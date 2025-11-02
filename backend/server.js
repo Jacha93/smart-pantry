@@ -918,8 +918,50 @@ app.use((err, req, res, next) => {
   res.status(500).json({ detail: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+// Error-Handling für Server-Start
+const server = app.listen(PORT, () => {
   console.log(`API listening on http://localhost:${PORT}`);
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} ist bereits belegt!`);
+    console.error(`   Bitte beende den anderen Prozess oder ändere PORT in .env`);
+    console.error(`   Finde Prozess: lsof -i :${PORT}`);
+  } else {
+    console.error('❌ Server-Fehler:', error);
+  }
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('\nSIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+// Unhandled Promise Rejections abfangen
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Server nicht sofort beenden, nur loggen (für Production)
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  server.close(() => {
+    process.exit(1);
+  });
 });
 
 
