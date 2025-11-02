@@ -62,9 +62,9 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     if (!recipeId) return;
     try {
       const response = await photoRecognitionAPI.getCookedRecipes();
-      const cooked = response.data.some((r: any) => r.recipe_id === recipeId);
+      const cooked = response.data.some((r: { recipe_id: number }) => r.recipe_id === recipeId);
       setIsCooked(cooked);
-    } catch (error) {
+    } catch {
       // Ignore errors
     }
   };
@@ -86,7 +86,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
       try {
         const response = await photoRecognitionAPI.translateInstructions(instructions, 'de');
         setTranslatedInstructions(response.data.translated_text);
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.warn('Übersetzung fehlgeschlagen, verwende Original:', error);
         // Bei Fehler Original verwenden
         setTranslatedInstructions(null);
@@ -112,8 +112,9 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
       if (recipeData.instructions) {
         translateInstructionsIfNeeded(recipeData.instructions);
       }
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to load recipe details');
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || 'Failed to load recipe details');
     } finally {
       setIsLoading(false);
     }
@@ -127,8 +128,9 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
       await photoRecognitionAPI.markRecipeAsCooked(recipeId, recipe.title);
       setIsCooked(true);
       toast.success(t('recipe.markedAsCooked'));
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || t('recipe.markedAsCookedFailed'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || t('recipe.markedAsCookedFailed'));
     } finally {
       setIsMarkingAsCooked(false);
     }

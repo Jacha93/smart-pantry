@@ -10,10 +10,6 @@ import { toast } from 'sonner';
 import { RecipeDetailsModal } from './recipe-details-modal';
 import { useI18n } from '@/hooks/use-i18n';
 
-interface RecognizedFood {
-  name: string;
-  confidence?: number;
-}
 
 interface Recipe {
   id: number;
@@ -63,8 +59,9 @@ export function FridgePhotoAnalyzer() {
 
       setAnalysisResult(response.data);
       toast.success(t('fridge.analyzeSuccess'));
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || t('fridge.analyzeFailed'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || t('fridge.analyzeFailed'));
     } finally {
       setIsAnalyzing(false);
     }
@@ -77,8 +74,9 @@ export function FridgePhotoAnalyzer() {
     try {
       await photoRecognitionAPI.addRecognizedGroceries(analysisResult.recognized_foods);
       toast.success(t('fridge.addSuccess'));
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || t('fridge.addFailed'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || t('fridge.addFailed'));
     } finally {
       setIsAddingGroceries(false);
     }

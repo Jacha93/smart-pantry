@@ -38,16 +38,24 @@ export default function LoginPage() {
       await auth.login(data.email, data.password);
       toast.success('Login successful!');
       router.push('/groceries');
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = 'Login failed';
       
-      if (error.response?.data?.detail) {
-        if (typeof error.response.data.detail === 'string') {
-          errorMessage = error.response.data.detail;
-        } else if (Array.isArray(error.response.data.detail)) {
-          errorMessage = error.response.data.detail.map((err: any) => err.msg || err.message || err).join(', ');
-        } else if (typeof error.response.data.detail === 'object') {
-          errorMessage = error.response.data.detail.message || error.response.data.detail.msg || 'Invalid credentials';
+      const apiError = error as { response?: { data?: { detail?: string | string[] | { message?: string; msg?: string } } } };
+      
+      if (apiError.response?.data?.detail) {
+        if (typeof apiError.response.data.detail === 'string') {
+          errorMessage = apiError.response.data.detail;
+        } else if (Array.isArray(apiError.response.data.detail)) {
+          errorMessage = apiError.response.data.detail.map((err) => {
+            if (typeof err === 'string') return err;
+            if (typeof err === 'object' && err !== null) {
+              return (err as { msg?: string; message?: string }).msg || (err as { msg?: string; message?: string }).message || String(err);
+            }
+            return String(err);
+          }).join(', ');
+        } else if (typeof apiError.response.data.detail === 'object') {
+          errorMessage = apiError.response.data.detail.message || apiError.response.data.detail.msg || 'Invalid credentials';
         }
       }
       
@@ -97,7 +105,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary hover:text-primary/80 hover:underline transition-colors">
               Sign up
             </Link>

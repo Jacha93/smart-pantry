@@ -1,3 +1,12 @@
+export interface ApiError {
+  response?: {
+    data?: {
+      detail?: string | string[] | { message?: string; msg?: string };
+    };
+  };
+  message?: string;
+}
+
 export interface Grocery {
   id: number;
   user_id: number;

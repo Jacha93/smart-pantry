@@ -16,7 +16,7 @@ export default function DashboardLayout({
 }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const { t, locale } = useI18n(); // locale wird verwendet um Re-Render bei Sprachwechsel zu triggern
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!auth.isAuthenticated()) {
