@@ -49,3 +49,10 @@ backend/.env.*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Internal documentation (nicht für öffentliches Repo)
+DATENSCHUTZ_DSGVO.md
+DSGVO_ZUSAMMENFASSUNG.md
+GITHUB_SETUP.md
+*_INTERNAL.md
+*_INTERN.md
