@@ -112,7 +112,7 @@ docker run -p 3000:3000 -p 8000:8000 \
 ## 🔒 Sicherheit
 
 - **Keine API Keys im Code**: Alle Secrets werden über Umgebungsvariablen bereitgestellt
-- **DSGVO-konforme Verschlüsselung**: Vorbereitet für zukünftige Datenbank-Migration (siehe [DATENSCHUTZ_DSGVO.md](./DATENSCHUTZ_DSGVO.md))
+- **DSGVO-konforme Verschlüsselung**: Vorbereitet für zukünftige Datenbank-Migration
 - **JWT-basierte Authentifizierung**: Sichere Token-basierte Authentifizierung
 
 ## 📝 Version

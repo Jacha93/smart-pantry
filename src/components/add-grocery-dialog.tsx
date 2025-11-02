@@ -63,8 +63,9 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
       setOpen(false);
       reset();
       onGroceryAdded();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || t('groceries.failedToAdd'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || t('groceries.failedToAdd'));
     } finally {
       setIsLoading(false);
     }

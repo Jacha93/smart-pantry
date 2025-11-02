@@ -38,24 +38,42 @@ export const authAPI = {
     api.post('/auth/register', { email, password, name }),
 };
 
+interface GroceryData {
+  name: string;
+  quantity: number;
+  unit: string;
+  expiry_date?: string;
+}
+
+interface ShoppingListData {
+  name: string;
+  items?: Array<{ name: string; quantity: number; unit: string }>;
+}
+
+interface ShoppingListItemData {
+  grocery_name: string;
+  quantity: number;
+  unit?: string;
+}
+
 // Groceries API
 export const groceriesAPI = {
   getAll: () => api.get('/groceries'),
-  create: (data: any) => api.post('/groceries', data),
-  update: (id: number, data: any) => api.put(`/groceries/${id}`, data),
+  create: (data: GroceryData) => api.post('/groceries', data),
+  update: (id: number, data: GroceryData) => api.put(`/groceries/${id}`, data),
   delete: (id: number) => api.delete(`/groceries/${id}`),
 };
 
 // Shopping Lists API
 export const shoppingListsAPI = {
   getAll: () => api.get('/shopping-lists'),
-  create: (data: any) => api.post('/shopping-lists', data),
+  create: (data: ShoppingListData) => api.post('/shopping-lists', data),
   generate: () => api.post('/shopping-lists/generate'),
   getById: (id: number) => api.get(`/shopping-lists/${id}`),
-  update: (id: number, data: any) => api.put(`/shopping-lists/${id}`, data),
+  update: (id: number, data: ShoppingListData) => api.put(`/shopping-lists/${id}`, data),
   delete: (id: number) => api.delete(`/shopping-lists/${id}`),
   complete: (id: number) => api.post(`/shopping-lists/${id}/complete`),
-  addItem: (listId: number, data: any) => api.post(`/shopping-lists/${listId}/items`, data),
+  addItem: (listId: number, data: ShoppingListItemData) => api.post(`/shopping-lists/${listId}/items`, data),
   toggleItem: (listId: number, itemId: number) =>
     api.put(`/shopping-lists/${listId}/items/${itemId}/toggle`),
 };

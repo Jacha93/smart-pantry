@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, isAfter, isBefore, addDays } from 'date-fns';
+import { format, isBefore, addDays } from 'date-fns';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
     try {
       const response = await groceriesAPI.getAll();
       setGroceries(response.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to fetch groceries');
     } finally {
       setIsLoading(false);
@@ -45,7 +45,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
       toast.success('Grocery deleted successfully');
       onGroceryUpdated();
       fetchGroceries();
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete grocery');
     }
   };

@@ -57,8 +57,9 @@ export function RenameShoppingListDialog({ list, onRenamed }: RenameShoppingList
       setOpen(false);
       reset();
       onRenamed();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to rename list');
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || 'Failed to rename list');
     } finally {
       setIsLoading(false);
     }

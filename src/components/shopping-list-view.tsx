@@ -28,7 +28,7 @@ export function ShoppingListView() {
     try {
       const response = await shoppingListsAPI.getAll();
       setShoppingLists(response.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to fetch shopping lists');
     } finally {
       setIsLoading(false);
@@ -41,8 +41,9 @@ export function ShoppingListView() {
       await shoppingListsAPI.generate();
       toast.success('Shopping list generated from low stock items!');
       fetchShoppingLists();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to generate shopping list');
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || 'Failed to generate shopping list');
     } finally {
       setIsGenerating(false);
     }
@@ -52,7 +53,7 @@ export function ShoppingListView() {
     try {
       await shoppingListsAPI.toggleItem(listId, itemId);
       fetchShoppingLists();
-    } catch (error) {
+    } catch {
       toast.error('Failed to toggle item');
     }
   };
@@ -64,8 +65,9 @@ export function ShoppingListView() {
       await shoppingListsAPI.complete(listId);
       toast.success(t('shoppingList.completed'));
       fetchShoppingLists();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to complete shopping list');
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || 'Failed to complete shopping list');
     }
   };
 
@@ -76,8 +78,9 @@ export function ShoppingListView() {
       await shoppingListsAPI.delete(listId);
       toast.success(t('shoppingList.listDeleted'));
       fetchShoppingLists();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Failed to delete shopping list');
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || 'Failed to delete shopping list');
     }
   };
 

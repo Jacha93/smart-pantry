@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -47,8 +47,9 @@ export function AddShoppingListItemDialog({ listId, onItemAdded }: AddShoppingLi
       setOpen(false);
       reset();
       onItemAdded();
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || t('shoppingList.failedToAdd'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || t('shoppingList.failedToAdd'));
     } finally {
       setIsLoading(false);
     }

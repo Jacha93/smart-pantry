@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChefHat, Check, Trash2, Loader2 } from 'lucide-react';
@@ -47,10 +47,11 @@ export default function RecipesPage() {
       console.log('📖 Rezepte erhalten:', response.data);
       console.log('📖 Anzahl Rezepte:', Array.isArray(response.data) ? response.data.length : 0);
       setRecipes(Array.isArray(response.data) ? response.data : []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Fehler beim Laden der Rezepte:', error);
-      console.error('❌ Error response:', error.response);
-      toast.error(error.response?.data?.detail || 'Failed to load recipes');
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      console.error('❌ Error response:', apiError.response);
+      toast.error(apiError.response?.data?.detail || 'Failed to load recipes');
       setRecipes([]);
     } finally {
       setIsLoading(false);
@@ -67,8 +68,9 @@ export default function RecipesPage() {
       await photoRecognitionAPI.deleteRecipe(id);
       setRecipes(recipes.filter((r) => r.id !== id));
       toast.success(t('recipes.deleted'));
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || t('recipes.deleteFailed'));
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { detail?: string } } };
+      toast.error(apiError.response?.data?.detail || t('recipes.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
