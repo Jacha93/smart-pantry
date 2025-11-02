@@ -842,6 +842,75 @@ app.post('/photo-recognition/translate-instructions', authMiddleware, async (req
   }
 });
 
+// Rezept-Zutaten übersetzen
+app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req, res) => {
+  try {
+    const { ingredients, targetLanguage } = req.body || {};
+    
+    if (!ingredients || !Array.isArray(ingredients)) {
+      return res.status(400).json({ detail: 'Zutaten-Array erforderlich' });
+    }
+
+    if (!targetLanguage || targetLanguage === 'en') {
+      // Keine Übersetzung nötig
+      return res.json({ translated_ingredients: ingredients });
+    }
+
+    if (!genAI || !GEMINI_API_KEY) {
+      console.warn('Gemini API Key fehlt, keine Übersetzung möglich');
+      return res.json({ translated_ingredients: ingredients }); // Original zurückgeben
+    }
+
+    try {
+      console.log('🌍 Übersetze', ingredients.length, 'Zutaten ins', targetLanguage);
+      
+      // Erstelle eine kommagetrennte Liste der Zutaten
+      const ingredientNames = ingredients.map(ing => typeof ing === 'string' ? ing : ing.name || ing);
+      
+      // Übersetze jede Zutat einzeln für bessere Qualität
+      const translatedNames: string[] = [];
+      for (const ingName of ingredientNames) {
+        try {
+          const translatedText = await translateTextWithGemini(
+            `Übersetze nur diesen einen Lebensmittel-Zutaten-Namen ins Deutsche (ohne Mengenangaben, nur der Zutaten-Name): ${ingName}`,
+            targetLanguage
+          );
+          // Clean up: Entferne mögliche zusätzliche Text aus der Antwort
+          const cleanName = translatedText.split(',')[0].trim().split('\n')[0].trim();
+          translatedNames.push(cleanName || ingName);
+        } catch (err) {
+          // Bei Fehler Original verwenden
+          translatedNames.push(ingName);
+        }
+      }
+      
+      // Mappe übersetzte Namen zurück zu den originalen Zutaten-Objekten
+      const translatedIngredients = ingredients.map((ing, index) => {
+        const originalName = typeof ing === 'string' ? ing : ing.name || '';
+        const translatedName = translatedNames[index] || originalName;
+        
+        if (typeof ing === 'string') {
+          return translatedName;
+        }
+        return {
+          ...ing,
+          name: translatedName
+        };
+      });
+      
+      console.log('✅ Zutaten-Übersetzung erfolgreich');
+      res.json({ translated_ingredients: translatedIngredients });
+    } catch (error) {
+      console.error('❌ Zutaten-Übersetzungsfehler:', error.message);
+      // Bei Fehler Original zurückgeben
+      res.json({ translated_ingredients: ingredients });
+    }
+  } catch (error) {
+    console.error('Zutaten-Übersetzungs-Endpoint Fehler:', error);
+    res.status(500).json({ detail: 'Fehler bei der Zutaten-Übersetzung' });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 app.use((err, req, res, next) => {
