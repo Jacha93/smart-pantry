@@ -868,7 +868,7 @@ app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req,
       const ingredientNames = ingredients.map(ing => typeof ing === 'string' ? ing : ing.name || ing);
       
       // Übersetze jede Zutat einzeln für bessere Qualität
-      const translatedNames: string[] = [];
+      const translatedNames = [];
       for (const ingName of ingredientNames) {
         try {
           const translatedText = await translateTextWithGemini(
