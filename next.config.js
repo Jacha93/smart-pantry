@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // Standalone-Mode nur für Production (für Docker)
+  ...(process.env.NODE_ENV === 'production' && { output: 'standalone' }),
 }
 
 module.exports = nextConfig
