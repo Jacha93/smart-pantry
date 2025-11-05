@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useI18n } from '@/hooks/use-i18n';
 import { chatAPI } from '@/lib/api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
   id: string;
@@ -105,8 +107,10 @@ export function ChatBubble() {
       setIsAnimating(true);
       const timer = setTimeout(() => {
         setIsAnimating(false);
-      }, 700); // Animation dauert 0.7s
+      }, 650); // Animation dauert 0.65s
       return () => clearTimeout(timer);
+    } else if (!isOpen) {
+      setIsAnimating(false);
     }
   }, [isOpen]);
 
@@ -321,6 +325,7 @@ export function ChatBubble() {
         <Card 
           ref={chatWindowRef}
           className={`fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
+          style={isAnimating ? undefined : { transform: 'none', opacity: 1 }}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 p-4">
@@ -371,7 +376,23 @@ export function ChatBubble() {
                     {message.role === 'bot' && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
                     {message.role === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
                     <div className="flex-1">
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            p: ({ children }) => <p className="m-0 mb-1 last:mb-0">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            ul: ({ children }) => <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>,
+                            li: ({ children }) => <li className="ml-2">{children}</li>,
+                            code: ({ children }) => <code className="bg-[rgba(0,0,0,0.2)] px-1 py-0.5 rounded text-xs">{children}</code>,
+                            a: ({ href, children }) => <a href={href} className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer">{children}</a>,
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -380,11 +401,11 @@ export function ChatBubble() {
             
             {(isTyping || showWelcomeAnimation) && (
               <div className="flex justify-start">
-                <div className="bg-[rgba(26,26,26,0.6)] border border-white/10 rounded-lg p-3">
-                  <div className="flex space-x-1.5 items-center">
-                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '0ms' }} />
-                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '233ms' }} />
-                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '466ms' }} />
+                <div className="bg-[rgba(26,26,26,0.6)] border border-white/10 rounded-2xl rounded-bl-sm px-4 py-3 min-w-[60px]">
+                  <div className="flex items-center justify-center space-x-1">
+                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-bounce 1.4s ease-in-out infinite', animationDelay: '0ms' }} />
+                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-bounce 1.4s ease-in-out infinite', animationDelay: '200ms' }} />
+                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-bounce 1.4s ease-in-out infinite', animationDelay: '400ms' }} />
                   </div>
                 </div>
               </div>
