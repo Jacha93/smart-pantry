@@ -124,17 +124,30 @@ Aktuelle Version: **v0.0.3**
 - `main`: Production-ready Code
 - `dev`: Development-Branch (nightly builds)
 
-## 🤝 Beitragen
+## 🤝 Beitragen & Feedback
 
-1. Forke das Repository
-2. Erstelle einen Feature-Branch (`git checkout -b feature/AmazingFeature`)
-3. Committe deine Änderungen (`git commit -m 'Add some AmazingFeature'`)
-4. Push zum Branch (`git push origin feature/AmazingFeature`)
-5. Öffne einen Pull Request
+Wir freuen uns über Feedback und Verbesserungsvorschläge! Bitte beachte folgende Richtlinien:
+
+### Issues melden
+- **Bug Reports**: Wenn du einen Fehler findest, öffne bitte ein [Issue](https://github.com/Jacha93/smart-pantry/issues/new) mit einer detaillierten Beschreibung
+- **Feature Requests**: Vorschläge für neue Features sind willkommen
+- **Fragen**: Bei Fragen zur Nutzung kannst du ebenfalls ein Issue öffnen
+
+### Wichtige Hinweise
+- **Keine Forks**: Dieses Projekt erlaubt keine Forks oder Pull Requests
+- **Nur Issues**: Bitte verwende ausschließlich das Issue-System für Feedback und Meldungen
+- **Keine Code-Änderungen**: Externe Code-Änderungen werden nicht akzeptiert
+
+### Code beitragen
+Falls du Interesse an einer Zusammenarbeit hast, kontaktiere bitte den Repository-Owner direkt.
 
 ## 📄 Lizenz
 
-Dieses Projekt ist unter der MIT-Lizenz lizenziert.
+Dieses Projekt ist proprietär und unterliegt dem Urheberrecht. Alle Rechte vorbehalten.
+
+Siehe [LICENSE.md](./LICENSE.md) für Details.
+
+**Wichtiger Hinweis**: Forks, Pull Requests und Code-Änderungen sind nicht gestattet. Bitte nutze ausschließlich das Issue-System für Feedback und Meldungen.
 
 ## 🐛 Bekannte Probleme / Roadmap
 
