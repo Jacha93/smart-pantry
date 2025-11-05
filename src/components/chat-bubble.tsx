@@ -212,33 +212,42 @@ export function ChatBubble() {
 
     setMessages(prev => [...prev, instructionMessage]);
 
-      // Wenn die Beschreibung bereits ausreichend ist, erstelle direkt das Issue
-      if (description.length > 20) {
-        try {
-          const response = await chatAPI.createIssue(
-            locale === 'de' 
-              ? `Issue: ${description.substring(0, 50)}...`
-              : `Issue: ${description.substring(0, 50)}...`,
-            description,
-            ['bug', 'user-reported']
-          );
+    // Wenn die Beschreibung bereits ausreichend ist, erstelle direkt das Issue
+    if (description.length > 20) {
+      try {
+        const response = await chatAPI.createIssue(
+          locale === 'de' 
+            ? `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
+            : `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`,
+          description,
+          ['bug', 'user-reported']
+        );
 
+        // Handle both html_url and fallback_url responses
+        const issueUrl = response.data.data?.html_url || response.data.html_url || response.data.fallback_url;
+        
         const successMessage: Message = {
           id: `success-${Date.now()}`,
           role: 'bot',
           content: locale === 'de'
-            ? `✅ Issue erfolgreich erstellt! Du findest es hier: ${response.data.html_url}\n\nVielen Dank für dein Feedback!`
-            : `✅ Issue created successfully! You can find it here: ${response.data.html_url}\n\nThank you for your feedback!`,
+            ? `✅ Issue erfolgreich erstellt! Du findest es hier: ${issueUrl}\n\nVielen Dank für dein Feedback!`
+            : `✅ Issue created successfully! You can find it here: ${issueUrl}\n\nThank you for your feedback!`,
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, successMessage]);
       } catch (error) {
+        console.error('Issue creation error:', error);
+        
+        // Extract fallback URL from error response if available
+        const fallbackUrl = (error as { response?: { data?: { fallback_url?: string } } })?.response?.data?.fallback_url 
+          || 'https://github.com/Jacha93/smart-pantry/issues/new';
+        
         const errorMsg: Message = {
           id: `issue-error-${Date.now()}`,
           role: 'bot',
           content: locale === 'de'
-            ? '❌ Fehler beim Erstellen des Issues. Bitte melde es manuell auf GitHub: https://github.com/Jacha93/smart-pantry/issues/new'
-            : '❌ Error creating issue. Please report it manually on GitHub: https://github.com/Jacha93/smart-pantry/issues/new',
+            ? `❌ Fehler beim Erstellen des Issues. Bitte melde es manuell auf GitHub:\n\n${fallbackUrl}\n\n**Hinweis:** Der GitHub Token ist möglicherweise nicht konfiguriert oder der Service ist nicht verfügbar.`
+            : `❌ Error creating issue. Please report it manually on GitHub:\n\n${fallbackUrl}\n\n**Note:** The GitHub token may not be configured or the service is unavailable.`,
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, errorMsg]);

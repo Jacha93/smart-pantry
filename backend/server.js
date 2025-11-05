@@ -1002,8 +1002,10 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
       console.log('✅ GitHub Issue erstellt:', githubResponse.data.html_url);
       res.json({
         success: true,
-        html_url: githubResponse.data.html_url,
-        number: githubResponse.data.number,
+        data: {
+          html_url: githubResponse.data.html_url,
+          number: githubResponse.data.number,
+        }
       });
     } catch (error) {
       console.error('❌ GitHub API Fehler:', error.response?.data || error.message);
