@@ -919,20 +919,27 @@ app.use((err, req, res, next) => {
 });
 
 // Error-Handling für Server-Start
-const server = app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
-});
+let server;
+try {
+  server = app.listen(PORT, () => {
+    console.log(`✅ API listening on http://localhost:${PORT}`);
+  });
 
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} ist bereits belegt!`);
-    console.error(`   Bitte beende den anderen Prozess oder ändere PORT in .env`);
-    console.error(`   Finde Prozess: lsof -i :${PORT}`);
-  } else {
-    console.error('❌ Server-Fehler:', error);
-  }
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`\n❌ Port ${PORT} ist bereits belegt!`);
+      console.error(`   Bitte beende den anderen Prozess:`);
+      console.error(`   kill $(lsof -t -i:${PORT})`);
+      console.error(`   Oder ändere PORT in .env\n`);
+    } else {
+      console.error('❌ Server-Fehler:', error);
+    }
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('❌ Fehler beim Starten des Servers:', error);
   process.exit(1);
-});
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
