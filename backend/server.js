@@ -977,9 +977,12 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
     
     if (!GITHUB_TOKEN) {
       console.warn('⚠️ GITHUB_TOKEN nicht gesetzt, Issue kann nicht erstellt werden');
+      // Erstelle Issue-Template URL mit vorausgefüllten Daten
+      const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
       return res.status(503).json({ 
         detail: 'GitHub Integration nicht konfiguriert',
-        fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
+        fallback_url: issueTemplateUrl,
+        message: 'Bitte erstelle das Issue manuell über den bereitgestellten Link'
       });
     }
 
@@ -993,7 +996,7 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
         },
         {
           headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Authorization': `Bearer ${GITHUB_TOKEN}`, // Bearer ist für neue Tokens empfohlen, funktioniert auch mit token
             'Accept': 'application/vnd.github.v3+json',
           },
         }
@@ -1009,9 +1012,12 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
       });
     } catch (error) {
       console.error('❌ GitHub API Fehler:', error.response?.data || error.message);
+      // Erstelle Issue-Template URL mit vorausgefüllten Daten als Fallback
+      const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
       res.status(500).json({ 
         detail: 'Fehler beim Erstellen des GitHub Issues',
-        fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
+        fallback_url: issueTemplateUrl,
+        github_error: error.response?.data?.message || error.message
       });
     }
   } catch (error) {
