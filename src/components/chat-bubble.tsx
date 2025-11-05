@@ -381,10 +381,10 @@ export function ChatBubble() {
             {(isTyping || showWelcomeAnimation) && (
               <div className="flex justify-start">
                 <div className="bg-[rgba(26,26,26,0.6)] border border-white/10 rounded-lg p-3">
-                  <div className="flex space-x-2 items-center">
+                  <div className="flex space-x-1.5 items-center">
                     <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '0ms' }} />
-                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '200ms' }} />
-                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '400ms' }} />
+                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '233ms' }} />
+                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '466ms' }} />
                   </div>
                 </div>
               </div>
