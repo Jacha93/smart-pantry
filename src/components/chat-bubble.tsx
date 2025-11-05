@@ -26,7 +26,10 @@ export function ChatBubble() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSubmittingIssue, setIsSubmittingIssue] = useState(false);
+  const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatWindowRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
 
   const scrollToBottom = () => {
@@ -39,18 +42,49 @@ export function ChatBubble() {
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      // Bot-Begrüßung beim ersten Öffnen
-      const welcomeMessage: Message = {
-        id: 'welcome',
-        role: 'bot',
-        content: locale === 'de' 
-          ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?\n\nIch kann dir helfen bei:\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App\n\nKlicke einfach auf eine der Optionen oder stelle mir eine Frage!'
-          : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?\n\nI can help you with:\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app\n\nJust click on one of the options or ask me a question!',
-        timestamp: new Date(),
-      };
-      setMessages([welcomeMessage]);
+      // Starte Typing-Animation nach kurzer Verzögerung
+      setIsTyping(true);
+      setShowWelcomeAnimation(true);
+      
+      // Simuliere Typing-Zeit
+      const typingTimeout = setTimeout(() => {
+        setIsTyping(false);
+        const welcomeMessage: Message = {
+          id: 'welcome',
+          role: 'bot',
+          content: locale === 'de' 
+            ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?\n\nIch kann dir helfen bei:\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App\n\nKlicke einfach auf eine der Optionen oder stelle mir eine Frage!'
+            : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?\n\nI can help you with:\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app\n\nJust click on one of the options or ask me a question!',
+          timestamp: new Date(),
+        };
+        setMessages([welcomeMessage]);
+        setShowWelcomeAnimation(false);
+      }, 1500); // Typing-Animation für 1.5 Sekunden
+
+      return () => clearTimeout(typingTimeout);
     }
-  }, [isOpen, locale, messages.length]);
+  }, [isOpen, locale]);
+
+  // Reset Chat beim Schließen
+  const handleClose = () => {
+    setIsOpen(false);
+    setMessages([]);
+    setInput('');
+    setIsTyping(false);
+    setShowWelcomeAnimation(false);
+    setIsAnimating(false);
+  };
+
+  // Wackeln-Animation nach dem Öffnen
+  useEffect(() => {
+    if (isOpen && chatWindowRef.current) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 1100); // Animation dauert 1.1s (0.5s slide-up + 0.6s wiggle)
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const quickActions: QuickAction[] = locale === 'de' 
     ? [
@@ -259,7 +293,10 @@ export function ChatBubble() {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl glass-card">
+        <Card 
+          ref={chatWindowRef}
+          className={`fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up chat-bubble-wiggle' : ''}`}
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 p-4">
             <div className="flex items-center space-x-2">
@@ -271,7 +308,7 @@ export function ChatBubble() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsOpen(false)}
+              onClick={handleClose}
               className="h-8 w-8"
             >
               <X className="h-4 w-4" />
@@ -303,13 +340,13 @@ export function ChatBubble() {
               </div>
             ))}
             
-            {isTyping && (
+            {(isTyping || showWelcomeAnimation) && (
               <div className="flex justify-start">
                 <div className="bg-[rgba(26,26,26,0.6)] border border-white/10 rounded-lg p-3">
-                  <div className="flex space-x-2">
-                    <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="flex space-x-2 items-center">
+                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '0ms' }} />
+                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '200ms' }} />
+                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '400ms' }} />
                   </div>
                 </div>
               </div>
@@ -319,7 +356,7 @@ export function ChatBubble() {
           </div>
 
           {/* Quick Actions */}
-          {messages.length === 1 && (
+          {messages.length === 1 && messages[0]?.id === 'welcome' && (
             <div className="px-4 pb-2">
               <div className="flex flex-wrap gap-2">
                 {quickActions.map((action) => (
@@ -362,4 +399,3 @@ export function ChatBubble() {
     </>
   );
 }
-

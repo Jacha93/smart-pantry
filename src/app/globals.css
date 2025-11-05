@@ -83,3 +83,81 @@ body {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+/* Chat Bubble iOS-style Animations */
+@keyframes slide-up-from-bubble {
+  0% {
+    transform: translateY(100%) scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-10px) scale(1.02);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake-wiggle {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  10% {
+    transform: translate(-1px, -1px) rotate(-0.5deg);
+  }
+  20% {
+    transform: translate(1px, 1px) rotate(0.5deg);
+  }
+  30% {
+    transform: translate(-1px, 1px) rotate(-0.5deg);
+  }
+  40% {
+    transform: translate(1px, -1px) rotate(0.5deg);
+  }
+  50% {
+    transform: translate(-1px, 0) rotate(-0.3deg);
+  }
+  60% {
+    transform: translate(1px, 0) rotate(0.3deg);
+  }
+  70% {
+    transform: translate(0, -1px) rotate(-0.2deg);
+  }
+  80% {
+    transform: translate(0, 1px) rotate(0.2deg);
+  }
+  90% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+@keyframes typing-dots {
+  0%, 20% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+  80%, 100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+}
+
+.chat-bubble-slide-up {
+  animation: slide-up-from-bubble 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.chat-bubble-wiggle {
+  animation: shake-wiggle 0.6s ease-in-out 0.5s;
+}
+
+.chat-bubble-container {
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
