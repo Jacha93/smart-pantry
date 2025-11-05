@@ -1031,7 +1031,7 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
       console.error('❌ GitHub API Fehler:', error.response?.data || error.message);
       
       // Wenn der Fehler wegen nicht existierender Labels ist, versuche es ohne Labels
-      if (error.response?.status === 422 && error.response?.data?.errors?.some((e: any) => e.resource === 'Label')) {
+      if (error.response?.status === 422 && error.response?.data?.errors?.some((e) => e.resource === 'Label')) {
         console.log('⚠️ Label-Fehler erkannt, versuche ohne Labels...');
         try {
           const githubResponse = await axios.post(
