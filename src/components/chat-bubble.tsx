@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -28,6 +28,7 @@ export function ChatBubble() {
   const [isSubmittingIssue, setIsSubmittingIssue] = useState(false);
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [hasUserMessages, setHasUserMessages] = useState(false); // Track ob User schon Nachrichten gesendet hat
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
@@ -41,7 +42,8 @@ export function ChatBubble() {
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    // Nur Begrüßung zeigen wenn Chat leer ist (neuer Chat oder erste Öffnung)
+    if (isOpen && messages.length === 0 && !hasUserMessages) {
       // Starte Typing-Animation nach kurzer Verzögerung
       setIsTyping(true);
       setShowWelcomeAnimation(true);
@@ -63,25 +65,47 @@ export function ChatBubble() {
 
       return () => clearTimeout(typingTimeout);
     }
-  }, [isOpen, locale]);
+  }, [isOpen, locale, messages.length, hasUserMessages]);
 
-  // Reset Chat beim Schließen
+  // Schließen ohne Reset (Chat-Verlauf bleibt)
   const handleClose = () => {
     setIsOpen(false);
+    setIsAnimating(false);
+  };
+
+  // Neuen Chat starten (Reset)
+  const handleNewChat = () => {
     setMessages([]);
     setInput('');
     setIsTyping(false);
     setShowWelcomeAnimation(false);
+    setHasUserMessages(false);
     setIsAnimating(false);
+    // Starte Begrüßung erneut
+    setIsTyping(true);
+    setShowWelcomeAnimation(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      const welcomeMessage: Message = {
+        id: 'welcome',
+        role: 'bot',
+        content: locale === 'de' 
+          ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?\n\nIch kann dir helfen bei:\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App\n\nKlicke einfach auf eine der Optionen oder stelle mir eine Frage!'
+          : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?\n\nI can help you with:\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app\n\nJust click on one of the options or ask me a question!',
+        timestamp: new Date(),
+      };
+      setMessages([welcomeMessage]);
+      setShowWelcomeAnimation(false);
+    }, 1500);
   };
 
-  // Wackeln-Animation nach dem Öffnen
+  // Liquid Glass Animation beim Öffnen
   useEffect(() => {
     if (isOpen && chatWindowRef.current) {
       setIsAnimating(true);
       const timer = setTimeout(() => {
         setIsAnimating(false);
-      }, 1100); // Animation dauert 1.1s (0.5s slide-up + 0.6s wiggle)
+      }, 700); // Animation dauert 0.7s
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -139,6 +163,7 @@ export function ChatBubble() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setHasUserMessages(true); // User hat jetzt eine Nachricht gesendet
     setIsTyping(true);
 
     try {
@@ -295,7 +320,7 @@ export function ChatBubble() {
       {isOpen && (
         <Card 
           ref={chatWindowRef}
-          className={`fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up chat-bubble-wiggle' : ''}`}
+          className={`fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 p-4">
@@ -305,14 +330,27 @@ export function ChatBubble() {
                 {locale === 'de' ? 'Smart Pantry Assistent' : 'Smart Pantry Assistant'}
               </h3>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center space-x-2">
+              {hasUserMessages && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNewChat}
+                  className="h-8 w-8"
+                  title={locale === 'de' ? 'Neuer Chat' : 'New Chat'}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -344,9 +382,9 @@ export function ChatBubble() {
               <div className="flex justify-start">
                 <div className="bg-[rgba(26,26,26,0.6)] border border-white/10 rounded-lg p-3">
                   <div className="flex space-x-2 items-center">
-                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '0ms' }} />
-                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '200ms' }} />
-                    <div className="h-2 w-2 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '400ms' }} />
+                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '0ms' }} />
+                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '200ms' }} />
+                    <div className="h-2.5 w-2.5 bg-primary rounded-full" style={{ animation: 'typing-dots 1.4s ease-in-out infinite', animationDelay: '400ms' }} />
                   </div>
                 </div>
               </div>
