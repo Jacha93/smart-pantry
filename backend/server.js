@@ -913,6 +913,111 @@ app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req,
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
+// Chat Endpoints
+app.post('/chat/message', authMiddleware, async (req, res) => {
+  try {
+    const { message, context } = req.body || {};
+    
+    if (!message) {
+      return res.status(400).json({ detail: 'Nachricht erforderlich' });
+    }
+
+    if (!genAI || !GEMINI_API_KEY) {
+      return res.status(503).json({ detail: 'Chat-Service nicht verfügbar' });
+    }
+
+    try {
+      let model;
+      try {
+        model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      } catch (error) {
+        model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
+      }
+
+      const prompt = `Du bist der Smart Pantry Assistent, ein hilfreicher Chatbot für eine Lebensmittel-Inventarverwaltungs-App.
+
+WICHTIG:
+- Antworte AUSSCHLIESSLICH zu Fragen über Smart Pantry
+- Keine allgemeinen Konversationen oder Themen außerhalb der App
+- Wenn Fragen nicht zur App gehören, leite höflich zum Issue-System weiter
+- Sei präzise und hilfreich
+- Maximal 200 Wörter pro Antwort
+
+Kontext: ${context || 'smart-pantry'}
+Nutzer-Frage: ${message}
+
+Antworte hilfreich und projektbezogen:`;
+
+      const result = await model.generateContent([prompt]);
+      const response = await result.response;
+      const botResponse = response.text();
+
+      res.json({ response: botResponse });
+    } catch (error) {
+      console.error('Chat-Fehler:', error);
+      res.status(500).json({ detail: 'Fehler bei der Chat-Antwort' });
+    }
+  } catch (error) {
+    console.error('Chat-Endpoint Fehler:', error);
+    res.status(500).json({ detail: 'Fehler beim Chat-Endpoint' });
+  }
+});
+
+// GitHub Issue erstellen
+app.post('/chat/create-issue', authMiddleware, async (req, res) => {
+  try {
+    const { title, body, labels = [] } = req.body || {};
+    
+    if (!title || !body) {
+      return res.status(400).json({ detail: 'Title und Body erforderlich' });
+    }
+
+    // GitHub API Token aus Umgebungsvariablen
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+    
+    if (!GITHUB_TOKEN) {
+      console.warn('⚠️ GITHUB_TOKEN nicht gesetzt, Issue kann nicht erstellt werden');
+      return res.status(503).json({ 
+        detail: 'GitHub Integration nicht konfiguriert',
+        fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
+      });
+    }
+
+    try {
+      const githubResponse = await axios.post(
+        'https://api.github.com/repos/Jacha93/smart-pantry/issues',
+        {
+          title,
+          body: `${body}\n\n---\n*Issue erstellt über Smart Pantry Chat-Bubble*`,
+          labels: ['user-reported', ...labels],
+        },
+        {
+          headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      console.log('✅ GitHub Issue erstellt:', githubResponse.data.html_url);
+      res.json({
+        success: true,
+        html_url: githubResponse.data.html_url,
+        number: githubResponse.data.number,
+      });
+    } catch (error) {
+      console.error('❌ GitHub API Fehler:', error.response?.data || error.message);
+      res.status(500).json({ 
+        detail: 'Fehler beim Erstellen des GitHub Issues',
+        fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
+      });
+    }
+  } catch (error) {
+    console.error('Issue-Endpoint Fehler:', error);
+    res.status(500).json({ detail: 'Fehler beim Issue-Endpoint' });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ detail: 'Internal server error' });

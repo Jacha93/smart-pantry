@@ -101,3 +101,11 @@ export const photoRecognitionAPI = {
   translateIngredients: (ingredients: Array<string | { name: string; amount?: number; unit?: string }>, targetLanguage: string) =>
     api.post('/photo-recognition/translate-ingredients', { ingredients, targetLanguage }),
 };
+
+// Chat API
+export const chatAPI = {
+  sendMessage: (message: string, context: string) =>
+    api.post('/chat/message', { message, context }),
+  createIssue: (title: string, body: string, labels: string[]) =>
+    api.post('/chat/create-issue', { title, body, labels }),
+};
