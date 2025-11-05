@@ -995,13 +995,22 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
     }
 
     try {
+      // Versuche Issue zu erstellen, ignoriere Labels wenn sie nicht existieren
+      const issueData = {
+        title,
+        body: `${body}\n\n---\n*Issue erstellt über Smart Pantry Chat-Bubble*`,
+      };
+      
+      // Füge Labels nur hinzu, wenn sie angegeben wurden (GitHub wird automatisch validieren)
+      // Wenn Labels nicht existieren, wird GitHub sie ignorieren oder einen Fehler geben
+      // Wir versuchen es erstmal ohne Labels, dann mit Labels falls angegeben
+      if (labels && labels.length > 0) {
+        issueData.labels = ['user-reported', ...labels];
+      }
+
       const githubResponse = await axios.post(
         'https://api.github.com/repos/Jacha93/smart-pantry/issues',
-        {
-          title,
-          body: `${body}\n\n---\n*Issue erstellt über Smart Pantry Chat-Bubble*`,
-          labels: ['user-reported', ...labels],
-        },
+        issueData,
         {
           headers: {
             'Authorization': `Bearer ${GITHUB_TOKEN}`, // Bearer ist für neue Tokens empfohlen, funktioniert auch mit token
@@ -1020,6 +1029,45 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
       });
     } catch (error) {
       console.error('❌ GitHub API Fehler:', error.response?.data || error.message);
+      
+      // Wenn der Fehler wegen nicht existierender Labels ist, versuche es ohne Labels
+      if (error.response?.status === 422 && error.response?.data?.errors?.some((e: any) => e.resource === 'Label')) {
+        console.log('⚠️ Label-Fehler erkannt, versuche ohne Labels...');
+        try {
+          const githubResponse = await axios.post(
+            'https://api.github.com/repos/Jacha93/smart-pantry/issues',
+            {
+              title,
+              body: `${body}\n\n---\n*Issue erstellt über Smart Pantry Chat-Bubble*`,
+            },
+            {
+              headers: {
+                'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+              },
+            }
+          );
+
+          console.log('✅ GitHub Issue erstellt (ohne Labels):', githubResponse.data.html_url);
+          return res.json({
+            success: true,
+            data: {
+              html_url: githubResponse.data.html_url,
+              number: githubResponse.data.number,
+            }
+          });
+        } catch (retryError) {
+          console.error('❌ Retry ohne Labels fehlgeschlagen:', retryError.response?.data || retryError.message);
+          // Fallback zu Issue-Template URL
+          const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+          return res.status(500).json({ 
+            detail: 'Fehler beim Erstellen des GitHub Issues',
+            fallback_url: issueTemplateUrl,
+            github_error: retryError.response?.data?.message || retryError.message
+          });
+        }
+      }
+      
       // Erstelle Issue-Template URL mit vorausgefüllten Daten als Fallback
       try {
         const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
