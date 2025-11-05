@@ -978,12 +978,20 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
     if (!GITHUB_TOKEN) {
       console.warn('⚠️ GITHUB_TOKEN nicht gesetzt, Issue kann nicht erstellt werden');
       // Erstelle Issue-Template URL mit vorausgefüllten Daten
-      const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-      return res.status(503).json({ 
-        detail: 'GitHub Integration nicht konfiguriert',
-        fallback_url: issueTemplateUrl,
-        message: 'Bitte erstelle das Issue manuell über den bereitgestellten Link'
-      });
+      try {
+        const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+        return res.status(503).json({ 
+          detail: 'GitHub Integration nicht konfiguriert',
+          fallback_url: issueTemplateUrl,
+          message: 'Bitte erstelle das Issue manuell über den bereitgestellten Link'
+        });
+      } catch (urlError) {
+        console.error('Fehler beim Erstellen der Issue-Template URL:', urlError);
+        return res.status(503).json({ 
+          detail: 'GitHub Integration nicht konfiguriert',
+          fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
+        });
+      }
     }
 
     try {
@@ -1013,16 +1021,39 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
     } catch (error) {
       console.error('❌ GitHub API Fehler:', error.response?.data || error.message);
       // Erstelle Issue-Template URL mit vorausgefüllten Daten als Fallback
-      const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-      res.status(500).json({ 
-        detail: 'Fehler beim Erstellen des GitHub Issues',
-        fallback_url: issueTemplateUrl,
-        github_error: error.response?.data?.message || error.message
-      });
+      try {
+        const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+        res.status(500).json({ 
+          detail: 'Fehler beim Erstellen des GitHub Issues',
+          fallback_url: issueTemplateUrl,
+          github_error: error.response?.data?.message || error.message
+        });
+      } catch (urlError) {
+        console.error('Fehler beim Erstellen der Issue-Template URL:', urlError);
+        res.status(500).json({ 
+          detail: 'Fehler beim Erstellen des GitHub Issues',
+          fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new',
+          github_error: error.response?.data?.message || error.message
+        });
+      }
     }
   } catch (error) {
     console.error('Issue-Endpoint Fehler:', error);
-    res.status(500).json({ detail: 'Fehler beim Issue-Endpoint' });
+    // Versuche auch hier eine Fallback-URL zu erstellen
+    try {
+      const title = req.body?.title || 'Issue';
+      const body = req.body?.body || '';
+      const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+      res.status(500).json({ 
+        detail: 'Fehler beim Issue-Endpoint',
+        fallback_url: issueTemplateUrl
+      });
+    } catch (urlError) {
+      res.status(500).json({ 
+        detail: 'Fehler beim Issue-Endpoint',
+        fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
+      });
+    }
   }
 });
 
