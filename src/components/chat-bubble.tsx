@@ -31,6 +31,7 @@ export function ChatBubble() {
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [hasUserMessages, setHasUserMessages] = useState(false); // Track ob User schon Nachrichten gesendet hat
+  const [isWaitingForIssueDescription, setIsWaitingForIssueDescription] = useState(false); // Track ob wir auf Issue-Beschreibung warten
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const { t, locale } = useI18n();
@@ -83,6 +84,7 @@ export function ChatBubble() {
     setShowWelcomeAnimation(false);
     setHasUserMessages(false);
     setIsAnimating(false);
+    setIsWaitingForIssueDescription(false);
     // Starte Begrüßung erneut
     setIsTyping(true);
     setShowWelcomeAnimation(true);
@@ -129,13 +131,25 @@ export function ChatBubble() {
       ];
 
   const handleQuickAction = (action: string) => {
+    if (action === 'report_issue') {
+      // Bei Issue-Meldung: Zeige nur die Anweisung, warte auf User-Beschreibung
+      setIsWaitingForIssueDescription(true);
+      const instructionMessage: Message = {
+        id: `instruction-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? '📝 Um ein Issue zu melden, beschreibe bitte kurz:\n\n1. Was ist das Problem?\n2. Wann tritt es auf?\n3. Welche Schritte führen zum Problem?\n\nIch erstelle dann automatisch ein Issue auf GitHub.'
+          : '📝 To report an issue, please describe:\n\n1. What is the problem?\n2. When does it occur?\n3. What steps lead to the problem?\n\nI will then automatically create an issue on GitHub.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, instructionMessage]);
+      setHasUserMessages(true);
+      return;
+    }
+    
     let message = '';
     
-    if (action === 'report_issue') {
-      message = locale === 'de' 
-        ? 'Ich möchte ein Issue melden'
-        : 'I want to report an issue';
-    } else if (action === 'general_question') {
+    if (action === 'general_question') {
       message = locale === 'de'
         ? 'Ich habe eine allgemeine Frage'
         : 'I have a general question';
@@ -171,17 +185,38 @@ export function ChatBubble() {
     setIsTyping(true);
 
     try {
-      // Prüfe ob es eine Issue-Meldung ist
+      // Wenn wir auf Issue-Beschreibung warten, erstelle direkt das Issue
+      if (isWaitingForIssueDescription) {
+        setIsWaitingForIssueDescription(false);
+        await handleIssueReport(userMessage.content);
+        setIsTyping(false);
+        return;
+      }
+
+      // Prüfe ob es eine Issue-Meldung ist (für manuelle Eingabe)
       const isIssueReport = userMessage.content.toLowerCase().includes('issue') || 
                             userMessage.content.toLowerCase().includes('fehler') ||
                             userMessage.content.toLowerCase().includes('bug') ||
                             userMessage.content.toLowerCase().includes('problem');
 
-      if (isIssueReport) {
-        await handleIssueReport(userMessage.content);
-      } else {
-        await handleBotResponse(userMessage.content);
+      if (isIssueReport && !userMessage.content.toLowerCase().includes('ich möchte') && !userMessage.content.toLowerCase().includes('i want')) {
+        // User hat manuell ein Issue gemeldet, aber noch keine Beschreibung
+        setIsWaitingForIssueDescription(true);
+        const instructionMessage: Message = {
+          id: `instruction-${Date.now()}`,
+          role: 'bot',
+          content: locale === 'de'
+            ? '📝 Um ein Issue zu melden, beschreibe bitte kurz:\n\n1. Was ist das Problem?\n2. Wann tritt es auf?\n3. Welche Schritte führen zum Problem?\n\nIch erstelle dann automatisch ein Issue auf GitHub.'
+            : '📝 To report an issue, please describe:\n\n1. What is the problem?\n2. When does it occur?\n3. What steps lead to the problem?\n\nI will then automatically create an issue on GitHub.',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, instructionMessage]);
+        setIsTyping(false);
+        return;
       }
+
+      // Normale Chat-Antwort
+      await handleBotResponse(userMessage.content);
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
@@ -201,57 +236,58 @@ export function ChatBubble() {
   const handleIssueReport = async (description: string) => {
     setIsSubmittingIssue(true);
     
-    const instructionMessage: Message = {
-      id: `instruction-${Date.now()}`,
-      role: 'bot',
-      content: locale === 'de'
-        ? '📝 Um ein Issue zu melden, beschreibe bitte kurz:\n\n1. Was ist das Problem?\n2. Wann tritt es auf?\n3. Welche Schritte führen zum Problem?\n\nIch erstelle dann automatisch ein Issue auf GitHub.'
-        : '📝 To report an issue, please describe:\n\n1. What is the problem?\n2. When does it occur?\n3. What steps lead to the problem?\n\nI will then automatically create an issue on GitHub.',
-      timestamp: new Date(),
-    };
+    // Prüfe ob die Beschreibung ausreichend ist
+    if (!description || description.trim().length < 10) {
+      const errorMsg: Message = {
+        id: `issue-error-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? '❌ Die Beschreibung ist zu kurz. Bitte beschreibe das Problem ausführlicher (mindestens 10 Zeichen).'
+          : '❌ The description is too short. Please describe the problem in more detail (at least 10 characters).',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
+      setIsSubmittingIssue(false);
+      return;
+    }
 
-    setMessages(prev => [...prev, instructionMessage]);
+    try {
+      const response = await chatAPI.createIssue(
+        locale === 'de' 
+          ? `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
+          : `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`,
+        description,
+        ['bug', 'user-reported']
+      );
 
-    // Wenn die Beschreibung bereits ausreichend ist, erstelle direkt das Issue
-    if (description.length > 20) {
-      try {
-        const response = await chatAPI.createIssue(
-          locale === 'de' 
-            ? `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
-            : `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`,
-          description,
-          ['bug', 'user-reported']
-        );
-
-        // Handle both html_url and fallback_url responses
-        const issueUrl = response.data.data?.html_url || response.data.html_url || response.data.fallback_url;
-        
-        const successMessage: Message = {
-          id: `success-${Date.now()}`,
-          role: 'bot',
-          content: locale === 'de'
-            ? `✅ Issue erfolgreich erstellt! Du findest es hier: ${issueUrl}\n\nVielen Dank für dein Feedback!`
-            : `✅ Issue created successfully! You can find it here: ${issueUrl}\n\nThank you for your feedback!`,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, successMessage]);
-      } catch (error) {
-        console.error('Issue creation error:', error);
-        
-        // Extract fallback URL from error response if available
-        const fallbackUrl = (error as { response?: { data?: { fallback_url?: string } } })?.response?.data?.fallback_url 
-          || 'https://github.com/Jacha93/smart-pantry/issues/new';
-        
-        const errorMsg: Message = {
-          id: `issue-error-${Date.now()}`,
-          role: 'bot',
-          content: locale === 'de'
-            ? `❌ Fehler beim Erstellen des Issues. Bitte melde es manuell auf GitHub:\n\n${fallbackUrl}\n\n**Hinweis:** Der GitHub Token ist möglicherweise nicht konfiguriert oder der Service ist nicht verfügbar.`
-            : `❌ Error creating issue. Please report it manually on GitHub:\n\n${fallbackUrl}\n\n**Note:** The GitHub token may not be configured or the service is unavailable.`,
-          timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, errorMsg]);
-      }
+      // Handle both html_url and fallback_url responses
+      const issueUrl = response.data.data?.html_url || response.data.html_url || response.data.fallback_url;
+      
+      const successMessage: Message = {
+        id: `success-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? `✅ Issue erfolgreich erstellt! Du findest es hier: ${issueUrl}\n\nVielen Dank für dein Feedback!`
+          : `✅ Issue created successfully! You can find it here: ${issueUrl}\n\nThank you for your feedback!`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, successMessage]);
+    } catch (error) {
+      console.error('Issue creation error:', error);
+      
+      // Extract fallback URL from error response if available
+      const fallbackUrl = (error as { response?: { data?: { fallback_url?: string } } })?.response?.data?.fallback_url 
+        || 'https://github.com/Jacha93/smart-pantry/issues/new';
+      
+      const errorMsg: Message = {
+        id: `issue-error-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? `❌ Fehler beim Erstellen des Issues. Bitte melde es manuell auf GitHub:\n\n${fallbackUrl}\n\n**Hinweis:** Der GitHub Token ist möglicherweise nicht konfiguriert oder der Service ist nicht verfügbar.`
+          : `❌ Error creating issue. Please report it manually on GitHub:\n\n${fallbackUrl}\n\n**Note:** The GitHub token may not be configured or the service is unavailable.`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
     }
     
     setIsSubmittingIssue(false);
