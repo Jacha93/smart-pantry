@@ -140,6 +140,15 @@ body {
 
 .chat-bubble-slide-up {
   animation: liquid-glass-morph 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-fill-mode: forwards;
+}
+
+/* Reset Animation State nach Animation */
+.chat-bubble-container:not(.chat-bubble-slide-up) {
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  clip-path: none !important;
 }
 
 .chat-bubble-container {

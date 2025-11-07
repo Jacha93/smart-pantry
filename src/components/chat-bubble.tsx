@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Bot, User, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useI18n } from '@/hooks/use-i18n';
 import { chatAPI } from '@/lib/api';
@@ -370,7 +369,6 @@ export function ChatBubble() {
         <Card 
           ref={chatWindowRef}
           className={`fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
-          style={isAnimating ? undefined : { transform: 'none', opacity: 1 }}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 p-4">
@@ -480,19 +478,34 @@ export function ChatBubble() {
 
           {/* Input */}
           <div className="border-t border-white/10 p-4">
-            <div className="flex space-x-2">
-              <Input
+            <div className="flex space-x-2 items-end">
+              <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                placeholder={locale === 'de' ? 'Schreibe eine Nachricht...' : 'Type a message...'}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                placeholder={locale === 'de' ? 'Schreibe eine Nachricht... (Shift+Enter für neue Zeile)' : 'Type a message... (Shift+Enter for new line)'}
                 disabled={isTyping || isSubmittingIssue}
-                className="flex-1"
+                rows={1}
+                className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  height: 'auto',
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                }}
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isTyping || isSubmittingIssue}
                 size="icon"
+                className="flex-shrink-0"
               >
                 <Send className="h-4 w-4" />
               </Button>

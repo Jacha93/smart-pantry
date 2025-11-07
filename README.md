@@ -2,6 +2,8 @@
 
 Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatischer Bildanalyse und Rezeptvorschlägen.
 
+> **⚠️ Disclaimer:** Dieses Projekt ist ein Experiment und wird im Rahmen eines Selbststudiums von einer KI programmiert. Der Code dient Lernzwecken und sollte nicht als Produktionscode betrachtet werden.
+
 ## 🚀 Features
 
 - **Lebensmittel-Inventarverwaltung**: Verwalte deine Lebensmittel digital
