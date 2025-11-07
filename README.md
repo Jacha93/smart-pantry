@@ -15,10 +15,11 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
 ## 📋 Technologien
 
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 16, React 19.2, TypeScript 5.1+, Tailwind CSS
 - **Backend**: Node.js, Express
 - **KI**: Google Gemini 2.5 Flash (Bildanalyse), Spoonacular API (Rezepte)
 - **Container**: Docker-ready
+- **Bundler**: Turbopack (Standard in Next.js 16)
 
 ## 🛠️ Installation
 
