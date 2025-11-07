@@ -160,5 +160,3 @@ Siehe [LICENSE.md](./LICENSE.md) für Details.
 ## 📚 Weitere Dokumentation
 
 - [API Keys Setup](./API_KEYS_SETUP.md)
-- [DSGVO Datenschutz](./DATENSCHUTZ_DSGVO.md)
-- [DSGVO Zusammenfassung](./DSGVO_ZUSAMMENFASSUNG.md)
