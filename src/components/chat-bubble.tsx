@@ -53,16 +53,43 @@ export function ChatBubble() {
       // Simuliere Typing-Zeit
       const typingTimeout = setTimeout(() => {
         setIsTyping(false);
-        const welcomeMessage: Message = {
-          id: 'welcome',
+        // Erste Nachricht: Begrüßung
+        const welcomeMessage1: Message = {
+          id: 'welcome-1',
           role: 'bot',
           content: locale === 'de' 
-            ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?\n\nIch kann dir helfen bei:\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App\n\nKlicke einfach auf eine der Optionen oder stelle mir eine Frage!'
-            : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?\n\nI can help you with:\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app\n\nJust click on one of the options or ask me a question!',
+            ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
+            : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?',
           timestamp: new Date(),
         };
-        setMessages([welcomeMessage]);
-        setShowWelcomeAnimation(false);
+        setMessages([welcomeMessage1]);
+        
+        // Zweite Nachricht: Hilfe-Bereiche (nach kurzer Verzögerung)
+        setTimeout(() => {
+          const welcomeMessage2: Message = {
+            id: 'welcome-2',
+            role: 'bot',
+            content: locale === 'de'
+              ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App'
+              : 'I can help you with:\n\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, welcomeMessage2]);
+          
+          // Dritte Nachricht: Call-to-Action
+          setTimeout(() => {
+            const welcomeMessage3: Message = {
+              id: 'welcome-3',
+              role: 'bot',
+              content: locale === 'de'
+                ? 'Klicke einfach auf eine der Optionen oder stelle mir eine Frage!'
+                : 'Just click on one of the options or ask me a question!',
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, welcomeMessage3]);
+            setShowWelcomeAnimation(false);
+          }, 800);
+        }, 600);
       }, 1500); // Typing-Animation für 1.5 Sekunden
 
       return () => clearTimeout(typingTimeout);
@@ -89,26 +116,53 @@ export function ChatBubble() {
     setShowWelcomeAnimation(true);
     setTimeout(() => {
       setIsTyping(false);
-      const welcomeMessage: Message = {
-        id: 'welcome',
+      // Erste Nachricht: Begrüßung
+      const welcomeMessage1: Message = {
+        id: 'welcome-1',
         role: 'bot',
         content: locale === 'de' 
-          ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?\n\nIch kann dir helfen bei:\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App\n\nKlicke einfach auf eine der Optionen oder stelle mir eine Frage!'
-          : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?\n\nI can help you with:\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app\n\nJust click on one of the options or ask me a question!',
+          ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
+          : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?',
         timestamp: new Date(),
       };
-      setMessages([welcomeMessage]);
-      setShowWelcomeAnimation(false);
+      setMessages([welcomeMessage1]);
+      
+      // Zweite Nachricht: Hilfe-Bereiche (nach kurzer Verzögerung)
+      setTimeout(() => {
+        const welcomeMessage2: Message = {
+          id: 'welcome-2',
+          role: 'bot',
+          content: locale === 'de'
+            ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App'
+            : 'I can help you with:\n\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, welcomeMessage2]);
+        
+        // Dritte Nachricht: Call-to-Action
+        setTimeout(() => {
+          const welcomeMessage3: Message = {
+            id: 'welcome-3',
+            role: 'bot',
+            content: locale === 'de'
+              ? 'Klicke einfach auf eine der Optionen oder stelle mir eine Frage!'
+              : 'Just click on one of the options or ask me a question!',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, welcomeMessage3]);
+          setShowWelcomeAnimation(false);
+        }, 800);
+      }, 600);
     }, 1500);
   };
 
-  // Liquid Glass Animation beim Öffnen
+  // Smooth Slide-Up Animation beim Öffnen
   useEffect(() => {
     if (isOpen && chatWindowRef.current) {
       setIsAnimating(true);
       const timer = setTimeout(() => {
         setIsAnimating(false);
-      }, 650); // Animation dauert 0.65s
+      }, 400); // Animation dauert 0.4s
       return () => clearTimeout(timer);
     } else if (!isOpen) {
       setIsAnimating(false);
@@ -423,12 +477,12 @@ export function ChatBubble() {
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ children }) => <p className="m-0 mb-1 last:mb-0">{children}</p>,
+                            p: ({ children }) => <p className="m-0 mb-2 last:mb-0 leading-relaxed">{children}</p>,
                             strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
                             em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className="list-disc list-inside my-1 space-y-0.5">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside my-1 space-y-0.5">{children}</ol>,
-                            li: ({ children }) => <li className="ml-2">{children}</li>,
+                            ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1.5 ml-1">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1.5 ml-1">{children}</ol>,
+                            li: ({ children }) => <li className="ml-1 leading-relaxed">{children}</li>,
                             code: ({ children }) => <code className="bg-[rgba(0,0,0,0.2)] px-1 py-0.5 rounded text-xs">{children}</code>,
                             a: ({ href, children }) => <a href={href} className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer">{children}</a>,
                           }}
@@ -458,7 +512,7 @@ export function ChatBubble() {
           </div>
 
           {/* Quick Actions */}
-          {messages.length === 1 && messages[0]?.id === 'welcome' && (
+          {messages.length >= 1 && messages[0]?.id === 'welcome-1' && (
             <div className="px-4 pb-2">
               <div className="flex flex-wrap gap-2">
                 {quickActions.map((action) => (

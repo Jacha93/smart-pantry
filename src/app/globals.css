@@ -84,45 +84,15 @@ body {
   transition-duration: 150ms;
 }
 
-/* Chat Bubble iOS-style Animations - Liquid Glass Morphing (Expo-inspired) */
-@keyframes liquid-glass-morph {
+/* Chat Bubble Smooth Slide-Up Animation */
+@keyframes chat-slide-up {
   0% {
-    transform: translateY(100%) scale(0.7);
+    transform: translateY(20px) scale(0.95);
     opacity: 0;
-    border-radius: 50%;
-    filter: blur(30px);
-    clip-path: circle(20% at 50% 100%);
-  }
-  20% {
-    border-radius: 45%;
-    filter: blur(20px);
-    clip-path: circle(35% at 50% 85%);
-  }
-  40% {
-    transform: translateY(-3px) scale(1.01);
-    opacity: 0.85;
-    border-radius: 30%;
-    filter: blur(12px);
-    clip-path: circle(55% at 50% 60%);
-  }
-  60% {
-    transform: translateY(1px) scale(0.995);
-    border-radius: 20%;
-    filter: blur(8px);
-    clip-path: circle(70% at 50% 40%);
-  }
-  80% {
-    transform: translateY(-1px) scale(1.002);
-    border-radius: 15%;
-    filter: blur(4px);
-    clip-path: circle(85% at 50% 20%);
   }
   100% {
     transform: translateY(0) scale(1);
     opacity: 1;
-    border-radius: 12px;
-    filter: blur(0px);
-    clip-path: circle(100% at 50% 0%);
   }
 }
 
@@ -139,16 +109,8 @@ body {
 }
 
 .chat-bubble-slide-up {
-  animation: liquid-glass-morph 0.65s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: chat-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-fill-mode: forwards;
-}
-
-/* Reset Animation State nach Animation */
-.chat-bubble-container:not(.chat-bubble-slide-up) {
-  transform: none !important;
-  opacity: 1 !important;
-  filter: none !important;
-  clip-path: none !important;
 }
 
 .chat-bubble-container {
