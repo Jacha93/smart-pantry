@@ -842,6 +842,43 @@ app.post('/photo-recognition/translate-instructions', authMiddleware, async (req
   }
 });
 
+// Rezept-Titel übersetzen
+app.post('/photo-recognition/translate-title', authMiddleware, async (req, res) => {
+  try {
+    const { title, targetLanguage } = req.body || {};
+    
+    if (!title) {
+      return res.status(400).json({ detail: 'Titel erforderlich' });
+    }
+
+    if (!targetLanguage || targetLanguage === 'en') {
+      // Keine Übersetzung nötig
+      return res.json({ translated_title: title });
+    }
+
+    if (!genAI || !GEMINI_API_KEY) {
+      console.warn('Gemini API Key fehlt, keine Übersetzung möglich');
+      return res.json({ translated_title: title }); // Original zurückgeben
+    }
+
+    try {
+      console.log('🌍 Übersetze Rezept-Titel ins', targetLanguage);
+      const translated = await translateTextWithGemini(title, targetLanguage);
+      // Clean up: Entferne mögliche zusätzliche Text aus der Antwort
+      const cleanTitle = translated.split('\n')[0].trim().split('.')[0].trim();
+      console.log('✅ Titel-Übersetzung erfolgreich');
+      res.json({ translated_title: cleanTitle || translated });
+    } catch (error) {
+      console.error('❌ Titel-Übersetzungsfehler:', error.message);
+      // Bei Fehler Original zurückgeben
+      res.json({ translated_title: title });
+    }
+  } catch (error) {
+    console.error('Titel-Übersetzungs-Endpoint Fehler:', error);
+    res.status(500).json({ detail: 'Fehler bei der Titel-Übersetzung' });
+  }
+});
+
 // Rezept-Zutaten übersetzen
 app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req, res) => {
   try {

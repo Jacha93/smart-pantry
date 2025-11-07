@@ -39,6 +39,7 @@ interface RecipeDetailsModalProps {
 
 export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsModalProps) {
   const [recipe, setRecipe] = useState<RecipeDetails | null>(null);
+  const [translatedTitle, setTranslatedTitle] = useState<string | null>(null);
   const [translatedInstructions, setTranslatedInstructions] = useState<string | null>(null);
   const [translatedIngredients, setTranslatedIngredients] = useState<RecipeDetails['ingredients'] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +55,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     }
     // Reset translation when modal closes or recipe changes
     if (!isOpen || !recipeId) {
+      setTranslatedTitle(null);
       setTranslatedInstructions(null);
       setTranslatedIngredients(null);
     }
@@ -108,6 +110,27 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     }
   };
 
+  const translateTitleIfNeeded = async (title: string) => {
+    // Nur übersetzen wenn:
+    // 1. User hat Deutsch ausgewählt
+    // 2. Titel ist wahrscheinlich Englisch
+    if (locale === 'de' && title && isLikelyEnglish(title)) {
+      setIsTranslating(true);
+      try {
+        const response = await photoRecognitionAPI.translateTitle(title, 'de');
+        setTranslatedTitle(response.data.translated_title);
+      } catch (error: unknown) {
+        console.warn('Titel-Übersetzung fehlgeschlagen, verwende Original:', error);
+        // Bei Fehler Original verwenden
+        setTranslatedTitle(null);
+      } finally {
+        setIsTranslating(false);
+      }
+    } else {
+      setTranslatedTitle(null);
+    }
+  };
+
   const translateIngredientsIfNeeded = async (ingredients: RecipeDetails['ingredients']) => {
     // Nur übersetzen wenn:
     // 1. User hat Deutsch ausgewählt
@@ -133,12 +156,18 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     if (!recipeId) return;
 
     setIsLoading(true);
+    setTranslatedTitle(null);
     setTranslatedInstructions(null);
     setTranslatedIngredients(null);
     try {
       const response = await photoRecognitionAPI.getRecipeDetails(recipeId);
       const recipeData = response.data;
       setRecipe(recipeData);
+      
+      // Übersetze Titel falls nötig (asynchron, blockiert nicht das Laden)
+      if (recipeData.title) {
+        translateTitleIfNeeded(recipeData.title);
+      }
       
       // Übersetze Anleitung falls nötig (asynchron, blockiert nicht das Laden)
       if (recipeData.instructions) {
@@ -207,7 +236,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
                 />
               </div>
               <div className="md:w-1/2 space-y-4">
-                <h2 className="text-2xl font-bold">{recipe.title}</h2>
+                <h2 className="text-2xl font-bold">{translatedTitle || recipe.title}</h2>
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                   <div className="flex items-center space-x-1">
                     <Clock className="h-4 w-4" />
@@ -281,7 +310,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
         <div className="flex justify-between items-center">
           {recipe && !isCooked && (
             <Button
-              variant="outline"
+              variant="default"
               onClick={handleMarkAsCooked}
               disabled={isMarkingAsCooked}
               className="flex items-center space-x-2"

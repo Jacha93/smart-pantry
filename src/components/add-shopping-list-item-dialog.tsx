@@ -58,7 +58,7 @@ export function AddShoppingListItemDialog({ listId, onItemAdded }: AddShoppingLi
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+        <Button variant="outline" size="sm">
           <Plus className="h-4 w-4 mr-2" />
           {t('shoppingList.addItem')}
         </Button>
@@ -96,7 +96,7 @@ export function AddShoppingListItemDialog({ listId, onItemAdded }: AddShoppingLi
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {t('shoppingList.cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading} className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? t('shoppingList.adding') : t('shoppingList.add')}
             </Button>
           </div>

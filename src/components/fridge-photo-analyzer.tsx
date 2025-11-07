@@ -120,7 +120,7 @@ export function FridgePhotoAnalyzer() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <Button onClick={() => fileInputRef.current?.click()} className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+              <Button onClick={() => fileInputRef.current?.click()}>
                 <Camera className="h-4 w-4 mr-2" />
                 {t('fridge.choosePhoto')}
               </Button>
@@ -145,7 +145,7 @@ export function FridgePhotoAnalyzer() {
               <Button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className="w-full hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="w-full"
               >
                 {isAnalyzing ? (
                   <>
@@ -188,7 +188,7 @@ export function FridgePhotoAnalyzer() {
               <Button
                 onClick={handleAddToInventory}
                 disabled={isAddingGroceries}
-                className="w-full hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="w-full"
               >
                 {isAddingGroceries ? (
                   <>

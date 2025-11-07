@@ -162,7 +162,6 @@ export function ShoppingListView() {
                           variant="destructive"
                           size="sm"
                           onClick={() => deleteShoppingList(list.id)}
-                          className="hover:scale-[1.02] active:scale-[0.98] transition-transform"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
                           {t('shoppingList.delete')}

@@ -100,6 +100,8 @@ export const photoRecognitionAPI = {
     api.post('/photo-recognition/translate-instructions', { text, targetLanguage }),
   translateIngredients: (ingredients: Array<string | { name: string; amount?: number; unit?: string }>, targetLanguage: string) =>
     api.post('/photo-recognition/translate-ingredients', { ingredients, targetLanguage }),
+  translateTitle: (title: string, targetLanguage: string) =>
+    api.post('/photo-recognition/translate-title', { title, targetLanguage }),
 };
 
 // Chat API

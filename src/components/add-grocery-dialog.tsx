@@ -74,7 +74,7 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+        <Button>
           <Plus className="h-4 w-4 mr-2" />
           {t('groceries.add')}
         </Button>
@@ -196,7 +196,7 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {t('groceries.cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading} className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? t('groceries.adding') : t('groceries.add')}
             </Button>
           </div>
