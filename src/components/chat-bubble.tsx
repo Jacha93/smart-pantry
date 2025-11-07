@@ -70,8 +70,8 @@ export function ChatBubble() {
             id: 'welcome-2',
             role: 'bot',
             content: locale === 'de'
-              ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App'
-              : 'I can help you with:\n\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app',
+              ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
+              : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app',
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, welcomeMessage2]);
@@ -133,8 +133,8 @@ export function ChatBubble() {
           id: 'welcome-2',
           role: 'bot',
           content: locale === 'de'
-            ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue melden\n• Allgemeine Fragen zur App'
-            : 'I can help you with:\n\n• Questions about groceries and recipes\n• Report an issue\n• General questions about the app',
+            ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
+            : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app',
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, welcomeMessage2]);
