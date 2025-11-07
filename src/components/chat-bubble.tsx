@@ -456,7 +456,7 @@ export function ChatBubble() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -548,8 +548,6 @@ export function ChatBubble() {
                 className="flex-1 min-h-[80px] max-h-[200px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"
                 style={{
                   height: 'auto',
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
