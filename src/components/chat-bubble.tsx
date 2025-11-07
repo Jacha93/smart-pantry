@@ -463,7 +463,7 @@ export function ChatBubble() {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
+                  className={`max-w-[80%] rounded-lg p-4 ${
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-[rgba(26,26,26,0.6)] text-foreground border border-white/10'
@@ -473,17 +473,17 @@ export function ChatBubble() {
                     {message.role === 'bot' && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
                     {message.role === 'user' && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
                     <div className="flex-1">
-                      <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                      <div className="text-sm max-w-none">
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={{
-                            p: ({ children }) => <p className="m-0 mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                            p: ({ children }) => <p className="m-0 mb-3 last:mb-0 leading-relaxed text-foreground">{children}</p>,
                             strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-                            em: ({ children }) => <em className="italic">{children}</em>,
-                            ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1.5 ml-1">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1.5 ml-1">{children}</ol>,
-                            li: ({ children }) => <li className="ml-1 leading-relaxed">{children}</li>,
-                            code: ({ children }) => <code className="bg-[rgba(0,0,0,0.2)] px-1 py-0.5 rounded text-xs">{children}</code>,
+                            em: ({ children }) => <em className="italic text-foreground">{children}</em>,
+                            ul: ({ children }) => <ul className="list-disc list-outside my-3 space-y-2 ml-4 text-foreground">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-outside my-3 space-y-2 ml-4 text-foreground">{children}</ol>,
+                            li: ({ children }) => <li className="leading-relaxed pl-1">{children}</li>,
+                            code: ({ children }) => <code className="bg-[rgba(0,0,0,0.3)] px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
                             a: ({ href, children }) => <a href={href} className="text-primary underline hover:text-primary/80" target="_blank" rel="noopener noreferrer">{children}</a>,
                           }}
                         >
@@ -544,15 +544,17 @@ export function ChatBubble() {
                 }}
                 placeholder={locale === 'de' ? 'Schreibe eine Nachricht... (Shift+Enter für neue Zeile)' : 'Type a message... (Shift+Enter for new line)'}
                 disabled={isTyping || isSubmittingIssue}
-                rows={1}
-                className="flex-1 min-h-[40px] max-h-[120px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                rows={3}
+                className="flex-1 min-h-[80px] max-h-[200px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"
                 style={{
                   height: 'auto',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
                   target.style.height = 'auto';
-                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                  target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
                 }}
               />
               <Button
