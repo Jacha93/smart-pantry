@@ -59,6 +59,10 @@ export const translations: Translations = {
   'groceries.thresholdPositive': { en: 'Threshold must be positive', de: 'Mindestbestand muss positiv sein' },
   'groceries.addedSuccess': { en: 'Grocery added successfully!', de: 'Lebensmittel erfolgreich hinzugefügt!' },
   'groceries.failedToAdd': { en: 'Failed to add grocery', de: 'Lebensmittel konnte nicht hinzugefügt werden' },
+  'groceries.failedToFetch': { en: 'Failed to fetch groceries', de: 'Lebensmittel konnten nicht geladen werden' },
+  'groceries.deleteConfirm': { en: 'Are you sure you want to delete this grocery?', de: 'Möchtest du dieses Lebensmittel wirklich löschen?' },
+  'groceries.deletedSuccess': { en: 'Grocery deleted successfully', de: 'Lebensmittel erfolgreich gelöscht' },
+  'groceries.failedToDelete': { en: 'Failed to delete grocery', de: 'Lebensmittel konnte nicht gelöscht werden' },
 
   // Fridge Analyzer
   'fridge.title': { en: 'Fridge Analyzer', de: 'Kühlschrank-Analyse' },
@@ -150,6 +154,25 @@ export const translations: Translations = {
   'common.invalidCredentials': { en: 'Invalid credentials', de: 'Ungültige Anmeldedaten' },
   'common.registrationSuccess': { en: 'Registration successful! Please sign in.', de: 'Registrierung erfolgreich! Bitte anmelden.' },
   'common.registrationFailed': { en: 'Registration failed', de: 'Registrierung fehlgeschlagen' },
+  'common.noGroceriesFound': { en: 'No groceries found', de: 'Keine Lebensmittel gefunden' },
+  'common.loadingGroceries': { en: 'Loading groceries...', de: 'Lade Lebensmittel...' },
+  'common.expired': { en: 'Expired', de: 'Abgelaufen' },
+  'common.expiresSoon': { en: 'Expires Soon', de: 'Läuft bald ab' },
+  'common.noDate': { en: 'No Date', de: 'Kein Datum' },
+  'common.good': { en: 'Good', de: 'Gut' },
+  'common.lowStock': { en: 'Low Stock', de: 'Niedriger Bestand' },
+  'common.inStock': { en: 'In Stock', de: 'Auf Lager' },
+  
+  // Categories
+  'category.dairy': { en: 'Dairy', de: 'Milchprodukte' },
+  'category.produce': { en: 'Produce', de: 'Obst & Gemüse' },
+  'category.meat': { en: 'Meat', de: 'Fleisch' },
+  'category.bakery': { en: 'Bakery', de: 'Backwaren' },
+  'category.pantry': { en: 'Pantry', de: 'Vorrat' },
+  'category.frozen': { en: 'Frozen', de: 'Tiefkühl' },
+  'category.beverages': { en: 'Beverages', de: 'Getränke' },
+  'category.snacks': { en: 'Snacks', de: 'Snacks' },
+  'category.other': { en: 'Other', de: 'Sonstiges' },
 };
 
 let currentLocale: Locale = (typeof window !== 'undefined' && (localStorage.getItem('locale') as Locale)) || 'en';

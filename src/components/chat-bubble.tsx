@@ -33,6 +33,8 @@ export function ChatBubble() {
   const [isWaitingForIssueDescription, setIsWaitingForIssueDescription] = useState(false); // Track ob wir auf Issue-Beschreibung warten
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
+  const welcomeSentRef = useRef(false); // Ref um zu tracken ob Welcome-Messages bereits gesendet wurden
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]); // Ref für alle Timeouts zum Aufräumen
   const { t, locale } = useI18n();
 
   const scrollToBottom = () => {
@@ -45,10 +47,17 @@ export function ChatBubble() {
 
   useEffect(() => {
     // Nur Begrüßung zeigen wenn Chat leer ist (neuer Chat oder erste Öffnung)
-    if (isOpen && messages.length === 0 && !hasUserMessages) {
+    // UND Welcome-Messages noch nicht gesendet wurden
+    if (isOpen && messages.length === 0 && !hasUserMessages && !welcomeSentRef.current) {
+      welcomeSentRef.current = true; // Markiere als gesendet
+      
       // Starte Typing-Animation nach kurzer Verzögerung
       setIsTyping(true);
       setShowWelcomeAnimation(true);
+      
+      // Räume alle vorherigen Timeouts auf
+      timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+      timeoutRefs.current = [];
       
       // Simuliere Typing-Zeit
       const typingTimeout = setTimeout(() => {
@@ -65,7 +74,7 @@ export function ChatBubble() {
         setMessages([welcomeMessage1]);
         
         // Zweite Nachricht: Hilfe-Bereiche (nach kurzer Verzögerung)
-        setTimeout(() => {
+        const timeout2 = setTimeout(() => {
           const welcomeMessage2: Message = {
             id: 'welcome-2',
             role: 'bot',
@@ -77,7 +86,7 @@ export function ChatBubble() {
           setMessages(prev => [...prev, welcomeMessage2]);
           
           // Dritte Nachricht: Call-to-Action
-          setTimeout(() => {
+          const timeout3 = setTimeout(() => {
             const welcomeMessage3: Message = {
               id: 'welcome-3',
               role: 'bot',
@@ -89,21 +98,36 @@ export function ChatBubble() {
             setMessages(prev => [...prev, welcomeMessage3]);
             setShowWelcomeAnimation(false);
           }, 800);
+          timeoutRefs.current.push(timeout3);
         }, 600);
+        timeoutRefs.current.push(timeout2);
       }, 1500); // Typing-Animation für 1.5 Sekunden
+      
+      timeoutRefs.current.push(typingTimeout);
 
-      return () => clearTimeout(typingTimeout);
+      return () => {
+        // Räume alle Timeouts auf
+        timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+        timeoutRefs.current = [];
+      };
     }
-  }, [isOpen, locale, messages.length, hasUserMessages]);
+  }, [isOpen, locale, hasUserMessages]); // messages.length entfernt!
 
   // Schließen ohne Reset (Chat-Verlauf bleibt)
   const handleClose = () => {
+    // Räume alle Timeouts auf beim Schließen
+    timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+    timeoutRefs.current = [];
     setIsOpen(false);
     setIsAnimating(false);
   };
 
   // Neuen Chat starten (Reset)
   const handleNewChat = () => {
+    // Räume alle Timeouts auf
+    timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+    timeoutRefs.current = [];
+    
     setMessages([]);
     setInput('');
     setIsTyping(false);
@@ -111,10 +135,12 @@ export function ChatBubble() {
     setHasUserMessages(false);
     setIsAnimating(false);
     setIsWaitingForIssueDescription(false);
+    welcomeSentRef.current = false; // Reset Welcome-Flag
+    
     // Starte Begrüßung erneut
     setIsTyping(true);
     setShowWelcomeAnimation(true);
-    setTimeout(() => {
+    const timeout1 = setTimeout(() => {
       setIsTyping(false);
       // Erste Nachricht: Begrüßung
       const welcomeMessage1: Message = {
@@ -128,7 +154,7 @@ export function ChatBubble() {
       setMessages([welcomeMessage1]);
       
       // Zweite Nachricht: Hilfe-Bereiche (nach kurzer Verzögerung)
-      setTimeout(() => {
+      const timeout2 = setTimeout(() => {
         const welcomeMessage2: Message = {
           id: 'welcome-2',
           role: 'bot',
@@ -140,7 +166,7 @@ export function ChatBubble() {
         setMessages(prev => [...prev, welcomeMessage2]);
         
         // Dritte Nachricht: Call-to-Action
-        setTimeout(() => {
+        const timeout3 = setTimeout(() => {
           const welcomeMessage3: Message = {
             id: 'welcome-3',
             role: 'bot',
@@ -152,8 +178,11 @@ export function ChatBubble() {
           setMessages(prev => [...prev, welcomeMessage3]);
           setShowWelcomeAnimation(false);
         }, 800);
+        timeoutRefs.current.push(timeout3);
       }, 600);
+      timeoutRefs.current.push(timeout2);
     }, 1500);
+    timeoutRefs.current.push(timeout1);
   };
 
   // Smooth Slide-Up Animation beim Öffnen

@@ -46,7 +46,7 @@ export function LanguageSwitcher() {
           {locale === 'en' ? 'English' : 'Deutsch'}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent position="popper" className="z-[100]">
+      <SelectContent className="z-[100]">
         <SelectItem value="en">🇬🇧 English</SelectItem>
         <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
       </SelectContent>

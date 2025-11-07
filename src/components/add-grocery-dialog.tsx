@@ -116,7 +116,7 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
                 <SelectTrigger>
                   <SelectValue placeholder={t('groceries.selectUnit')} />
                 </SelectTrigger>
-                <SelectContent position="popper" className="z-[100]">
+                <SelectContent  className="z-[100]">
                   {UNITS.map((unit) => (
                     <SelectItem key={unit} value={unit}>
                       {unit}
@@ -136,12 +136,15 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
               <SelectTrigger>
                 <SelectValue placeholder={t('groceries.selectCategory')} />
               </SelectTrigger>
-              <SelectContent position="popper" className="z-[100]">
-                {GROCERY_CATEGORIES.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
+              <SelectContent  className="z-[100]">
+                {GROCERY_CATEGORIES.map((category) => {
+                  const categoryKey = `category.${category.toLowerCase()}`;
+                  return (
+                    <SelectItem key={category} value={category}>
+                      {t(categoryKey) || category}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             {errors.category && (

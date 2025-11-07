@@ -11,16 +11,24 @@ import { Edit, Trash2, Search } from 'lucide-react';
 import { Grocery, GROCERY_CATEGORIES } from '@/types';
 import { groceriesAPI } from '@/lib/api';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface GroceryTableProps {
   onGroceryUpdated: () => void;
 }
 
 export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
+  const { t } = useI18n();
   const [groceries, setGroceries] = useState<Grocery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+
+  // Helper function to translate category names
+  const translateCategory = (category: string): string => {
+    const categoryKey = `category.${category.toLowerCase()}`;
+    return t(categoryKey) || category;
+  };
 
   useEffect(() => {
     fetchGroceries();
@@ -31,22 +39,22 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
       const response = await groceriesAPI.getAll();
       setGroceries(response.data);
     } catch {
-      toast.error('Failed to fetch groceries');
+      toast.error(t('groceries.failedToFetch'));
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this grocery?')) return;
+    if (!confirm(t('groceries.deleteConfirm'))) return;
     
     try {
       await groceriesAPI.delete(id);
-      toast.success('Grocery deleted successfully');
+      toast.success(t('groceries.deletedSuccess'));
       onGroceryUpdated();
       fetchGroceries();
     } catch {
-      toast.error('Failed to delete grocery');
+      toast.error(t('groceries.failedToDelete'));
     }
   };
 
@@ -67,21 +75,21 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
     
     switch (status) {
       case 'expired':
-        return <Badge variant="destructive">Expired</Badge>;
+        return <Badge variant="destructive">{t('common.expired')}</Badge>;
       case 'expiring-soon':
-        return <Badge variant="secondary">Expires Soon</Badge>;
+        return <Badge variant="secondary">{t('common.expiresSoon')}</Badge>;
       case 'no-date':
-        return <Badge variant="outline">No Date</Badge>;
+        return <Badge variant="outline">{t('common.noDate')}</Badge>;
       default:
-        return <Badge variant="default">Good</Badge>;
+        return <Badge variant="default">{t('common.good')}</Badge>;
     }
   };
 
   const getStockStatus = (quantity: number, threshold: number) => {
     if (quantity <= threshold) {
-      return <Badge variant="destructive">Low Stock</Badge>;
+      return <Badge variant="destructive">{t('common.lowStock')}</Badge>;
     }
-    return <Badge variant="default">In Stock</Badge>;
+    return <Badge variant="default">{t('common.inStock')}</Badge>;
   };
 
   const filteredGroceries = groceries.filter((grocery) => {
@@ -95,7 +103,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2">Loading groceries...</p>
+          <p className="mt-2">{t('common.loadingGroceries')}</p>
         </div>
       </div>
     );
@@ -107,7 +115,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
-            placeholder="Search groceries..."
+            placeholder={t('common.search')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -115,13 +123,13 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Filter by category" />
+            <SelectValue placeholder={t('common.filterCategory')} />
           </SelectTrigger>
-          <SelectContent position="popper" className="z-[100]">
-            <SelectItem value="all">All Categories</SelectItem>
+          <SelectContent className="z-[100]">
+            <SelectItem value="all">{t('common.allCategories')}</SelectItem>
             {GROCERY_CATEGORIES.map((category) => (
               <SelectItem key={category} value={category}>
-                {category}
+                {translateCategory(category)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -145,7 +153,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
             {filteredGroceries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  No groceries found
+                  {t('common.noGroceriesFound')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -156,7 +164,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
                     {grocery.quantity} {grocery.unit}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{grocery.category}</Badge>
+                    <Badge variant="outline">{translateCategory(grocery.category)}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
@@ -165,7 +173,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
                           {format(new Date(grocery.expiry_date), 'MMM dd, yyyy')}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-400">No date</div>
+                        <div className="text-sm text-gray-400">{t('common.noDate')}</div>
                       )}
                       {getExpiryBadge(grocery.expiry_date)}
                     </div>
