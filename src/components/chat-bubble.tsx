@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Bot, User, Plus, LogIn } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Plus, LogIn, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/hooks/use-i18n';
 import { chatAPI } from '@/lib/api';
 import { auth, authDisabled } from '@/lib/auth';
@@ -551,14 +552,29 @@ export function ChatBubble() {
 
   return (
     <>
-      {/* Chat Bubble Button */}
+      {/* Chat Bubble Button mit Badge-Design */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl hover:bg-primary/90 hover:scale-110 transition-all duration-200"
+          className="fixed bottom-6 right-6 z-50 rounded-full h-14 w-14 flex items-center justify-center transition-all duration-200 hover:scale-110"
+          style={{
+            background: 'rgba(26, 26, 26, 0.5)',
+            backdropFilter: 'blur(30px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(30px) saturate(200%)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(6, 182, 212, 0.1) inset, 0 0 20px rgba(6, 182, 212, 0.15)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.35)';
+            e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(6, 182, 212, 0.2) inset, 0 0 30px rgba(6, 182, 212, 0.25)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.25)';
+            e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(6, 182, 212, 0.1) inset, 0 0 20px rgba(6, 182, 212, 0.15)';
+          }}
           aria-label="Open chat"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" />
         </button>
       )}
 
@@ -587,11 +603,19 @@ export function ChatBubble() {
             <div className="relative z-10 flex flex-col h-full">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/20 p-4 glass-card bg-white/5">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Bot className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-foreground">
-                  {locale === 'de' ? 'Smart Pantry Assistent' : 'Smart Pantry Assistant'}
-                </h3>
+                <div className="flex flex-col">
+                  <h3 className="font-semibold text-foreground">
+                    {locale === 'de' ? 'Smart Pantry Assistent' : 'Smart Pantry Assistant'}
+                  </h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    <span className="text-xs text-muted-foreground">
+                      {locale === 'de' ? 'KI-gestützt' : 'AI-powered'}
+                    </span>
+                  </div>
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 {hasUserMessages && (
