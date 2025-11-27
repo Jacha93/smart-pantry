@@ -1054,10 +1054,35 @@ app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req,
 
 app.get('/health', (req, res) => res.json({ ok: true }));
 
-// Chat Endpoints
-app.post('/chat/message', authMiddleware, async (req, res) => {
+// Optional Auth Middleware für Chat/Issue Endpoints
+function optionalAuthMiddleware(req, res, next) {
+  if (AUTH_DISABLED) {
+    const demoUser = ensureDemoUser();
+    req.user = { id: demoUser.id, email: demoUser.email };
+    req.isAuthenticated = true;
+    return next();
+  }
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET);
+      req.user = { id: payload.sub, email: payload.email };
+      req.isAuthenticated = true;
+    } catch (e) {
+      req.isAuthenticated = false;
+    }
+  } else {
+    req.isAuthenticated = false;
+  }
+  next();
+}
+
+// Chat Endpoints (optional auth)
+app.post('/chat/message', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { message, context } = req.body || {};
+    const { message, context, is_authenticated } = req.body || {};
+    const authenticated = req.isAuthenticated || is_authenticated === true;
     
     if (!message) {
       return res.status(400).json({ detail: 'Nachricht erforderlich' });
@@ -1075,7 +1100,9 @@ app.post('/chat/message', authMiddleware, async (req, res) => {
         model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
       }
 
-      const prompt = `Du bist der Smart Pantry Assistent, ein hilfreicher Chatbot für eine Lebensmittel-Inventarverwaltungs-App.
+      // Unterschiedliche Prompts je nach Auth-Status
+      const prompt = authenticated
+        ? `Du bist der Smart Pantry Assistent, ein hilfreicher Chatbot für eine Lebensmittel-Inventarverwaltungs-App.
 
 WICHTIG:
 - Antworte AUSSCHLIESSLICH zu Fragen über Smart Pantry
@@ -1083,11 +1110,29 @@ WICHTIG:
 - Wenn Fragen nicht zur App gehören, leite höflich zum Issue-System weiter
 - Sei präzise und hilfreich
 - Maximal 200 Wörter pro Antwort
+- Der Nutzer ist EINGELOGGT und kann alle Funktionen nutzen
 
 Kontext: ${context || 'smart-pantry'}
 Nutzer-Frage: ${message}
 
-Antworte hilfreich und projektbezogen:`;
+Antworte hilfreich und projektbezogen:`
+        : `Du bist der Smart Pantry Assistent, ein hilfreicher Chatbot für eine Lebensmittel-Inventarverwaltungs-App.
+
+WICHTIG:
+- Der Nutzer ist NICHT eingeloggt (Gast)
+- Antworte NUR zu ALLGEMEINEN Fragen über Smart Pantry
+- Motiviere den Nutzer höflich, sich anzumelden/zu registrieren
+- Erkläre die Vorteile der App und warum sich eine Anmeldung lohnt
+- Bei Fragen zu spezifischen Funktionen (Lebensmittel, Rezepte, etc.): Erkläre, dass diese nur für eingeloggte Nutzer verfügbar sind
+- Issue-Meldungen sind erlaubt
+- Keine allgemeinen Konversationen außerhalb der App
+- Sei präzise und hilfreich
+- Maximal 200 Wörter pro Antwort
+
+Kontext: ${context || 'smart-pantry'}
+Nutzer-Frage: ${message}
+
+Antworte hilfreich, projektbezogen und motiviere zur Anmeldung:`;
 
       const result = await model.generateContent([prompt]);
       const response = await result.response;
@@ -1104,14 +1149,22 @@ Antworte hilfreich und projektbezogen:`;
   }
 });
 
-// GitHub Issue erstellen
-app.post('/chat/create-issue', authMiddleware, async (req, res) => {
+// GitHub Issue erstellen (optional auth)
+app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { title, body, labels = [] } = req.body || {};
+    const { title, body, labels = [], is_authenticated } = req.body || {};
+    const authenticated = req.isAuthenticated || is_authenticated === true;
     
     if (!title || !body) {
       return res.status(400).json({ detail: 'Title und Body erforderlich' });
     }
+    
+    // Markiere Issue als Gast- oder User-Issue
+    const userInfo = authenticated && req.user
+      ? `\n\n---\n*Issue erstellt von: ${req.user.email} (User ID: ${req.user.id})*`
+      : `\n\n---\n*Issue erstellt von Gast-User (nicht eingeloggt)*`;
+    
+    const issueBody = `${body}${userInfo}`;
 
     // GitHub API Token aus Umgebungsvariablen
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
@@ -1139,14 +1192,17 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
       // Versuche Issue zu erstellen, ignoriere Labels wenn sie nicht existieren
       const issueData = {
         title,
-        body: `${body}\n\n---\n*Issue erstellt über Smart Pantry Chat-Bubble*`,
+        body: issueBody,
       };
       
       // Füge Labels nur hinzu, wenn sie angegeben wurden (GitHub wird automatisch validieren)
       // Wenn Labels nicht existieren, wird GitHub sie ignorieren oder einen Fehler geben
       // Wir versuchen es erstmal ohne Labels, dann mit Labels falls angegeben
       if (labels && labels.length > 0) {
-        issueData.labels = ['user-reported', ...labels];
+        // Labels je nach Auth-Status
+        issueData.labels = authenticated 
+          ? ['user-reported', ...labels]
+          : ['guest-reported', ...labels];
       }
 
       const githubResponse = await axios.post(
@@ -1179,7 +1235,7 @@ app.post('/chat/create-issue', authMiddleware, async (req, res) => {
             'https://api.github.com/repos/Jacha93/smart-pantry/issues',
             {
               title,
-              body: `${body}\n\n---\n*Issue erstellt über Smart Pantry Chat-Bubble*`,
+              body: issueBody,
             },
             {
               headers: {

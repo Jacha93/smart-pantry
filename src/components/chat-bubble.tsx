@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Bot, User, Plus } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Plus, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useI18n } from '@/hooks/use-i18n';
 import { chatAPI } from '@/lib/api';
+import { auth, authDisabled } from '@/lib/auth';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -31,11 +32,22 @@ export function ChatBubble() {
   const [isAnimating, setIsAnimating] = useState(false);
   const [hasUserMessages, setHasUserMessages] = useState(false); // Track ob User schon Nachrichten gesendet hat
   const [isWaitingForIssueDescription, setIsWaitingForIssueDescription] = useState(false); // Track ob wir auf Issue-Beschreibung warten
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Auth-Status
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatWindowRef = useRef<HTMLDivElement>(null);
   const welcomeSentRef = useRef(false); // Ref um zu tracken ob Welcome-Messages bereits gesendet wurden
   const timeoutRefs = useRef<NodeJS.Timeout[]>([]); // Ref für alle Timeouts zum Aufräumen
   const { t, locale } = useI18n();
+
+  // Prüfe Auth-Status
+  useEffect(() => {
+    const checkAuth = () => {
+      setIsAuthenticated(authDisabled || auth.isAuthenticated());
+    };
+    checkAuth();
+    window.addEventListener('authchange', checkAuth);
+    return () => window.removeEventListener('authchange', checkAuth);
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -62,25 +74,33 @@ export function ChatBubble() {
       // Simuliere Typing-Zeit
       const typingTimeout = setTimeout(() => {
         setIsTyping(false);
-        // Erste Nachricht: Begrüßung
+        // Erste Nachricht: Begrüßung (unterschiedlich je nach Auth-Status)
         const welcomeMessage1: Message = {
           id: 'welcome-1',
           role: 'bot',
-          content: locale === 'de' 
-            ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
-            : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?',
+          content: isAuthenticated
+            ? (locale === 'de' 
+                ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
+                : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?')
+            : (locale === 'de'
+                ? '👋 Hallo! Ich bin der Smart Pantry Assistent. Ich beantworte gerne allgemeine Fragen zur App!'
+                : '👋 Hello! I\'m the Smart Pantry assistant. I\'m happy to answer general questions about the app!'),
           timestamp: new Date(),
         };
         setMessages([welcomeMessage1]);
         
-        // Zweite Nachricht: Hilfe-Bereiche (nach kurzer Verzögerung)
+        // Zweite Nachricht: Hilfe-Bereiche (unterschiedlich je nach Auth-Status)
         const timeout2 = setTimeout(() => {
           const welcomeMessage2: Message = {
             id: 'welcome-2',
             role: 'bot',
-            content: locale === 'de'
-              ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
-              : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app',
+            content: isAuthenticated
+              ? (locale === 'de'
+                  ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
+                  : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app')
+              : (locale === 'de'
+                  ? 'Als Gast kannst du:\n\n• Allgemeine Fragen zur App stellen\n\n• Issue melden\n\n• Mehr über Smart Pantry erfahren\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen!'
+                  : 'As a guest you can:\n\n• Ask general questions about the app\n\n• Report an issue\n\n• Learn more about Smart Pantry\n\n💡 **Tip:** Sign in to use all features!'),
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, welcomeMessage2]);
@@ -111,7 +131,7 @@ export function ChatBubble() {
         timeoutRefs.current = [];
       };
     }
-  }, [isOpen, locale, hasUserMessages]); // messages.length entfernt!
+  }, [isOpen, locale, hasUserMessages, isAuthenticated]); // Auth-Status als Dependency
 
   // Schließen ohne Reset (Chat-Verlauf bleibt)
   const handleClose = () => {
@@ -142,28 +162,36 @@ export function ChatBubble() {
     setShowWelcomeAnimation(true);
     const timeout1 = setTimeout(() => {
       setIsTyping(false);
-      // Erste Nachricht: Begrüßung
-      const welcomeMessage1: Message = {
-        id: 'welcome-1',
-        role: 'bot',
-        content: locale === 'de' 
-          ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
-          : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?',
-        timestamp: new Date(),
-      };
-      setMessages([welcomeMessage1]);
-      
-      // Zweite Nachricht: Hilfe-Bereiche (nach kurzer Verzögerung)
-      const timeout2 = setTimeout(() => {
-        const welcomeMessage2: Message = {
-          id: 'welcome-2',
+      // Erste Nachricht: Begrüßung (unterschiedlich je nach Auth-Status)
+        const welcomeMessage1: Message = {
+          id: 'welcome-1',
           role: 'bot',
-          content: locale === 'de'
-            ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
-            : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app',
+          content: isAuthenticated
+            ? (locale === 'de' 
+                ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
+                : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?')
+            : (locale === 'de'
+                ? '👋 Hallo! Ich bin der Smart Pantry Assistent. Ich beantworte gerne allgemeine Fragen zur App!'
+                : '👋 Hello! I\'m the Smart Pantry assistant. I\'m happy to answer general questions about the app!'),
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, welcomeMessage2]);
+        setMessages([welcomeMessage1]);
+        
+        // Zweite Nachricht: Hilfe-Bereiche (unterschiedlich je nach Auth-Status)
+        const timeout2 = setTimeout(() => {
+          const welcomeMessage2: Message = {
+            id: 'welcome-2',
+            role: 'bot',
+            content: isAuthenticated
+              ? (locale === 'de'
+                  ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
+                  : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app')
+              : (locale === 'de'
+                  ? 'Als Gast kannst du:\n\n• Allgemeine Fragen zur App stellen\n\n• Issue melden\n\n• Mehr über Smart Pantry erfahren\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen!'
+                  : 'As a guest you can:\n\n• Ask general questions about the app\n\n• Report an issue\n\n• Learn more about Smart Pantry\n\n💡 **Tip:** Sign in to use all features!'),
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, welcomeMessage2]);
         
         // Dritte Nachricht: Call-to-Action
         const timeout3 = setTimeout(() => {
@@ -198,19 +226,34 @@ export function ChatBubble() {
     }
   }, [isOpen]);
 
-  const quickActions: QuickAction[] = locale === 'de' 
-    ? [
-        { label: 'Allgemeine Frage', action: 'general_question' },
-        { label: 'Issue melden', action: 'report_issue' },
-        { label: 'Lebensmittel fragen', action: 'groceries_question' },
-        { label: 'Rezept-Fragen', action: 'recipes_question' },
-      ]
-    : [
-        { label: 'General Question', action: 'general_question' },
-        { label: 'Report Issue', action: 'report_issue' },
-        { label: 'Groceries Question', action: 'groceries_question' },
-        { label: 'Recipe Questions', action: 'recipes_question' },
-      ];
+  // Quick Actions unterschiedlich je nach Auth-Status
+  const quickActions: QuickAction[] = isAuthenticated
+    ? (locale === 'de' 
+        ? [
+            { label: 'Allgemeine Frage', action: 'general_question' },
+            { label: 'Issue melden', action: 'report_issue' },
+            { label: 'Lebensmittel fragen', action: 'groceries_question' },
+            { label: 'Rezept-Fragen', action: 'recipes_question' },
+          ]
+        : [
+            { label: 'General Question', action: 'general_question' },
+            { label: 'Report Issue', action: 'report_issue' },
+            { label: 'Groceries Question', action: 'groceries_question' },
+            { label: 'Recipe Questions', action: 'recipes_question' },
+          ])
+    : (locale === 'de'
+        ? [
+            { label: 'Allgemeine Frage', action: 'general_question' },
+            { label: 'Issue melden', action: 'report_issue' },
+            { label: 'Über Smart Pantry', action: 'about_app' },
+            { label: 'Jetzt anmelden', action: 'sign_in' },
+          ]
+        : [
+            { label: 'General Question', action: 'general_question' },
+            { label: 'Report Issue', action: 'report_issue' },
+            { label: 'About Smart Pantry', action: 'about_app' },
+            { label: 'Sign In', action: 'sign_in' },
+          ]);
 
   const handleQuickAction = (action: string) => {
     if (action === 'report_issue') {
@@ -229,17 +272,45 @@ export function ChatBubble() {
       return;
     }
     
+    if (action === 'sign_in') {
+      const signInMessage: Message = {
+        id: `signin-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? '🔐 Um alle Funktionen von Smart Pantry zu nutzen, melde dich bitte an:\n\n• **Registrieren:** Erstelle ein kostenloses Konto\n• **Anmelden:** Falls du bereits ein Konto hast\n\nNach der Anmeldung kannst du:\n• Lebensmittel verwalten\n• Rezepte entdecken\n• Fotos analysieren\n• Einkaufslisten erstellen\n\nKlicke auf "Login" in der Navigation oder nutze den Login-Dialog!'
+          : '🔐 To use all Smart Pantry features, please sign in:\n\n• **Sign Up:** Create a free account\n• **Sign In:** If you already have an account\n\nAfter signing in you can:\n• Manage groceries\n• Discover recipes\n• Analyze photos\n• Create shopping lists\n\nClick "Login" in the navigation or use the login dialog!',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, signInMessage]);
+      setHasUserMessages(true);
+      return;
+    }
+    
+    if (action === 'about_app') {
+      const aboutMessage: Message = {
+        id: `about-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? '📱 **Smart Pantry** ist dein intelligenter Küchenassistent:\n\n✨ **Features:**\n• Lebensmittel-Inventar verwalten\n• KI-gestützte Foto-Analyse\n• Personalisierte Rezeptvorschläge\n• Einkaufslisten erstellen\n• Ablaufdaten tracken\n\n🎯 **Vorteile:**\n• Weniger Lebensmittelverschwendung\n• Zeit sparen beim Einkaufen\n• Immer passende Rezepte parat\n\n💡 Melde dich an, um alle Funktionen zu nutzen!'
+          : '📱 **Smart Pantry** is your intelligent kitchen assistant:\n\n✨ **Features:**\n• Manage grocery inventory\n• AI-powered photo analysis\n• Personalized recipe suggestions\n• Create shopping lists\n• Track expiration dates\n\n🎯 **Benefits:**\n• Less food waste\n• Save time shopping\n• Always have matching recipes\n\n💡 Sign in to use all features!',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, aboutMessage]);
+      setHasUserMessages(true);
+      return;
+    }
+    
     let message = '';
     
     if (action === 'general_question') {
       message = locale === 'de'
         ? 'Ich habe eine allgemeine Frage'
         : 'I have a general question';
-    } else if (action === 'groceries_question') {
+    } else if (action === 'groceries_question' && isAuthenticated) {
       message = locale === 'de'
         ? 'Ich habe eine Frage zu Lebensmitteln'
         : 'I have a question about groceries';
-    } else if (action === 'recipes_question') {
+    } else if (action === 'recipes_question' && isAuthenticated) {
       message = locale === 'de'
         ? 'Ich habe eine Frage zu Rezepten'
         : 'I have a question about recipes';
@@ -248,6 +319,18 @@ export function ChatBubble() {
     if (message) {
       setInput(message);
       handleSend();
+    } else if (action === 'groceries_question' || action === 'recipes_question') {
+      // Wenn nicht eingeloggt und versucht auf Lebensmittel/Rezepte zuzugreifen
+      const restrictedMessage: Message = {
+        id: `restricted-${Date.now()}`,
+        role: 'bot',
+        content: locale === 'de'
+          ? '🔐 Diese Funktion ist nur für eingeloggte Nutzer verfügbar.\n\nMelde dich an, um:\n• Dein Lebensmittel-Inventar zu verwalten\n• Rezepte basierend auf deinen Zutaten zu erhalten\n• Fotos zu analysieren\n\nKlicke auf "Login" in der Navigation!'
+          : '🔐 This feature is only available for signed-in users.\n\nSign in to:\n• Manage your grocery inventory\n• Get recipes based on your ingredients\n• Analyze photos\n\nClick "Login" in the navigation!',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, restrictedMessage]);
+      setHasUserMessages(true);
     }
   };
 
@@ -297,8 +380,8 @@ export function ChatBubble() {
         return;
       }
 
-      // Normale Chat-Antwort
-      await handleBotResponse(userMessage.content);
+      // Normale Chat-Antwort (mit Auth-Status)
+      await handleBotResponse(userMessage.content, isAuthenticated);
     } catch (error) {
       console.error('Chat error:', error);
       const errorMessage: Message = {
@@ -334,12 +417,24 @@ export function ChatBubble() {
     }
 
     try {
+      // Markiere Issue als Gast- oder User-Issue
+      const labels = isAuthenticated 
+        ? ['bug', 'user-reported'] 
+        : ['bug', 'guest-reported'];
+      
+      const issueTitle = locale === 'de' 
+        ? `[${isAuthenticated ? 'User' : 'Gast'}] ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
+        : `[${isAuthenticated ? 'User' : 'Guest'}] ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`;
+      
+      const issueBody = isAuthenticated
+        ? description
+        : `${description}\n\n---\n*Issue gemeldet von Gast-User (nicht eingeloggt)*`;
+      
       const response = await chatAPI.createIssue(
-        locale === 'de' 
-          ? `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
-          : `Issue: ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`,
-        description,
-        ['bug', 'user-reported']
+        issueTitle,
+        issueBody,
+        labels,
+        isAuthenticated
       );
 
       // Handle both html_url and fallback_url responses
@@ -375,9 +470,9 @@ export function ChatBubble() {
     setIsSubmittingIssue(false);
   };
 
-  const handleBotResponse = async (userMessage: string) => {
+  const handleBotResponse = async (userMessage: string, authenticated: boolean) => {
     try {
-      const response = await chatAPI.sendMessage(userMessage, 'smart-pantry');
+      const response = await chatAPI.sendMessage(userMessage, 'smart-pantry', authenticated);
 
       const botMessage: Message = {
         id: `bot-${Date.now()}`,
@@ -388,7 +483,7 @@ export function ChatBubble() {
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
       // Fallback zu lokalen Antworten
-      const fallbackResponse = getFallbackResponse(userMessage);
+      const fallbackResponse = getFallbackResponse(userMessage, authenticated);
       const botMessage: Message = {
         id: `bot-${Date.now()}`,
         role: 'bot',
@@ -399,7 +494,7 @@ export function ChatBubble() {
     }
   };
 
-  const getFallbackResponse = (userMessage: string): string => {
+  const getFallbackResponse = (userMessage: string, authenticated: boolean): string => {
     const lowerMessage = userMessage.toLowerCase();
     const isGerman = locale === 'de';
 
@@ -410,28 +505,48 @@ export function ChatBubble() {
         : 'To report an issue:\n\n1. Briefly describe the problem\n2. Mention steps to reproduce if possible\n3. I will then automatically create a GitHub Issue\n\nOr use: "Report Issue" as a quick action.';
     }
 
-    if (lowerMessage.includes('rezept') || lowerMessage.includes('recipe')) {
-      return isGerman
-        ? 'Rezepte kannst du finden, indem du:\n\n1. Ein Foto deines Kühlschranks machst\n2. Die App analysiert die Lebensmittel\n3. Du bekommst passende Rezeptvorschläge\n\nGespeicherte Rezepte findest du auf der "Rezepte"-Seite.'
-        : 'You can find recipes by:\n\n1. Taking a photo of your fridge\n2. The app analyzes the groceries\n3. You get matching recipe suggestions\n\nSaved recipes can be found on the "Recipes" page.';
-    }
+    if (authenticated) {
+      // Eingeloggte User: Alle Funktionen
+      if (lowerMessage.includes('rezept') || lowerMessage.includes('recipe')) {
+        return isGerman
+          ? 'Rezepte kannst du finden, indem du:\n\n1. Ein Foto deines Kühlschranks machst\n2. Die App analysiert die Lebensmittel\n3. Du bekommst passende Rezeptvorschläge\n\nGespeicherte Rezepte findest du auf der "Rezepte"-Seite.'
+          : 'You can find recipes by:\n\n1. Taking a photo of your fridge\n2. The app analyzes the groceries\n3. You get matching recipe suggestions\n\nSaved recipes can be found on the "Recipes" page.';
+      }
 
-    if (lowerMessage.includes('lebensmittel') || lowerMessage.includes('grocery') || lowerMessage.includes('inventar')) {
-      return isGerman
-        ? 'Dein Lebensmittel-Inventar kannst du auf der "Lebensmittel"-Seite verwalten:\n\n• Lebensmittel hinzufügen\n• Verfallsdaten tracken\n• Menge und Einheiten verwalten\n\nNutze die Foto-Analyse für schnelles Hinzufügen!'
-        : 'You can manage your grocery inventory on the "Groceries" page:\n\n• Add groceries\n• Track expiration dates\n• Manage quantities and units\n\nUse photo analysis for quick adding!';
+      if (lowerMessage.includes('lebensmittel') || lowerMessage.includes('grocery') || lowerMessage.includes('inventar')) {
+        return isGerman
+          ? 'Dein Lebensmittel-Inventar kannst du auf der "Lebensmittel"-Seite verwalten:\n\n• Lebensmittel hinzufügen\n• Verfallsdaten tracken\n• Menge und Einheiten verwalten\n\nNutze die Foto-Analyse für schnelles Hinzufügen!'
+          : 'You can manage your grocery inventory on the "Groceries" page:\n\n• Add groceries\n• Track expiration dates\n• Manage quantities and units\n\nUse photo analysis for quick adding!';
+      }
+    } else {
+      // Nicht eingeloggte User: Nur allgemeine Infos + Login-Motivation
+      if (lowerMessage.includes('rezept') || lowerMessage.includes('recipe') || 
+          lowerMessage.includes('lebensmittel') || lowerMessage.includes('grocery') || 
+          lowerMessage.includes('inventar')) {
+        return isGerman
+          ? '🔐 Diese Funktionen sind nur für eingeloggte Nutzer verfügbar.\n\n**Smart Pantry bietet:**\n• Lebensmittel-Inventar verwalten\n• KI-gestützte Foto-Analyse\n• Personalisierte Rezeptvorschläge\n• Einkaufslisten erstellen\n\n💡 **Melde dich an**, um alle Funktionen zu nutzen! Klicke auf "Login" in der Navigation.'
+          : '🔐 These features are only available for signed-in users.\n\n**Smart Pantry offers:**\n• Manage grocery inventory\n• AI-powered photo analysis\n• Personalized recipe suggestions\n• Create shopping lists\n\n💡 **Sign in** to use all features! Click "Login" in the navigation.';
+      }
     }
 
     if (lowerMessage.includes('hilfe') || lowerMessage.includes('help')) {
-      return isGerman
-        ? 'Ich helfe dir gerne bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue-Meldungen\n• Allgemeinen Fragen zur App\n\nStelle einfach eine Frage oder nutze die Quick-Actions!'
-        : 'I can help you with:\n\n• Questions about groceries and recipes\n• Issue reports\n• General questions about the app\n\nJust ask a question or use the quick actions!';
+      return authenticated
+        ? (isGerman
+            ? 'Ich helfe dir gerne bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue-Meldungen\n• Allgemeinen Fragen zur App\n\nStelle einfach eine Frage oder nutze die Quick-Actions!'
+            : 'I can help you with:\n\n• Questions about groceries and recipes\n• Issue reports\n• General questions about the app\n\nJust ask a question or use the quick actions!')
+        : (isGerman
+            ? 'Als Gast kann ich dir helfen bei:\n\n• Allgemeinen Fragen zur App\n• Issue-Meldungen\n• Informationen über Smart Pantry\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen!'
+            : 'As a guest I can help you with:\n\n• General questions about the app\n• Issue reports\n• Information about Smart Pantry\n\n💡 **Tip:** Sign in to use all features!');
     }
 
     // Standard-Antwort
-    return isGerman
-      ? 'Ich kann dir bei Fragen zu Smart Pantry helfen:\n\n• Lebensmittel-Verwaltung\n• Rezept-Vorschläge\n• Issue-Meldungen\n• Allgemeine Fragen\n\nStelle mir eine spezifische Frage oder nutze die Quick-Actions oben!'
-      : 'I can help you with Smart Pantry questions:\n\n• Grocery management\n• Recipe suggestions\n• Issue reports\n• General questions\n\nAsk me a specific question or use the quick actions above!';
+    return authenticated
+      ? (isGerman
+          ? 'Ich kann dir bei Fragen zu Smart Pantry helfen:\n\n• Lebensmittel-Verwaltung\n• Rezept-Vorschläge\n• Issue-Meldungen\n• Allgemeine Fragen\n\nStelle mir eine spezifische Frage oder nutze die Quick-Actions oben!'
+          : 'I can help you with Smart Pantry questions:\n\n• Grocery management\n• Recipe suggestions\n• Issue reports\n• General questions\n\nAsk me a specific question or use the quick actions above!')
+      : (isGerman
+          ? 'Ich beantworte gerne allgemeine Fragen zu Smart Pantry!\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen:\n• Lebensmittel verwalten\n• Rezepte entdecken\n• Fotos analysieren\n\nKlicke auf "Login" in der Navigation!'
+          : 'I\'m happy to answer general questions about Smart Pantry!\n\n💡 **Tip:** Sign in to use all features:\n• Manage groceries\n• Discover recipes\n• Analyze photos\n\nClick "Login" in the navigation!');
   };
 
   return (

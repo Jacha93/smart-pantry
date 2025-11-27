@@ -23,8 +23,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      // Nur bei geschützten Endpoints weiterleiten, nicht bei Chat/Issue (optional auth)
+      const url = error.config?.url || '';
+      if (!url.includes('/chat/')) {
+        localStorage.removeItem('token');
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }
@@ -106,8 +110,8 @@ export const photoRecognitionAPI = {
 
 // Chat API
 export const chatAPI = {
-  sendMessage: (message: string, context: string) =>
-    api.post('/chat/message', { message, context }),
-  createIssue: (title: string, body: string, labels: string[] = []) =>
-    api.post('/chat/create-issue', { title, body, labels }),
+  sendMessage: (message: string, context: string, isAuthenticated: boolean = false) =>
+    api.post('/chat/message', { message, context, is_authenticated: isAuthenticated }),
+  createIssue: (title: string, body: string, labels: string[] = [], isAuthenticated: boolean = false) =>
+    api.post('/chat/create-issue', { title, body, labels, is_authenticated: isAuthenticated }),
 };
