@@ -257,7 +257,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
                   {isTranslatingTitle && (
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-1.5" />
                   )}
-                </div>
+                  </div>
                 <div className="flex flex-wrap gap-4">
                   <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
                     <Clock className="h-4 w-4 text-primary" />
@@ -363,9 +363,9 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
             </Badge>
           )}
           <div className={recipe && !isCooked ? '' : 'ml-auto'}>
-            <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
               {t('recipe.close')}
-            </Button>
+          </Button>
           </div>
         </div>
       </DialogContent>

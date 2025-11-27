@@ -23,13 +23,14 @@ export default function DashboardLayout({
     if (authDisabled || auth.isAuthenticated()) {
       setIsLoading(false);
     } else {
-      router.push('/login');
+      router.push('/');
     }
   }, [router, authDisabled]);
 
   const handleLogout = () => {
     auth.logout();
-    router.push('/login');
+    router.push('/');
+    router.refresh();
   };
 
   if (isLoading) {
@@ -49,7 +50,7 @@ export default function DashboardLayout({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-3">
+              <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
                 <Image
                   src="/smart-pantry-favicon.png"
                   alt="Smart Pantry Icon"
@@ -58,8 +59,8 @@ export default function DashboardLayout({
                   className="rounded-lg shadow-[0_0_25px_rgba(79,209,197,0.35)]"
                   priority
                 />
-                <h1 className="text-xl font-bold text-foreground">{t('nav.appTitle')}</h1>
-              </div>
+              <h1 className="text-xl font-bold text-foreground">{t('nav.appTitle')}</h1>
+              </Link>
               <div className="flex space-x-2">
                 <Link
                   href="/groceries"

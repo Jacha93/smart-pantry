@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -24,6 +25,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { t } = useI18n();
   
   const {
     register,
@@ -37,10 +39,10 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await auth.login(data.email, data.password);
-      toast.success('Login successful!');
+      toast.success(t('common.loginSuccess'));
       router.push('/groceries');
     } catch (error: unknown) {
-      let errorMessage = 'Login failed';
+      let errorMessage = t('common.loginFailed');
       
       const apiError = error as { response?: { data?: { detail?: string | string[] | { message?: string; msg?: string } } } };
       
@@ -56,7 +58,7 @@ export default function LoginPage() {
             return String(err);
           }).join(', ');
         } else if (typeof apiError.response.data.detail === 'object') {
-          errorMessage = apiError.response.data.detail.message || apiError.response.data.detail.msg || 'Invalid credentials';
+          errorMessage = apiError.response.data.detail.message || apiError.response.data.detail.msg || t('common.invalidCredentials');
         }
       }
       
@@ -70,7 +72,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex justify-center mb-2">
+          <Link href="/" className="flex justify-center mb-2 hover:opacity-80 transition-opacity">
             <Image
               src="/smart-pantry-favicon.png"
               alt="Smart Pantry Icon"
@@ -79,20 +81,20 @@ export default function LoginPage() {
               className="rounded-xl shadow-[0_0_30px_rgba(129,140,248,0.35)]"
               priority
             />
-          </div>
-          <CardTitle className="text-2xl font-bold text-center text-card-foreground">Sign in</CardTitle>
+          </Link>
+          <CardTitle className="text-2xl font-bold text-center text-card-foreground">{t('auth.signIn')}</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Enter your email and password to access your grocery inventory
+            {t('auth.enterEmailPassword')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email</Label>
+              <Label htmlFor="email" className="text-foreground">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('auth.email')}
                 {...register('email')}
               />
               {errors.email && (
@@ -100,11 +102,11 @@ export default function LoginPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <Label htmlFor="password" className="text-foreground">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('auth.password')}
                 {...register('password')}
               />
               {errors.password && (
@@ -112,13 +114,13 @@ export default function LoginPage() {
               )}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link href="/register" className="text-primary hover:text-primary/80 hover:underline transition-colors">
-              Sign up
+              {t('auth.signUp')}
             </Link>
           </div>
         </CardContent>

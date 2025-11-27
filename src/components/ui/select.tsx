@@ -72,17 +72,17 @@ const SelectContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, position = "item-aligned", ...props }, ref) => {
   return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Content
-        ref={ref}
-        className={cn(
+  <SelectPrimitive.Portal>
+    <SelectPrimitive.Content
+      ref={ref}
+      className={cn(
           "relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-lg border border-white/10 bg-[rgba(30,30,30,0.95)] backdrop-blur-xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=open]:duration-200 data-[state=closed]:duration-150",
-          className
-        )}
-        position={position}
-        sideOffset={4}
-        {...props}
-      >
+        className
+      )}
+      position={position}
+      sideOffset={4}
+      {...props}
+    >
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(

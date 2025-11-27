@@ -23,12 +23,20 @@ export const auth = {
     if (AUTH_DISABLED) {
       const placeholder = 'demo-token';
       localStorage.setItem('token', placeholder);
+      // Dispatch custom event für Auth-Status-Update
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('authchange'));
+      }
       return { access_token: placeholder, token_type: 'bearer' };
     }
     const response = await authAPI.login(email, password);
     const { access_token, token_type } = response.data;
     
     localStorage.setItem('token', access_token);
+    // Dispatch custom event für Auth-Status-Update
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('authchange'));
+    }
     return { access_token, token_type };
   },
 
@@ -39,6 +47,10 @@ export const auth = {
 
   logout: () => {
     localStorage.removeItem('token');
+    // Dispatch custom event für Auth-Status-Update
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('authchange'));
+    }
   },
 
   getToken: (): string | null => {

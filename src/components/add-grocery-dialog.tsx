@@ -140,9 +140,9 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
                 {GROCERY_CATEGORIES.map((category) => {
                   const categoryKey = `category.${category.toLowerCase()}`;
                   return (
-                    <SelectItem key={category} value={category}>
+                  <SelectItem key={category} value={category}>
                       {t(categoryKey) || category}
-                    </SelectItem>
+                  </SelectItem>
                   );
                 })}
               </SelectContent>

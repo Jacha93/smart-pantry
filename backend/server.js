@@ -32,7 +32,7 @@ console.log('GEMINI_API_KEY vorhanden:', !!GEMINI_API_KEY);
 console.log('GEMINI_API_KEY Länge:', GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
 if (GEMINI_API_KEY) {
   try {
-    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     console.log('✅ Gemini AI erfolgreich initialisiert');
   } catch (error) {
     console.error('❌ Fehler bei Gemini AI Initialisierung:', error.message);
@@ -138,6 +138,20 @@ app.post('/auth/register', async (req, res) => {
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ detail: 'Missing credentials' });
+  
+  // Demo-User Support: Auch bei aktiviertem Auth die Demo-Credentials akzeptieren
+  const isDemoCredentials = 
+    email.toLowerCase() === DEMO_USER_EMAIL.toLowerCase() && 
+    password === DEMO_USER_PASSWORD;
+  
+  if (isDemoCredentials) {
+    // Stelle sicher, dass Demo-User existiert
+    const demoUser = ensureDemoUser();
+    const access_token = generateToken(demoUser);
+    return res.json({ access_token, token_type: 'bearer' });
+  }
+  
+  // Normale Login-Logik
   const user = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
   if (!user) return res.status(401).json({ detail: 'Invalid credentials' });
   const ok = await bcrypt.compare(password, user.passwordHash);

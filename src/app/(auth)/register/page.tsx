@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -29,6 +30,7 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { t } = useI18n();
   
   const {
     register,
@@ -42,10 +44,10 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       await auth.register(data.email, data.password, data.name);
-      toast.success('Registration successful! Please sign in.');
+      toast.success(t('common.registrationSuccess'));
       router.push('/login');
     } catch (error: unknown) {
-      let errorMessage = 'Registration failed';
+      let errorMessage = t('common.registrationFailed');
       
       const apiError = error as { response?: { data?: { detail?: string | string[] | { message?: string; msg?: string } } } };
       
@@ -61,7 +63,7 @@ export default function RegisterPage() {
             return String(err);
           }).join(', ');
         } else if (typeof apiError.response.data.detail === 'object') {
-          errorMessage = apiError.response.data.detail.message || apiError.response.data.detail.msg || 'Registration failed';
+          errorMessage = apiError.response.data.detail.message || apiError.response.data.detail.msg || t('common.registrationFailed');
         }
       }
       
@@ -75,7 +77,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex justify-center mb-2">
+          <Link href="/" className="flex justify-center mb-2 hover:opacity-80 transition-opacity">
             <Image
               src="/smart-pantry-favicon.png"
               alt="Smart Pantry Icon"
@@ -84,20 +86,20 @@ export default function RegisterPage() {
               className="rounded-xl shadow-[0_0_30px_rgba(129,140,248,0.35)]"
               priority
             />
-          </div>
-          <CardTitle className="text-2xl font-bold text-center text-card-foreground">Create account</CardTitle>
+          </Link>
+          <CardTitle className="text-2xl font-bold text-center text-card-foreground">{t('auth.createAccount')}</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Enter your details to create your grocery inventory account
+            {t('auth.enterDetails')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-foreground">Full Name</Label>
+              <Label htmlFor="name" className="text-foreground">{t('auth.name')}</Label>
               <Input
                 id="name"
                 type="text"
-                placeholder="Enter your full name"
+                placeholder={t('auth.name')}
                 {...register('name')}
               />
               {errors.name && (
@@ -105,11 +107,11 @@ export default function RegisterPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email</Label>
+              <Label htmlFor="email" className="text-foreground">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder={t('auth.email')}
                 {...register('email')}
               />
               {errors.email && (
@@ -117,11 +119,11 @@ export default function RegisterPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-foreground">Password</Label>
+              <Label htmlFor="password" className="text-foreground">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('auth.password')}
                 {...register('password')}
               />
               {errors.password && (
@@ -129,11 +131,11 @@ export default function RegisterPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-foreground">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-foreground">{t('auth.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirm your password"
+                placeholder={t('auth.confirmPassword')}
                 {...register('confirmPassword')}
               />
               {errors.confirmPassword && (
@@ -141,13 +143,13 @@ export default function RegisterPage() {
               )}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? t('auth.creatingAccount') : t('auth.createAccount')}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            {t('auth.haveAccount')}{' '}
             <Link href="/login" className="text-primary hover:text-primary/80 hover:underline transition-colors">
-              Sign in
+              {t('auth.signIn')}
             </Link>
           </div>
         </CardContent>
