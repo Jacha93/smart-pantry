@@ -43,7 +43,9 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
   const [translatedInstructions, setTranslatedInstructions] = useState<string | null>(null);
   const [translatedIngredients, setTranslatedIngredients] = useState<RecipeDetails['ingredients'] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
+  const [isTranslatingInstructions, setIsTranslatingInstructions] = useState(false);
+  const [isTranslatingIngredients, setIsTranslatingIngredients] = useState(false);
   const [isMarkingAsCooked, setIsMarkingAsCooked] = useState(false);
   const [isCooked, setIsCooked] = useState(false);
   const { t, locale } = useI18n();
@@ -83,10 +85,24 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
 
   // Prüft ob Zutaten wahrscheinlich Englisch sind
   const areIngredientsLikelyEnglish = (ingredients: RecipeDetails['ingredients']): boolean => {
-    const englishIngredientWords = ['flour', 'sugar', 'salt', 'pepper', 'oil', 'butter', 'milk', 'eggs', 'cheese', 'chicken', 'beef', 'pork', 'onion', 'garlic', 'tomato', 'potato', 'carrot', 'celery', 'tablespoon', 'teaspoon', 'cup', 'pound', 'ounce'];
+    // Erweiterte Liste englischer Zutatenwörter
+    const englishIngredientWords = [
+      'flour', 'sugar', 'salt', 'pepper', 'oil', 'butter', 'milk', 'eggs', 'egg', 'cheese', 
+      'chicken', 'beef', 'pork', 'lamb', 'fish', 'shrimp', 'salmon', 'tuna',
+      'onion', 'garlic', 'tomato', 'potato', 'carrot', 'celery', 'broccoli', 'spinach',
+      'tablespoon', 'teaspoon', 'cup', 'pound', 'ounce', 'clove', 'cloves',
+      'cream', 'water', 'stock', 'broth', 'sauce', 'paste', 'juice', 'vinegar',
+      'olive', 'vegetable', 'canola', 'sesame', 'coconut',
+      'rice', 'pasta', 'noodles', 'bread', 'crumbs',
+      'fresh', 'dried', 'ground', 'chopped', 'minced', 'sliced', 'diced',
+      'large', 'small', 'medium', 'whole', 'half',
+      'baking', 'powder', 'soda', 'yeast', 'vanilla', 'extract',
+      'lemon', 'lime', 'orange', 'apple', 'banana', 'berry', 'berries'
+    ];
     const allNames = ingredients.map(ing => ing.name.toLowerCase()).join(' ');
     const englishWordCount = englishIngredientWords.filter(word => allNames.includes(word)).length;
-    return englishWordCount > 2; // Wenn mehrere englische Wörter gefunden, sind die Zutaten wahrscheinlich Englisch
+    // Bereits bei 1 englischem Wort übersetzen (weniger streng)
+    return englishWordCount >= 1;
   };
 
   const translateInstructionsIfNeeded = async (instructions: string) => {
@@ -94,7 +110,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     // 1. User hat Deutsch ausgewählt
     // 2. Anleitung ist wahrscheinlich Englisch
     if (locale === 'de' && instructions && isLikelyEnglish(instructions)) {
-      setIsTranslating(true);
+      setIsTranslatingInstructions(true);
       try {
         const response = await photoRecognitionAPI.translateInstructions(instructions, 'de');
         setTranslatedInstructions(response.data.translated_text);
@@ -103,7 +119,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
         // Bei Fehler Original verwenden
         setTranslatedInstructions(null);
       } finally {
-        setIsTranslating(false);
+        setIsTranslatingInstructions(false);
       }
     } else {
       setTranslatedInstructions(null);
@@ -115,7 +131,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     // 1. User hat Deutsch ausgewählt
     // 2. Titel ist wahrscheinlich Englisch
     if (locale === 'de' && title && isLikelyEnglish(title)) {
-      setIsTranslating(true);
+      setIsTranslatingTitle(true);
       try {
         const response = await photoRecognitionAPI.translateTitle(title, 'de');
         setTranslatedTitle(response.data.translated_title);
@@ -124,7 +140,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
         // Bei Fehler Original verwenden
         setTranslatedTitle(null);
       } finally {
-        setIsTranslating(false);
+        setIsTranslatingTitle(false);
       }
     } else {
       setTranslatedTitle(null);
@@ -136,7 +152,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
     // 1. User hat Deutsch ausgewählt
     // 2. Zutaten sind wahrscheinlich Englisch
     if (locale === 'de' && ingredients && ingredients.length > 0 && areIngredientsLikelyEnglish(ingredients)) {
-      setIsTranslating(true);
+      setIsTranslatingIngredients(true);
       try {
         const response = await photoRecognitionAPI.translateIngredients(ingredients, 'de');
         setTranslatedIngredients(response.data.translated_ingredients);
@@ -145,7 +161,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
         // Bei Fehler Original verwenden
         setTranslatedIngredients(null);
       } finally {
-        setIsTranslating(false);
+        setIsTranslatingIngredients(false);
       }
     } else {
       setTranslatedIngredients(null);
@@ -252,7 +268,15 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
 
             {/* Ingredients */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">{t('recipe.ingredients')}</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">{t('recipe.ingredients')}</h3>
+                {isTranslatingIngredients && (
+                  <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>{t('recipe.translating')}</span>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {(translatedIngredients || recipe.ingredients).map((ingredient, idx) => (
                   <div key={ingredient.id || `ingredient-${idx}`} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-100 rounded border border-gray-200">
@@ -269,7 +293,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold">{t('recipe.instructions')}</h3>
-                {isTranslating && (
+                {isTranslatingInstructions && (
                   <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     <span>{t('recipe.translating')}</span>
