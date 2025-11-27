@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]",
+        default: "border border-primary/30 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm hover:bg-[rgba(26,26,26,0.8)] hover:border-primary/50 text-foreground hover:scale-[1.02] active:scale-[0.98] transition-transform",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-transform",
+          "border border-destructive/30 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm hover:bg-[rgba(26,26,26,0.8)] hover:border-destructive/50 text-destructive hover:scale-[1.02] active:scale-[0.98] transition-transform",
         outline:
           "border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm hover:bg-[rgba(26,26,26,0.8)] hover:border-white/20 text-foreground hover:scale-[1.02] active:scale-[0.98] transition-transform",
         secondary:
-          "bg-[rgba(54,54,54,0.6)] backdrop-blur-sm text-secondary-foreground hover:bg-[rgba(54,54,54,0.8)] border border-white/10 hover:scale-[1.02] active:scale-[0.98] transition-transform",
+          "border border-white/10 bg-[rgba(54,54,54,0.6)] backdrop-blur-sm text-secondary-foreground hover:bg-[rgba(54,54,54,0.8)] hover:border-white/20 hover:scale-[1.02] active:scale-[0.98] transition-transform",
         ghost: "hover:bg-white/10 text-foreground hover:scale-[1.02] active:scale-[0.98] transition-transform",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary/80",
       },
