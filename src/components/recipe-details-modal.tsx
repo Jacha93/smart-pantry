@@ -77,10 +77,10 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
 
   // Einfache Spracheerkennung: Prüft ob Text hauptsächlich Englisch ist
   const isLikelyEnglish = (text: string): boolean => {
-    const englishWords = ['the', 'and', 'or', 'with', 'for', 'into', 'over', 'heat', 'cook', 'add', 'stir', 'mix', 'cup', 'tablespoon', 'teaspoon', 'minutes', 'oven', 'pan', 'frying'];
+    const englishWords = ['the', 'and', 'or', 'with', 'for', 'into', 'over', 'heat', 'cook', 'add', 'stir', 'mix', 'cup', 'tablespoon', 'teaspoon', 'minutes', 'oven', 'pan', 'frying', 'what', 'how', 'make', 'style', 'easy', 'quick', 'best', 'recipe', 'dinner', 'lunch', 'breakfast', 'chicken', 'beef', 'pork', 'pasta', 'salad', 'soup', 'sauce'];
     const textLower = text.toLowerCase();
     const englishWordCount = englishWords.filter(word => textLower.includes(word)).length;
-    return englishWordCount > 3; // Wenn mehrere englische Wörter gefunden, ist es wahrscheinlich Englisch
+    return englishWordCount >= 1; // Bereits bei 1 englischen Wort übersetzen
   };
 
   // Prüft ob Zutaten wahrscheinlich Englisch sind
@@ -229,7 +229,7 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
             <span>{t('recipe.details')}</span>
           </DialogTitle>
           <DialogDescription>
-            {recipe ? `Details für ${recipe.title}` : t('recipe.loading')}
+            {recipe ? `${t('recipe.detailsFor')} ${translatedTitle || recipe.title}` : t('recipe.loading')}
           </DialogDescription>
         </DialogHeader>
 
@@ -252,16 +252,21 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
                 />
               </div>
               <div className="md:w-1/2 space-y-4">
-                <h2 className="text-2xl font-bold">{translatedTitle || recipe.title}</h2>
-                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{recipe.ready_in_minutes} min</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Users className="h-4 w-4" />
-                    <span>{recipe.servings} servings</span>
-                  </div>
+                <div className="flex items-start gap-2">
+                  <h2 className="text-2xl font-bold">{translatedTitle || recipe.title}</h2>
+                  {isTranslatingTitle && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-1.5" />
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <span>{recipe.ready_in_minutes} {t('recipe.minutes')}</span>
+                  </Badge>
+                  <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span>{recipe.servings} {t('recipe.servings')}</span>
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -331,13 +336,12 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
           </div>
         )}
 
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center pt-4 border-t border-white/10">
           {recipe && !isCooked && (
             <Button
-              variant="default"
               onClick={handleMarkAsCooked}
               disabled={isMarkingAsCooked}
-              className="flex items-center space-x-2"
+              className="flex items-center gap-2"
             >
               {isMarkingAsCooked ? (
                 <>
@@ -353,10 +357,10 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
             </Button>
           )}
           {recipe && isCooked && (
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Check className="h-4 w-4 text-green-500" />
+            <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 text-green-500 border border-green-500/20">
+              <Check className="h-4 w-4" />
               <span>{t('recipe.markedAsCooked')}</span>
-            </div>
+            </Badge>
           )}
           <div className={recipe && !isCooked ? '' : 'ml-auto'}>
             <Button variant="outline" onClick={onClose}>
