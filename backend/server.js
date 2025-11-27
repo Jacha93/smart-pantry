@@ -845,6 +845,58 @@ app.delete('/recipes/:id', authMiddleware, (req, res) => {
   res.json({ success: true });
 });
 
+// Eigenes Rezept hinzufügen
+app.post('/recipes', authMiddleware, (req, res) => {
+  try {
+    const { title, image, ready_in_minutes, servings, ingredients, instructions, is_custom } = req.body || {};
+    
+    if (!title || !title.trim()) {
+      return res.status(400).json({ detail: 'Rezeptname erforderlich' });
+    }
+    
+    if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
+      return res.status(400).json({ detail: 'Mindestens eine Zutat erforderlich' });
+    }
+    
+    if (!instructions || !instructions.trim()) {
+      return res.status(400).json({ detail: 'Anleitung erforderlich' });
+    }
+    
+    // Generiere eine eindeutige recipe_id für eigene Rezepte (negative Zahlen)
+    const customRecipeId = -Date.now();
+    
+    const newRecipe = {
+      id: nextSavedRecipeId++,
+      user_id: req.user.id,
+      recipe_id: customRecipeId,
+      title: title.trim(),
+      image: image || '/smart-pantry-favicon.png',
+      ready_in_minutes: ready_in_minutes || 30,
+      servings: servings || 4,
+      used_ingredients: ingredients.map((ing, idx) => ({
+        id: idx + 1,
+        name: ing.name,
+        amount: ing.amount || 1,
+        unit: ing.unit || ''
+      })),
+      missed_ingredients: [],
+      instructions: instructions.trim(),
+      likes: 0,
+      sourceUrl: '',
+      saved_at: new Date().toISOString(),
+      is_custom: true
+    };
+    
+    savedRecipes.push(newRecipe);
+    
+    console.log('✅ Eigenes Rezept gespeichert:', newRecipe.title);
+    res.status(201).json(newRecipe);
+  } catch (error) {
+    console.error('❌ Fehler beim Speichern des Rezepts:', error);
+    res.status(500).json({ detail: 'Fehler beim Speichern des Rezepts' });
+  }
+});
+
 // Rezept-Anleitung übersetzen
 app.post('/photo-recognition/translate-instructions', authMiddleware, async (req, res) => {
   try {

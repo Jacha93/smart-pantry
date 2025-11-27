@@ -115,6 +115,30 @@ export const translations: Translations = {
   'recipes.deleteConfirm': { en: 'Are you sure you want to delete this recipe?', de: 'Möchtest du dieses Rezept wirklich löschen?' },
   'recipes.deleted': { en: 'Recipe deleted successfully', de: 'Rezept erfolgreich gelöscht' },
   'recipes.deleteFailed': { en: 'Failed to delete recipe', de: 'Rezept konnte nicht gelöscht werden' },
+  'recipes.customRecipe': { en: 'Own Recipe', de: 'Eigenes Rezept' },
+
+  // Add Recipe Dialog
+  'addRecipe.button': { en: 'Add Recipe', de: 'Rezept hinzufügen' },
+  'addRecipe.title': { en: 'Add Own Recipe', de: 'Eigenes Rezept hinzufügen' },
+  'addRecipe.description': { en: 'Create your own recipe with ingredients and instructions.', de: 'Erstelle dein eigenes Rezept mit Zutaten und Anleitung.' },
+  'addRecipe.recipeName': { en: 'Recipe Name', de: 'Rezeptname' },
+  'addRecipe.recipeNamePlaceholder': { en: 'e.g. Grandma\'s Apple Pie', de: 'z.B. Omas Apfelkuchen' },
+  'addRecipe.imageUrl': { en: 'Image URL (optional)', de: 'Bild-URL (optional)' },
+  'addRecipe.imageUrlPlaceholder': { en: 'https://example.com/image.jpg', de: 'https://beispiel.de/bild.jpg' },
+  'addRecipe.servings': { en: 'Servings', de: 'Portionen' },
+  'addRecipe.prepTime': { en: 'Prep Time (min)', de: 'Zubereitungszeit (Min.)' },
+  'addRecipe.ingredients': { en: 'Ingredients', de: 'Zutaten' },
+  'addRecipe.addIngredient': { en: 'Add', de: 'Hinzufügen' },
+  'addRecipe.ingredient': { en: 'Ingredient', de: 'Zutat' },
+  'addRecipe.unit': { en: 'Unit', de: 'Einheit' },
+  'addRecipe.instructions': { en: 'Instructions', de: 'Anleitung' },
+  'addRecipe.instructionsPlaceholder': { en: 'Describe the preparation step by step...', de: 'Beschreibe die Zubereitung Schritt für Schritt...' },
+  'addRecipe.save': { en: 'Save Recipe', de: 'Rezept speichern' },
+  'addRecipe.success': { en: 'Recipe added successfully!', de: 'Rezept erfolgreich hinzugefügt!' },
+  'addRecipe.error': { en: 'Failed to add recipe', de: 'Rezept konnte nicht hinzugefügt werden' },
+  'addRecipe.titleRequired': { en: 'Please enter a recipe name', de: 'Bitte gib einen Rezeptnamen ein' },
+  'addRecipe.ingredientsRequired': { en: 'Please add at least one ingredient', de: 'Bitte füge mindestens eine Zutat hinzu' },
+  'addRecipe.instructionsRequired': { en: 'Please add preparation instructions', de: 'Bitte füge eine Anleitung hinzu' },
 
   // Shopping List
   'shoppingList.title': { en: 'Shopping List', de: 'Einkaufsliste' },
@@ -165,6 +189,8 @@ export const translations: Translations = {
   'common.good': { en: 'Good', de: 'Gut' },
   'common.lowStock': { en: 'Low Stock', de: 'Niedriger Bestand' },
   'common.inStock': { en: 'In Stock', de: 'Auf Lager' },
+  'common.cancel': { en: 'Cancel', de: 'Abbrechen' },
+  'common.saving': { en: 'Saving...', de: 'Speichern...' },
   
   // Categories
   'category.dairy': { en: 'Dairy', de: 'Milchprodukte' },

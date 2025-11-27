@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChefHat, Check, Trash2, Loader2 } from 'lucide-react';
+import { ChefHat, Check, Trash2, Loader2, Clock, Users } from 'lucide-react';
 import { photoRecognitionAPI } from '@/lib/api';
 import { RecipeDetailsModal } from '@/components/recipe-details-modal';
+import { AddRecipeDialog } from '@/components/add-recipe-dialog';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
@@ -21,6 +22,10 @@ interface SavedRecipe {
   sourceUrl: string;
   saved_at: string;
   is_cooked: boolean;
+  is_custom?: boolean;
+  ready_in_minutes?: number;
+  servings?: number;
+  instructions?: string;
   cooked_info?: {
     cooked_at: string;
     rating?: number;
@@ -97,9 +102,12 @@ export default function RecipesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">{t('recipes.title')}</h1>
-        <p className="text-muted-foreground">{t('recipes.subtitle')}</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">{t('recipes.title')}</h1>
+          <p className="text-muted-foreground">{t('recipes.subtitle')}</p>
+        </div>
+        <AddRecipeDialog onRecipeAdded={loadRecipes} />
       </div>
 
       {recipes.length === 0 ? (
@@ -136,8 +144,25 @@ export default function RecipesPage() {
                   {recipe.title}
                 </h3>
                 <div className="space-y-2">
+                  {/* Zeige Zeit/Portionen für eigene Rezepte */}
+                  {recipe.is_custom && (recipe.ready_in_minutes || recipe.servings) && (
+                    <div className="flex gap-3 text-xs text-muted-foreground mb-2">
+                      {recipe.ready_in_minutes && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {recipe.ready_in_minutes} {t('recipe.minutes')}
+                        </span>
+                      )}
+                      {recipe.servings && (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {recipe.servings} {t('recipe.servings')}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="text-xs text-muted-foreground">
-                    <span className="font-medium">{t('fridge.usedIngredients')}</span>
+                    <span className="font-medium">{recipe.is_custom ? t('recipe.ingredients') : t('fridge.usedIngredients')}</span>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {recipe.used_ingredients.slice(0, 3).map((ingredient, idx) => (
                         <Badge key={idx} variant="outline" className="text-xs">
@@ -151,7 +176,7 @@ export default function RecipesPage() {
                       )}
                     </div>
                   </div>
-                  {recipe.missed_ingredients.length > 0 && (
+                  {!recipe.is_custom && recipe.missed_ingredients.length > 0 && (
                     <div className="text-xs text-muted-foreground">
                       <span className="font-medium">{t('fridge.missingIngredients')}</span>
                       <div className="flex flex-wrap gap-1 mt-1">
@@ -169,7 +194,13 @@ export default function RecipesPage() {
                     </div>
                   )}
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>❤️ {t('fridge.likes').replace('{count}', String(recipe.likes))}</span>
+                    {recipe.is_custom ? (
+                      <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
+                        {t('recipes.customRecipe')}
+                      </Badge>
+                    ) : (
+                      <span>❤️ {t('fridge.likes').replace('{count}', String(recipe.likes))}</span>
+                    )}
                     {!recipe.is_cooked && (
                       <Badge variant="outline" className="text-xs">
                         {t('recipes.notCooked')}
