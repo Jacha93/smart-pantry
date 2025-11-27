@@ -451,41 +451,58 @@ export function ChatBubble() {
       {isOpen && (
         <Card 
           ref={chatWindowRef}
-          className={`fixed bottom-6 right-6 z-50 flex h-[600px] w-[400px] flex-col border border-white/10 shadow-2xl chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
+          className={`fixed bottom-6 right-6 z-50 h-[600px] w-[400px] border border-white/10 shadow-2xl chat-bubble-container overflow-hidden ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 p-4">
-            <div className="flex items-center space-x-2">
-              <Bot className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-foreground">
-                {locale === 'de' ? 'Smart Pantry Assistent' : 'Smart Pantry Assistant'}
-              </h3>
-            </div>
-            <div className="flex items-center space-x-2">
-              {hasUserMessages && (
+          {/* Wrapper für Hintergrund + Content */}
+          <div className="relative h-full w-full">
+            {/* Hintergrundbild - nur mittlerer Bereich (Kühlschrank) */}
+            <div 
+              className="absolute inset-0 z-0 opacity-25"
+              style={{
+                backgroundImage: 'url(/smart-pantry-banner.jpg)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            />
+            {/* Overlay für bessere Lesbarkeit - weniger Blur */}
+            <div className="absolute inset-0 z-0 bg-black/30" />
+          
+            {/* Content über Hintergrund */}
+            <div className="relative z-10 flex flex-col h-full">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-white/20 p-4 glass-card bg-white/5">
+              <div className="flex items-center space-x-2">
+                <Bot className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">
+                  {locale === 'de' ? 'Smart Pantry Assistent' : 'Smart Pantry Assistant'}
+                </h3>
+              </div>
+              <div className="flex items-center space-x-2">
+                {hasUserMessages && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleNewChat}
+                    className="h-8 w-8"
+                    title={locale === 'de' ? 'Neuer Chat' : 'New Chat'}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleNewChat}
+                  onClick={handleClose}
                   className="h-8 w-8"
-                  title={locale === 'de' ? 'Neuer Chat' : 'New Chat'}
                 >
-                  <Plus className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClose}
-                className="h-8 w-8"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              </div>
             </div>
-          </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -537,62 +554,64 @@ export function ChatBubble() {
               </div>
             )}
             
-            <div ref={messagesEndRef} />
-          </div>
+              <div ref={messagesEndRef} />
+            </div>
 
-          {/* Quick Actions */}
-          {messages.length >= 1 && messages[0]?.id === 'welcome-1' && (
-            <div className="px-4 pb-2">
-              <div className="flex flex-wrap gap-2">
-                {quickActions.map((action) => (
-                  <Button
-                    key={action.action}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuickAction(action.action)}
-                    className="text-xs"
-                  >
-                    {action.label}
-                  </Button>
-                ))}
+            {/* Quick Actions */}
+            {messages.length >= 1 && messages[0]?.id === 'welcome-1' && (
+              <div className="px-4 pb-2">
+                <div className="flex flex-wrap gap-2">
+                  {quickActions.map((action) => (
+                    <Button
+                      key={action.action}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleQuickAction(action.action)}
+                      className="text-xs"
+                    >
+                      {action.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="border-t border-white/20 p-4 glass-card bg-white/5">
+              <div className="flex space-x-2 items-end">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={locale === 'de' ? 'Schreibe eine Nachricht... (Shift+Enter für neue Zeile)' : 'Type a message... (Shift+Enter for new line)'}
+                  disabled={isTyping || isSubmittingIssue}
+                  rows={3}
+                  className="flex-1 min-h-[80px] max-h-[200px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"
+                  style={{
+                    height: 'auto',
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+                  }}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isTyping || isSubmittingIssue}
+                  size="icon"
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          )}
-
-          {/* Input */}
-          <div className="border-t border-white/10 p-4">
-            <div className="flex space-x-2 items-end">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                placeholder={locale === 'de' ? 'Schreibe eine Nachricht... (Shift+Enter für neue Zeile)' : 'Type a message... (Shift+Enter for new line)'}
-                disabled={isTyping || isSubmittingIssue}
-                rows={3}
-                className="flex-1 min-h-[80px] max-h-[200px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"
-                style={{
-                  height: 'auto',
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
-                }}
-              />
-              <Button
-                onClick={handleSend}
-                disabled={!input.trim() || isTyping || isSubmittingIssue}
-                size="icon"
-                className="flex-shrink-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
+          </div>
           </div>
         </Card>
       )}

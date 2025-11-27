@@ -1,5 +1,11 @@
 import { authAPI } from './api';
 
+const AUTH_DISABLED =
+  process.env.NEXT_PUBLIC_AUTH_DISABLED === 'true' ||
+  (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_AUTH_DISABLED !== 'false');
+
+export const authDisabled = AUTH_DISABLED;
+
 export interface User {
   id: number;
   email: string;
@@ -14,6 +20,11 @@ export interface AuthResponse {
 
 export const auth = {
   login: async (email: string, password: string): Promise<AuthResponse> => {
+    if (AUTH_DISABLED) {
+      const placeholder = 'demo-token';
+      localStorage.setItem('token', placeholder);
+      return { access_token: placeholder, token_type: 'bearer' };
+    }
     const response = await authAPI.login(email, password);
     const { access_token, token_type } = response.data;
     
@@ -35,6 +46,7 @@ export const auth = {
   },
 
   isAuthenticated: (): boolean => {
+    if (AUTH_DISABLED) return true;
     return !!localStorage.getItem('token');
   },
 };

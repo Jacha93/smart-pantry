@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -74,6 +75,16 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
+          <div className="flex justify-center mb-2">
+            <Image
+              src="/smart-pantry-favicon.png"
+              alt="Smart Pantry Icon"
+              width={56}
+              height={56}
+              className="rounded-xl shadow-[0_0_30px_rgba(129,140,248,0.35)]"
+              priority
+            />
+          </div>
           <CardTitle className="text-2xl font-bold text-center text-card-foreground">Create account</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
             Enter your details to create your grocery inventory account

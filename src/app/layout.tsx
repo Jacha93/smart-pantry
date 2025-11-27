@@ -9,6 +9,14 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Smart Pantry',
   description: 'AI-powered grocery inventory management with intelligent recipe suggestions',
+  icons: {
+    icon: [
+      { url: '/smart-pantry-favicon.png', type: 'image/png', rel: 'icon' },
+      { url: '/smart-pantry-favicon.png', sizes: '512x512', type: 'image/png' },
+    ],
+    shortcut: '/smart-pantry-favicon.png',
+    apple: '/smart-pantry-favicon.png',
+  },
 };
 
 export default function RootLayout({

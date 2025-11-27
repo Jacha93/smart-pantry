@@ -14,6 +14,12 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const PORT = process.env.PORT || 8000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
+const AUTH_DISABLED =
+  process.env.AUTH_DISABLED === 'true' ||
+  (process.env.NODE_ENV !== 'production' && process.env.AUTH_DISABLED !== 'false');
+const DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL || 'demo@smartpantry.app';
+const DEMO_USER_NAME = process.env.DEMO_USER_NAME || 'Demo User';
+const DEMO_USER_PASSWORD = process.env.DEMO_USER_PASSWORD || 'demo123';
 
 // API Keys (aus Umgebungsvariablen)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
@@ -38,6 +44,13 @@ console.log('SPOONACULAR_API_KEY vorhanden:', !!SPOONACULAR_API_KEY);
 console.log('SPOONACULAR_API_KEY Länge:', SPOONACULAR_API_KEY ? SPOONACULAR_API_KEY.length : 0);
 console.log('================================\n');
 
+if (AUTH_DISABLED) {
+  console.warn(
+    '⚠️  DEMO MODE AKTIV: Authentifizierung ist deaktiviert. Alle geschützten Routen verwenden den Demo-User:',
+    DEMO_USER_EMAIL
+  );
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -60,11 +73,36 @@ let nextCookedRecipeId = 1;
 const savedRecipes = []; // {id, user_id, recipe_id, title, image, used_ingredients, missed_ingredients, likes, sourceUrl, saved_at}
 let nextSavedRecipeId = 1;
 
+let demoUserCache = null;
+
+function ensureDemoUser() {
+  if (demoUserCache) return demoUserCache;
+  let existing = users.find((u) => u.email === DEMO_USER_EMAIL);
+  if (!existing) {
+    const passwordHash = bcrypt.hashSync(DEMO_USER_PASSWORD, 10);
+    existing = {
+      id: nextUserId++,
+      email: DEMO_USER_EMAIL,
+      name: DEMO_USER_NAME,
+      passwordHash,
+      created_at: new Date().toISOString(),
+    };
+    users.push(existing);
+  }
+  demoUserCache = existing;
+  return existing;
+}
+
 function generateToken(user) {
   return jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
 }
 
 function authMiddleware(req, res, next) {
+  if (AUTH_DISABLED) {
+    const demoUser = ensureDemoUser();
+    req.user = { id: demoUser.id, email: demoUser.email };
+    return next();
+  }
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
   if (!token) return res.status(401).json({ detail: 'Not authenticated' });

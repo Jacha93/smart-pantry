@@ -77,6 +77,17 @@ Die Anwendung läuft dann auf:
 - Frontend: http://localhost:3000
 - Backend: http://localhost:8000
 
+## 🔓 Demo-Modus (Login deaktivieren)
+
+Für Präsentationen ist der Login im Entwicklungsmodus automatisch deaktiviert. Das Backend nutzt einen Demo-User (`demo@smartpantry.app`) und das Frontend lässt den Zugriff ohne Token zu.
+
+- **Standard-Credentials (falls Login trotzdem genutzt wird):**  
+  `demo@smartpantry.app` / `demo123`
+- **Demo-Modus erzwingen (z. B. Produktion):**
+  - Backend: `AUTH_DISABLED=true`
+  - Frontend: `NEXT_PUBLIC_AUTH_DISABLED=true`
+- **Login wieder aktivieren:** Setze beide Variablen explizit auf `false`.
+
 ## 🐳 Docker
 
 ### Build
