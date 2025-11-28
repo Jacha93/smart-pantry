@@ -14,7 +14,7 @@ const multer = require('multer');
 const crypto = require('crypto');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
-const { PrismaClient } = require('./generated/prisma');
+const { PrismaClient } = require('@prisma/client');
 const { encryptField, decryptField } = require('./utils/encryption');
 
 const app = express();

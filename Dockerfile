@@ -12,8 +12,8 @@ RUN npm ci
 COPY backend/prisma ./prisma
 # Generate Prisma Client (muss im backend Verzeichnis ausgeführt werden)
 RUN cd /app/backend && npx prisma generate --schema=./prisma/schema.prisma
-# Verify that generated client exists (prisma-client-js creates index.js)
-RUN ls -la /app/backend/generated/prisma/index.js || (echo "ERROR: Prisma Client index.js wurde nicht generiert!" && exit 1)
+# Verify that generated client exists (Standard-Pfad: node_modules/.prisma/client)
+RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Prisma Client wurde nicht generiert!" && exit 1)
 # Remove dev dependencies after Prisma generation
 RUN npm prune --production
 
@@ -56,9 +56,8 @@ RUN apk add --no-cache dumb-init
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy backend dependencies, Prisma client, and source
+# Copy backend dependencies (includes Prisma client in node_modules/.prisma/client) and source
 COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/node_modules ./backend/node_modules
-COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/generated ./backend/generated
 COPY --chown=nextjs:nodejs backend/package*.json ./backend/
 COPY --chown=nextjs:nodejs backend/server.js ./backend/
 COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
