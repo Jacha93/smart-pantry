@@ -14,8 +14,13 @@ COPY backend/prisma ./prisma
 RUN cd /app/backend && npx prisma generate --schema=./prisma/schema.prisma
 # Verify that generated client exists (Standard-Pfad: node_modules/.prisma/client)
 RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Prisma Client wurde nicht generiert!" && exit 1)
-# Remove dev dependencies after Prisma generation
+# Verify that @prisma/client runtime exists
+RUN ls -la /app/backend/node_modules/@prisma/client/runtime/client.js || (echo "ERROR: Prisma Client Runtime fehlt!" && exit 1)
+# Remove dev dependencies after Prisma generation (prisma CLI wird entfernt, aber @prisma/client bleibt)
 RUN npm prune --production
+# Verify that Prisma Client files still exist after prune
+RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Prisma Client wurde nach npm prune entfernt!" && exit 1)
+RUN ls -la /app/backend/node_modules/@prisma/client/runtime/client.js || (echo "ERROR: Prisma Client Runtime wurde nach npm prune entfernt!" && exit 1)
 
 # ============================================
 # Stage 2: Frontend Builder
@@ -57,7 +62,10 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy backend dependencies (includes Prisma client in node_modules/.prisma/client) and source
+# Copy node_modules but ensure .prisma/client is included
 COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/node_modules ./backend/node_modules
+# Explicitly verify Prisma client exists in final image
+RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Prisma Client fehlt im finalen Image!" && exit 1)
 COPY --chown=nextjs:nodejs backend/package*.json ./backend/
 COPY --chown=nextjs:nodejs backend/server.js ./backend/
 COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
