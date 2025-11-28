@@ -12,8 +12,8 @@ RUN npm ci
 COPY backend/prisma ./prisma
 # Generate Prisma Client (muss im backend Verzeichnis ausgeführt werden)
 RUN cd /app/backend && npx prisma generate --schema=./prisma/schema.prisma
-# Verify that generated client exists
-RUN ls -la /app/backend/generated/prisma || (echo "ERROR: Prisma Client wurde nicht generiert!" && exit 1)
+# Verify that generated client exists (prisma-client-js creates index.js)
+RUN ls -la /app/backend/generated/prisma/index.js || (echo "ERROR: Prisma Client index.js wurde nicht generiert!" && exit 1)
 # Remove dev dependencies after Prisma generation
 RUN npm prune --production
 

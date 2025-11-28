@@ -2,7 +2,7 @@
 // Datenbank-Modell Definition
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
