@@ -47,16 +47,11 @@ export default function RecipesPage() {
   const loadRecipes = async () => {
     setIsLoading(true);
     try {
-      console.log('📖 Lade Rezepte vom Backend...');
       const response = await photoRecognitionAPI.getSavedRecipes();
-      console.log('📖 Rezepte erhalten:', response.data);
-      console.log('📖 Anzahl Rezepte:', Array.isArray(response.data) ? response.data.length : 0);
       setRecipes(Array.isArray(response.data) ? response.data : []);
     } catch (error: unknown) {
-      console.error('❌ Fehler beim Laden der Rezepte:', error);
       const apiError = error as { response?: { data?: { detail?: string } } };
-      console.error('❌ Error response:', apiError.response);
-      toast.error(apiError.response?.data?.detail || 'Failed to load recipes');
+      toast.error(apiError.response?.data?.detail || t('recipes.loadFailed'));
       setRecipes([]);
     } finally {
       setIsLoading(false);

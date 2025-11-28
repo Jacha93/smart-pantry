@@ -62,6 +62,7 @@ export const translations: Translations = {
   'groceries.failedToFetch': { en: 'Failed to fetch groceries', de: 'Lebensmittel konnten nicht geladen werden' },
   'groceries.deleteConfirm': { en: 'Are you sure you want to delete this grocery?', de: 'Möchtest du dieses Lebensmittel wirklich löschen?' },
   'groceries.deletedSuccess': { en: 'Grocery deleted successfully', de: 'Lebensmittel erfolgreich gelöscht' },
+  'groceries.editComingSoon': { en: 'Edit functionality coming soon', de: 'Bearbeitungsfunktion kommt bald' },
   'groceries.failedToDelete': { en: 'Failed to delete grocery', de: 'Lebensmittel konnte nicht gelöscht werden' },
 
   // Fridge Analyzer

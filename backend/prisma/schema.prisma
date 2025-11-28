@@ -1,0 +1,111 @@
+// Prisma Schema für Smart Pantry
+// Datenbank-Modell Definition
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id               Int            @id @default(autoincrement())
+  email            String         @unique
+  name             String
+  passwordHash     String
+  role             UserRole       @default(USER)
+  encryptedProfile String?
+  quotaLlmTokens   Int            @default(15000)
+  quotaRecipeCalls Int            @default(100)
+  llmTokensUsed    Int            @default(0)
+  recipeCallsUsed  Int            @default(0)
+  quotaResetAt     DateTime       @default(now())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  refreshTokens    RefreshToken[]
+  groceries        Grocery[]
+  shoppingLists    ShoppingList[]
+  savedRecipes     SavedRecipe[]
+  cookedRecipes    CookedRecipe[]
+}
+
+model RefreshToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+}
+
+model Grocery {
+  id                Int       @id @default(autoincrement())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            Int
+  name              String
+  quantity          Float
+  unit              String
+  category          String
+  expiryDate        DateTime?
+  addedAt           DateTime  @default(now())
+  lowStockThreshold Float     @default(1)
+  notes             String?
+}
+
+model ShoppingList {
+  id        Int                @id @default(autoincrement())
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  name      String?
+  createdAt DateTime           @default(now())
+  completed Boolean            @default(false)
+  items     ShoppingListItem[]
+}
+
+model ShoppingListItem {
+  id          Int          @id @default(autoincrement())
+  list        ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  listId      Int
+  groceryName String
+  quantity    Float        @default(1)
+  checked     Boolean      @default(false)
+}
+
+model SavedRecipe {
+  id                Int      @id @default(autoincrement())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            Int
+  recipeId          Int
+  title             String
+  image             String?
+  usedIngredients   Json?
+  missedIngredients Json?
+  likes             Int      @default(0)
+  sourceUrl         String?
+  savedAt           DateTime @default(now())
+  isCustom          Boolean  @default(false)
+  readyInMinutes    Int?
+  servings          Int?
+  instructions      String?
+  ingredientsJson   Json?
+}
+
+model CookedRecipe {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      Int
+  recipeId    Int
+  recipeTitle String
+  cookedAt    DateTime @default(now())
+  rating      Int?
+}

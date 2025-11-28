@@ -1,12 +1,18 @@
 # Multi-stage Dockerfile für Frontend + Backend
 
 # ============================================
-# Stage 1: Backend Dependencies
+# Stage 1: Backend Dependencies & Prisma Client
 # ============================================
 FROM node:20-alpine AS backend-deps
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies for Prisma)
+RUN npm ci
+# Copy Prisma schema and generate client
+COPY backend/prisma ./prisma
+RUN npx prisma generate
+# Remove dev dependencies after Prisma generation
+RUN npm prune --production
 
 # ============================================
 # Stage 2: Frontend Builder
@@ -47,10 +53,13 @@ RUN apk add --no-cache dumb-init
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy backend dependencies and source
+# Copy backend dependencies, Prisma client, and source
 COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/node_modules ./backend/node_modules
+COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/generated ./backend/generated
 COPY --chown=nextjs:nodejs backend/package*.json ./backend/
 COPY --chown=nextjs:nodejs backend/server.js ./backend/
+COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
+COPY --chown=nextjs:nodejs backend/utils ./backend/utils
 
 # Copy built frontend (standalone output)
 COPY --from=frontend-builder --chown=nextjs:nodejs /app/.next/standalone ./

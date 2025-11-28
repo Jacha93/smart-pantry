@@ -1,0 +1,77 @@
+# ============================================
+# Smart Pantry - Docker Compose (Production)
+# ============================================
+# Diese Datei ist für Production-Deployment gedacht.
+# Docker Compose erkennt diese Datei automatisch (Standard-Name).
+# 
+# Verwendung:
+# 1. Erstelle .env aus .env.example: cp .env.example .env
+# 2. Fülle .env mit echten Werten (Secrets, API Keys, etc.)
+# 3. Starte: docker compose up -d
+# 4. Führe Migrationen aus: docker compose exec app npx prisma migrate deploy
+#
+# Für lokale Entwicklung nutze: compose.dev.yml
+# docker compose -f compose.dev.yml up -d
+# ============================================
+
+services:
+  # PostgreSQL Datenbank
+  smart-pantry-postgres:
+    image: postgres:16-alpine
+    container_name: smart-pantry-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smart_pantry}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-smart_pantry}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart-pantry-network
+
+  # Smart Pantry Application (Frontend + Backend kombiniert)
+  app:
+    image: ghcr.io/jacha93/smart-pantry:latest
+    container_name: smart-pantry-app
+    restart: unless-stopped
+    depends_on:
+      smart-pantry-postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Database Connection (wird aus .env Variablen gebaut)
+      # WICHTIG: Innerhalb des Docker-Netzwerks ist der Port immer 5432 (Container-Standard)
+      # POSTGRES_PORT wird nur für das externe Port-Mapping verwendet
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
+      
+      # Frontend API URL (kann in .env überschrieben werden)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    networks:
+      - smart-pantry-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres-data:
+    driver: local
+
+networks:
+  smart-pantry-network:
+    driver: bridge

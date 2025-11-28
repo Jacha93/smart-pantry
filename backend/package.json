@@ -1,17 +1,21 @@
 {
   "name": "smart-pantry-backend",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "private": true,
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "kill-port": "lsof -ti :8000 | xargs kill -9 2>/dev/null || echo 'Port 8000 ist frei'"
+    "kill-port": "lsof -ti :8000 | xargs kill -9 2>/dev/null || echo 'Port 8000 ist frei'",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@google-cloud/vision": "^5.3.4",
     "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^7.0.1",
     "axios": "^1.13.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -19,6 +23,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "prisma": "^7.0.1"
   }
 }

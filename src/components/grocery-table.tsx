@@ -190,8 +190,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          // TODO: Implement edit functionality
-                          toast.info('Edit functionality coming soon');
+                          toast.info(t('groceries.editComingSoon'));
                         }}
                       >
                         <Edit className="h-4 w-4" />

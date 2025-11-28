@@ -1,6 +1,34 @@
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './storage-keys';
+
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    _retry?: boolean;
+  }
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+const getStoredToken = (key: string): string | null => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key);
+};
+
+const setStoredToken = (key: string, value: string) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(key, value);
+};
+
+const removeStoredToken = (key: string) => {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+};
+
+const redirectToLogin = () => {
+  if (typeof window !== 'undefined') {
+    window.location.href = '/';
+  }
+};
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,27 +37,122 @@ export const api = axios.create({
   },
 });
 
+const authlessApi = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // Add auth token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
+  const token = getStoredToken(ACCESS_TOKEN_KEY);
+  if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
+let isRefreshing = false;
+let refreshSubscribers: Array<(token: string | null) => void> = [];
+
+const subscribeTokenRefresh = (callback: (token: string | null) => void) => {
+  refreshSubscribers.push(callback);
+};
+
+const onRefreshed = (token: string | null) => {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+};
+
+const refreshAccessToken = async (): Promise<string | null> => {
+  const refreshToken = getStoredToken(REFRESH_TOKEN_KEY);
+  if (!refreshToken) return null;
+  const response = await authlessApi.post('/auth/refresh', {
+    refresh_token: refreshToken,
+  });
+  const { access_token, refresh_token } = response.data;
+  setStoredToken(ACCESS_TOKEN_KEY, access_token);
+  if (refresh_token) {
+    setStoredToken(REFRESH_TOKEN_KEY, refresh_token);
+  }
+  return access_token;
+};
+
 // Handle auth errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Nur bei geschützten Endpoints weiterleiten, nicht bei Chat/Issue (optional auth)
-      const url = error.config?.url || '';
-      if (!url.includes('/chat/')) {
-        localStorage.removeItem('token');
-        window.location.href = '/';
+  async (error) => {
+    const status = error.response?.status;
+    const originalRequest = error.config;
+    const url = originalRequest?.url || '';
+
+    if (status === 402 && !url.includes('/chat/')) {
+      return Promise.reject(error);
+    }
+
+    if (
+      status === 401 &&
+      !originalRequest?._retry &&
+      !url.includes('/auth/login') &&
+      !url.includes('/auth/register') &&
+      !url.includes('/auth/refresh')
+    ) {
+      originalRequest._retry = true;
+      const refreshToken = getStoredToken(REFRESH_TOKEN_KEY);
+      if (!refreshToken) {
+        removeStoredToken(ACCESS_TOKEN_KEY);
+        removeStoredToken(REFRESH_TOKEN_KEY);
+        redirectToLogin();
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          subscribeTokenRefresh((token) => {
+            if (!token) {
+              reject(error);
+            } else {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(api(originalRequest));
+            }
+          });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const newToken = await refreshAccessToken();
+        onRefreshed(newToken);
+        if (!newToken) {
+          removeStoredToken(ACCESS_TOKEN_KEY);
+          removeStoredToken(REFRESH_TOKEN_KEY);
+          redirectToLogin();
+          return Promise.reject(error);
+        }
+        api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
+        return api(originalRequest);
+      } catch (refreshError) {
+        onRefreshed(null);
+        removeStoredToken(ACCESS_TOKEN_KEY);
+        removeStoredToken(REFRESH_TOKEN_KEY);
+        redirectToLogin();
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
+
+    if (status === 401) {
+      removeStoredToken(ACCESS_TOKEN_KEY);
+      removeStoredToken(REFRESH_TOKEN_KEY);
+      redirectToLogin();
+    }
+
     return Promise.reject(error);
   }
 );
@@ -40,6 +163,10 @@ export const authAPI = {
     api.post('/auth/login', { email, password }),
   register: (email: string, password: string, name: string) =>
     api.post('/auth/register', { email, password, name }),
+  refresh: (refreshToken: string) =>
+    api.post('/auth/refresh', { refresh_token: refreshToken }),
+  logout: (refreshToken: string) =>
+    api.post('/auth/logout', { refresh_token: refreshToken }),
 };
 
 interface GroceryData {
@@ -115,3 +242,4 @@ export const chatAPI = {
   createIssue: (title: string, body: string, labels: string[] = [], isAuthenticated: boolean = false) =>
     api.post('/chat/create-issue', { title, body, labels, is_authenticated: isAuthenticated }),
 };
+

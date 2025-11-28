@@ -38,6 +38,8 @@ backend/.env.*
 **/.env
 **/.env.local
 **/.env.*.local
+backend/generated/
+backend/generated/**
 
 # vercel
 .vercel
@@ -48,6 +50,28 @@ next-env.d.ts
 
 # Turbopack
 .turbo
+
+# Docker
+*.log
+.dockerignore
+docker-compose.override.yml
+
+# Database backups
+*.sql
+*.sql.gz
+backups/
+*.backup
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
 
 # Internal documentation (never commit!)
 DATENSCHUTZ_DSGVO.md

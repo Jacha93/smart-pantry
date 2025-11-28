@@ -1,18 +1,32 @@
-// Lade Umgebungsvariablen aus .env Datei
-require('dotenv').config();
+// Lade Umgebungsvariablen aus .env Datei im Root-Verzeichnis
+// Im Docker Container werden Variablen über Environment gesetzt
+const path = require('path');
+const rootEnvPath = path.resolve(__dirname, '..', '.env');
+if (process.env.NODE_ENV !== 'production' || !process.env.DATABASE_URL) {
+  require('dotenv').config({ path: rootEnvPath });
+}
 
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
+const crypto = require('crypto');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
+const { PrismaClient } = require('./generated/prisma');
+const { encryptField, decryptField } = require('./utils/encryption');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
+const prisma = new PrismaClient();
 
-const PORT = process.env.PORT || 8000;
+// Backend Port wird aus .env geladen (kein Fallback, muss gesetzt sein)
+const PORT = Number(process.env.BACKEND_PORT);
+if (!PORT) {
+  console.error('❌ BACKEND_PORT ist nicht in .env gesetzt!');
+  process.exit(1);
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 const AUTH_DISABLED =
   process.env.AUTH_DISABLED === 'true' ||
@@ -24,25 +38,70 @@ const DEMO_USER_PASSWORD = process.env.DEMO_USER_PASSWORD || 'demo123';
 // API Keys (aus Umgebungsvariablen)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const SPOONACULAR_API_KEY = process.env.SPOONACULAR_API_KEY || '';
+// Token & Quota Configuration (MUSS in .env gesetzt werden, keine Fallbacks!)
+const REFRESH_TOKEN_TTL_MS = Number(process.env.REFRESH_TOKEN_TTL_MS);
+if (!REFRESH_TOKEN_TTL_MS) {
+  console.error('❌ REFRESH_TOKEN_TTL_MS ist nicht in .env gesetzt!');
+  process.exit(1);
+}
+
+const QUOTA_RESET_INTERVAL_MS = Number(process.env.QUOTA_RESET_INTERVAL_MS);
+if (!QUOTA_RESET_INTERVAL_MS) {
+  console.error('❌ QUOTA_RESET_INTERVAL_MS ist nicht in .env gesetzt!');
+  process.exit(1);
+}
+
+const LLM_TOKEN_COST_CHAT = Number(process.env.LLM_TOKEN_COST_CHAT);
+if (!LLM_TOKEN_COST_CHAT) {
+  console.error('❌ LLM_TOKEN_COST_CHAT ist nicht in .env gesetzt!');
+  process.exit(1);
+}
+
+const LLM_TOKEN_COST_TRANSLATION = Number(process.env.LLM_TOKEN_COST_TRANSLATION);
+if (!LLM_TOKEN_COST_TRANSLATION) {
+  console.error('❌ LLM_TOKEN_COST_TRANSLATION ist nicht in .env gesetzt!');
+  process.exit(1);
+}
+
+const LLM_TOKEN_COST_ANALYZE = Number(process.env.LLM_TOKEN_COST_ANALYZE);
+if (!LLM_TOKEN_COST_ANALYZE) {
+  console.error('❌ LLM_TOKEN_COST_ANALYZE ist nicht in .env gesetzt!');
+  process.exit(1);
+}
+
+const RECIPE_CALL_COST_ANALYZE = Number(process.env.RECIPE_CALL_COST_ANALYZE);
+if (!RECIPE_CALL_COST_ANALYZE) {
+  console.error('❌ RECIPE_CALL_COST_ANALYZE ist nicht in .env gesetzt!');
+  process.exit(1);
+}
 
 // Initialize Gemini AI (falls API Key vorhanden)
 let genAI = null;
-console.log('\n🔑 === API-KEY INITIALISIERUNG ===');
-console.log('GEMINI_API_KEY vorhanden:', !!GEMINI_API_KEY);
-console.log('GEMINI_API_KEY Länge:', GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
+// API Key Initialisierung (nur in Development loggen)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('\n🔑 === API-KEY INITIALISIERUNG ===');
+  console.log('GEMINI_API_KEY vorhanden:', !!GEMINI_API_KEY);
+  console.log('SPOONACULAR_API_KEY vorhanden:', !!SPOONACULAR_API_KEY);
+}
+
 if (GEMINI_API_KEY) {
   try {
-  genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    console.log('✅ Gemini AI erfolgreich initialisiert');
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ Gemini AI erfolgreich initialisiert');
+    }
   } catch (error) {
     console.error('❌ Fehler bei Gemini AI Initialisierung:', error.message);
   }
 } else {
-  console.warn('⚠️ WARNING: GEMINI_API_KEY nicht gesetzt. Foto-Analyse verwendet Stub-Daten.');
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('⚠️ WARNING: GEMINI_API_KEY nicht gesetzt. Foto-Analyse verwendet Stub-Daten.');
+  }
 }
-console.log('SPOONACULAR_API_KEY vorhanden:', !!SPOONACULAR_API_KEY);
-console.log('SPOONACULAR_API_KEY Länge:', SPOONACULAR_API_KEY ? SPOONACULAR_API_KEY.length : 0);
-console.log('================================\n');
+
+if (process.env.NODE_ENV !== 'production') {
+  console.log('================================\n');
+}
 
 if (AUTH_DISABLED) {
   console.warn(
@@ -54,274 +113,673 @@ if (AUTH_DISABLED) {
 app.use(cors());
 app.use(express.json());
 
-// In-memory stores (demo)
-const users = []; // {id, email, name, passwordHash, created_at}
-let nextUserId = 1;
-
-const groceries = []; // {id, user_id, name, quantity, unit, category, expiry_date?, added_date, low_stock_threshold}
-let nextGroceryId = 1;
-
-const shoppingLists = []; // {id, user_id, name?, created_at, completed, items: [{id, list_id, grocery_name, quantity, checked}]}
-let nextShoppingListId = 1;
-let nextShoppingItemId = 1;
-
-// Gekochte Rezepte für KI-Lernen (für zukünftige personalisierte Vorschläge)
-const cookedRecipes = []; // {id, user_id, recipe_id, recipe_title, cooked_at, rating?}
-let nextCookedRecipeId = 1;
-
-// Gespeicherte Rezeptvorschläge (für Rezepte-Seite)
-const savedRecipes = []; // {id, user_id, recipe_id, title, image, used_ingredients, missed_ingredients, likes, sourceUrl, saved_at}
-let nextSavedRecipeId = 1;
-
 let demoUserCache = null;
 
-function ensureDemoUser() {
+const normalizeEmail = (email = '') => String(email).trim().toLowerCase();
+
+async function ensureDemoUser() {
   if (demoUserCache) return demoUserCache;
-  let existing = users.find((u) => u.email === DEMO_USER_EMAIL);
+  const email = normalizeEmail(DEMO_USER_EMAIL);
+  let existing = await prisma.user.findUnique({ where: { email } });
   if (!existing) {
-    const passwordHash = bcrypt.hashSync(DEMO_USER_PASSWORD, 10);
-    existing = {
-      id: nextUserId++,
-      email: DEMO_USER_EMAIL,
-      name: DEMO_USER_NAME,
-      passwordHash,
-      created_at: new Date().toISOString(),
-    };
-    users.push(existing);
+    const passwordHash = await bcrypt.hash(DEMO_USER_PASSWORD, 10);
+    existing = await prisma.user.create({
+      data: {
+        email,
+        name: DEMO_USER_NAME,
+        passwordHash,
+      },
+    });
   }
   demoUserCache = existing;
   return existing;
 }
 
-function generateToken(user) {
-  return jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
+function generateAccessToken(user) {
+  return jwt.sign(
+    { sub: user.id, email: user.email, role: user.role },
+    JWT_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_TTL || '15m' }
+  );
 }
 
-function authMiddleware(req, res, next) {
-  if (AUTH_DISABLED) {
-    const demoUser = ensureDemoUser();
-    req.user = { id: demoUser.id, email: demoUser.email };
-    return next();
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+async function issueAuthTokens(user, req) {
+  const accessToken = generateAccessToken(user);
+  const refreshToken = crypto.randomBytes(48).toString('hex');
+  const tokenHash = hashToken(refreshToken);
+  const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash,
+      userId: user.id,
+      expiresAt,
+      userAgent: req?.headers?.['user-agent'] || null,
+      ipAddress: req?.ip || null,
+    },
+  });
+  return { accessToken, refreshToken, expiresAt };
+}
+
+async function revokeRefreshToken(refreshToken) {
+  if (!refreshToken) return;
+  const tokenHash = hashToken(refreshToken);
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+}
+
+async function rotateRefreshToken(oldToken, req) {
+  if (!oldToken) return null;
+  const tokenHash = hashToken(oldToken);
+  const stored = await prisma.refreshToken.findFirst({
+    where: { tokenHash, revokedAt: null },
+  });
+  if (!stored) return null;
+  if (stored.expiresAt < new Date()) {
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+    return null;
   }
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) return res.status(401).json({ detail: 'Not authenticated' });
+  await prisma.refreshToken.update({
+    where: { id: stored.id },
+    data: { revokedAt: new Date() },
+  });
+  const user = await prisma.user.findUnique({ where: { id: stored.userId } });
+  if (!user) return null;
+  return issueAuthTokens(user, req);
+}
+
+async function resetQuotaIfNeeded(user) {
+  if (!user.quotaResetAt || user.quotaResetAt <= new Date()) {
+    return prisma.user.update({
+      where: { id: user.id },
+      data: {
+        llmTokensUsed: 0,
+        recipeCallsUsed: 0,
+        quotaResetAt: new Date(Date.now() + QUOTA_RESET_INTERVAL_MS),
+      },
+    });
+  }
+  return user;
+}
+
+async function consumeQuota(userId, type, amount) {
+  if (AUTH_DISABLED) return;
+  let user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    const err = new Error('USER_NOT_FOUND');
+    err.status = 404;
+    throw err;
+  }
+  user = await resetQuotaIfNeeded(user);
+  const isLlm = type === 'LLM';
+  const limit = isLlm ? user.quotaLlmTokens : user.quotaRecipeCalls;
+  const used = isLlm ? user.llmTokensUsed : user.recipeCallsUsed;
+  const field = isLlm ? 'llmTokensUsed' : 'recipeCallsUsed';
+  if (used + amount > limit) {
+    const err = new Error('QUOTA_EXCEEDED');
+    err.status = 402;
+    err.detail = isLlm
+      ? 'Dein KI-Kontingent ist aufgebraucht. Bitte warte bis zum Reset oder upgrade deinen Plan.'
+      : 'Dein Rezept-Kontingent ist aufgebraucht. Bitte warte bis zum Reset oder upgrade deinen Plan.';
+    throw err;
+  }
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      [field]: { increment: amount },
+    },
+  });
+}
+
+// Helper: Erstelle GitHub Issue Template URL
+function createIssueTemplateUrl(title, body) {
   try {
+    return `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+  } catch {
+    return 'https://github.com/Jacha93/smart-pantry/issues/new';
+  }
+}
+
+async function consumeQuotaOrRespond(res, userId, type, amount) {
+  try {
+    await consumeQuota(userId, type, amount);
+    return true;
+  } catch (error) {
+    if (error.status === 402) {
+      res.status(402).json({ detail: error.detail, quota: type });
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function authMiddleware(req, res, next) {
+  try {
+    if (AUTH_DISABLED) {
+      const demoUser = await ensureDemoUser();
+      req.user = { id: demoUser.id, email: demoUser.email, role: demoUser.role };
+      return next();
+    }
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ detail: 'Not authenticated' });
+    }
     const payload = jwt.verify(token, JWT_SECRET);
-    req.user = { id: payload.sub, email: payload.email };
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) {
+      return res.status(401).json({ detail: 'Invalid token' });
+    }
+    req.user = { id: user.id, email: user.email, role: user.role };
     next();
-  } catch (e) {
+  } catch (error) {
+    console.error('Auth Middleware Error:', error.message);
     return res.status(401).json({ detail: 'Invalid token' });
   }
 }
 
 // Auth routes
 app.post('/auth/register', async (req, res) => {
-  const { email, password, name } = req.body || {};
-  if (!email || !password || !name) {
-    return res.status(400).json({ detail: 'Missing required fields' });
+  try {
+    const { email, password, name, profile } = req.body || {};
+    if (!email || !password || !name) {
+      return res.status(400).json({ detail: 'Missing required fields' });
+    }
+    const normalizedEmail = normalizeEmail(email);
+    const exists = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (exists) return res.status(409).json({ detail: 'User already exists' });
+    const passwordHash = await bcrypt.hash(password, 10);
+    const encryptedProfile = profile ? encryptField(JSON.stringify(profile)) : null;
+    const user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        name: String(name).trim(),
+        passwordHash,
+        encryptedProfile,
+        quotaResetAt: new Date(),
+      },
+    });
+    return res
+      .status(201)
+      .json({ id: user.id, email: user.email, name: user.name, created_at: user.createdAt });
+  } catch (error) {
+    console.error('Register Error:', error);
+    res.status(500).json({ detail: 'Registration failed' });
   }
-  const exists = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
-  if (exists) return res.status(409).json({ detail: 'User already exists' });
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = {
-    id: nextUserId++,
-    email,
-    name,
-    passwordHash,
-    created_at: new Date().toISOString(),
-  };
-  users.push(user);
-  return res.status(201).json({ id: user.id, email: user.email, name: user.name, created_at: user.created_at });
 });
 
 app.post('/auth/login', async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ detail: 'Missing credentials' });
-  
-  // Demo-User Support: Auch bei aktiviertem Auth die Demo-Credentials akzeptieren
-  const isDemoCredentials = 
-    email.toLowerCase() === DEMO_USER_EMAIL.toLowerCase() && 
-    password === DEMO_USER_PASSWORD;
-  
-  if (isDemoCredentials) {
-    // Stelle sicher, dass Demo-User existiert
-    const demoUser = ensureDemoUser();
-    const access_token = generateToken(demoUser);
-    return res.json({ access_token, token_type: 'bearer' });
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) return res.status(400).json({ detail: 'Missing credentials' });
+    
+    const isDemoCredentials =
+      normalizeEmail(email) === normalizeEmail(DEMO_USER_EMAIL) &&
+      password === DEMO_USER_PASSWORD;
+
+    if (isDemoCredentials) {
+      const demoUser = await ensureDemoUser();
+      const tokens = await issueAuthTokens(demoUser, req);
+      return res.json({
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken,
+        token_type: 'bearer',
+        expires_in: REFRESH_TOKEN_TTL_MS / 1000,
+      });
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) return res.status(401).json({ detail: 'Invalid credentials' });
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) return res.status(401).json({ detail: 'Invalid credentials' });
+    const tokens = await issueAuthTokens(user, req);
+    return res.json({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      token_type: 'bearer',
+      expires_in: REFRESH_TOKEN_TTL_MS / 1000,
+    });
+  } catch (error) {
+    console.error('Login Error:', error);
+    res.status(500).json({ detail: 'Login failed' });
   }
-  
-  // Normale Login-Logik
-  const user = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
-  if (!user) return res.status(401).json({ detail: 'Invalid credentials' });
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ detail: 'Invalid credentials' });
-  const access_token = generateToken(user);
-  return res.json({ access_token, token_type: 'bearer' });
+});
+
+app.post('/auth/refresh', async (req, res) => {
+  try {
+    const { refresh_token } = req.body || {};
+    if (!refresh_token) return res.status(400).json({ detail: 'refresh_token erforderlich' });
+    const tokens = await rotateRefreshToken(refresh_token, req);
+    if (!tokens) {
+      return res.status(401).json({ detail: 'Refresh token ungültig' });
+    }
+    res.json({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      token_type: 'bearer',
+      expires_in: REFRESH_TOKEN_TTL_MS / 1000,
+    });
+  } catch (error) {
+    console.error('Refresh Error:', error);
+    res.status(500).json({ detail: 'Konnte Token nicht erneuern' });
+  }
+});
+
+app.post('/auth/logout', async (req, res) => {
+  try {
+    const { refresh_token } = req.body || {};
+    await revokeRefreshToken(refresh_token);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Logout Error:', error);
+    res.status(500).json({ detail: 'Logout fehlgeschlagen' });
+  }
+});
+
+app.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ detail: 'User not found' });
+    const profileString = user.encryptedProfile ? decryptField(user.encryptedProfile) : null;
+    const profile = profileString ? JSON.parse(profileString) : null;
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      profile,
+      quotas: {
+        llm_tokens_total: user.quotaLlmTokens,
+        llm_tokens_used: user.llmTokensUsed,
+        recipe_calls_total: user.quotaRecipeCalls,
+        recipe_calls_used: user.recipeCallsUsed,
+        reset_at: user.quotaResetAt,
+      },
+    });
+  } catch (error) {
+    console.error('Me endpoint error:', error);
+    res.status(500).json({ detail: 'Fehler beim Laden des Profils' });
+  }
+});
+
+app.put('/me/profile', authMiddleware, async (req, res) => {
+  try {
+    const { profile } = req.body || {};
+    if (!profile || typeof profile !== 'object') {
+      return res.status(400).json({ detail: 'Profile object required' });
+    }
+    const encryptedProfile = encryptField(JSON.stringify(profile));
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { encryptedProfile },
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ detail: 'Profil konnte nicht gespeichert werden' });
+  }
 });
 
 // Groceries routes (protected)
-app.get('/groceries', authMiddleware, (req, res) => {
-  const list = groceries.filter((g) => g.user_id === req.user.id);
-  res.json(list);
+app.get('/groceries', authMiddleware, async (req, res) => {
+  const list = await prisma.grocery.findMany({
+    where: { userId: req.user.id },
+    orderBy: { addedAt: 'desc' },
+  });
+  res.json(
+    list.map((g) => ({
+      id: g.id,
+      user_id: g.userId,
+      name: g.name,
+      quantity: g.quantity,
+      unit: g.unit,
+      category: g.category,
+      expiry_date: g.expiryDate,
+      added_date: g.addedAt,
+      low_stock_threshold: g.lowStockThreshold,
+      notes: g.notes,
+    }))
+  );
 });
 
-app.post('/groceries', authMiddleware, (req, res) => {
-  const { name, quantity, unit, category, expiry_date, low_stock_threshold } = req.body || {};
+app.post('/groceries', authMiddleware, async (req, res) => {
+  const { name, quantity, unit, category, expiry_date, low_stock_threshold, notes } = req.body || {};
   if (!name || quantity == null || !unit || !category || low_stock_threshold == null) {
     return res.status(400).json({ detail: 'Missing fields' });
   }
-  const item = {
-    id: nextGroceryId++,
-    user_id: req.user.id,
-    name,
-    quantity: Number(quantity),
-    unit,
-    category,
-    expiry_date: expiry_date || undefined,
-    added_date: new Date().toISOString(),
-    low_stock_threshold: Number(low_stock_threshold),
-  };
-  groceries.push(item);
-  res.status(201).json(item);
+  const item = await prisma.grocery.create({
+    data: {
+      userId: req.user.id,
+      name: String(name).trim(),
+      quantity: Number(quantity),
+      unit,
+      category,
+      expiryDate: expiry_date ? new Date(expiry_date) : null,
+      lowStockThreshold: Number(low_stock_threshold),
+      notes: notes || null,
+    },
+  });
+  res.status(201).json({
+    id: item.id,
+    user_id: item.userId,
+    name: item.name,
+    quantity: item.quantity,
+    unit: item.unit,
+    category: item.category,
+    expiry_date: item.expiryDate,
+    added_date: item.addedAt,
+    low_stock_threshold: item.lowStockThreshold,
+    notes: item.notes,
+  });
 });
 
-app.put('/groceries/:id', authMiddleware, (req, res) => {
+app.put('/groceries/:id', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const idx = groceries.findIndex((g) => g.id === id && g.user_id === req.user.id);
-  if (idx === -1) return res.status(404).json({ detail: 'Not found' });
-  const current = groceries[idx];
-  const updated = { ...current, ...req.body };
-  groceries[idx] = updated;
-  res.json(updated);
+  const grocery = await prisma.grocery.findFirst({
+    where: { id, userId: req.user.id },
+  });
+  if (!grocery) return res.status(404).json({ detail: 'Not found' });
+  const updated = await prisma.grocery.update({
+    where: { id },
+    data: {
+      name: req.body.name ?? grocery.name,
+      quantity: req.body.quantity != null ? Number(req.body.quantity) : grocery.quantity,
+      unit: req.body.unit ?? grocery.unit,
+      category: req.body.category ?? grocery.category,
+      expiryDate: req.body.expiry_date ? new Date(req.body.expiry_date) : grocery.expiryDate,
+      lowStockThreshold:
+        req.body.low_stock_threshold != null
+          ? Number(req.body.low_stock_threshold)
+          : grocery.lowStockThreshold,
+      notes: req.body.notes !== undefined ? req.body.notes : grocery.notes,
+    },
+  });
+  res.json({
+    id: updated.id,
+    user_id: updated.userId,
+    name: updated.name,
+    quantity: updated.quantity,
+    unit: updated.unit,
+    category: updated.category,
+    expiry_date: updated.expiryDate,
+    added_date: updated.addedAt,
+    low_stock_threshold: updated.lowStockThreshold,
+    notes: updated.notes,
+  });
 });
 
-app.delete('/groceries/:id', authMiddleware, (req, res) => {
+app.delete('/groceries/:id', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const idx = groceries.findIndex((g) => g.id === id && g.user_id === req.user.id);
-  if (idx === -1) return res.status(404).json({ detail: 'Not found' });
-  groceries.splice(idx, 1);
+  const grocery = await prisma.grocery.findFirst({
+    where: { id, userId: req.user.id },
+  });
+  if (!grocery) return res.status(404).json({ detail: 'Not found' });
+  await prisma.grocery.delete({ where: { id } });
   res.status(204).end();
 });
 
 // Shopping lists (protected)
-app.get('/shopping-lists', authMiddleware, (req, res) => {
-  const lists = shoppingLists.filter((l) => l.user_id === req.user.id);
-  res.json(lists);
+app.get('/shopping-lists', authMiddleware, async (req, res) => {
+  const lists = await prisma.shoppingList.findMany({
+    where: { userId: req.user.id },
+    include: { items: true },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(
+    lists.map((list) => ({
+      id: list.id,
+      user_id: list.userId,
+      name: list.name,
+      created_at: list.createdAt,
+      completed: list.completed,
+      items: list.items.map((item) => ({
+        id: item.id,
+        list_id: item.listId,
+        grocery_name: item.groceryName,
+        quantity: item.quantity,
+        checked: item.checked,
+      })),
+    }))
+  );
 });
 
-app.post('/shopping-lists', authMiddleware, (req, res) => {
+app.post('/shopping-lists', authMiddleware, async (req, res) => {
   const { items, name } = req.body || {};
-  const list = {
-    id: nextShoppingListId++,
-    user_id: req.user.id,
-    name: name || undefined,
-    created_at: new Date().toISOString(),
-    completed: false,
-    items: Array.isArray(items)
-      ? items.map((it) => ({
-          id: nextShoppingItemId++,
-          list_id: 0, // will set below
-          grocery_name: it.grocery_name,
-          quantity: Number(it.quantity) || 1,
-          checked: false,
-        }))
-      : [],
-  };
-  list.items.forEach((i) => (i.list_id = list.id));
-  shoppingLists.push(list);
-  res.status(201).json(list);
+  const list = await prisma.shoppingList.create({
+    data: {
+      userId: req.user.id,
+      name: name || null,
+      items: {
+        create:
+          Array.isArray(items) && items.length
+            ? items.map((it) => ({
+                groceryName: it.grocery_name,
+                quantity: Number(it.quantity) || 1,
+              }))
+            : [],
+      },
+    },
+    include: { items: true },
+  });
+  res.status(201).json({
+    id: list.id,
+    user_id: list.userId,
+    name: list.name,
+    created_at: list.createdAt,
+    completed: list.completed,
+    items: list.items.map((item) => ({
+      id: item.id,
+      list_id: item.listId,
+      grocery_name: item.groceryName,
+      quantity: item.quantity,
+      checked: item.checked,
+    })),
+  });
 });
 
-app.post('/shopping-lists/generate', authMiddleware, (req, res) => {
-  // very naive: add groceries below low_stock_threshold
-  const userGroceries = groceries.filter((g) => g.user_id === req.user.id);
-  const need = userGroceries.filter((g) => g.quantity <= g.low_stock_threshold);
-  const list = {
-    id: nextShoppingListId++,
-    user_id: req.user.id,
-    created_at: new Date().toISOString(),
-    completed: false,
-    items: need.map((g) => ({
-      id: nextShoppingItemId++,
-      list_id: 0,
-      grocery_name: g.name,
-      quantity: Math.max(1, g.low_stock_threshold + 1 - g.quantity),
-      checked: false,
+app.post('/shopping-lists/generate', authMiddleware, async (req, res) => {
+  const userGroceries = await prisma.grocery.findMany({
+    where: { userId: req.user.id },
+  });
+  const need = userGroceries.filter((g) => g.quantity <= g.lowStockThreshold);
+  const list = await prisma.shoppingList.create({
+    data: {
+      userId: req.user.id,
+      items: {
+        create: need.map((g) => ({
+          groceryName: g.name,
+          quantity: Math.max(1, g.lowStockThreshold + 1 - g.quantity),
+        })),
+      },
+    },
+    include: { items: true },
+  });
+  res.status(201).json({
+    id: list.id,
+    user_id: list.userId,
+    name: list.name,
+    created_at: list.createdAt,
+    completed: list.completed,
+    items: list.items.map((item) => ({
+      id: item.id,
+      list_id: item.listId,
+      grocery_name: item.groceryName,
+      quantity: item.quantity,
+      checked: item.checked,
     })),
-  };
-  list.items.forEach((i) => (i.list_id = list.id));
-  shoppingLists.push(list);
-  res.status(201).json(list);
+  });
 });
 
 // DELETE must come before GET :id to avoid route conflicts
-app.delete('/shopping-lists/:id', authMiddleware, (req, res) => {
+app.delete('/shopping-lists/:id', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const idx = shoppingLists.findIndex((l) => l.id === id && l.user_id === req.user.id);
-  if (idx === -1) return res.status(404).json({ detail: 'Not found' });
-  shoppingLists.splice(idx, 1);
+  const list = await prisma.shoppingList.findFirst({
+    where: { id, userId: req.user.id },
+  });
+  if (!list) return res.status(404).json({ detail: 'Not found' });
+  await prisma.shoppingList.delete({ where: { id } });
   res.status(204).end();
 });
 
 // PUT must come before GET :id to avoid route conflicts
-app.put('/shopping-lists/:id', authMiddleware, (req, res) => {
+app.put('/shopping-lists/:id', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const list = shoppingLists.find((l) => l.id === id && l.user_id === req.user.id);
+  const list = await prisma.shoppingList.findFirst({
+    where: { id, userId: req.user.id },
+  });
   if (!list) return res.status(404).json({ detail: 'List not found' });
-  
-  const { name } = req.body || {};
-  if (name) {
-    list.name = String(name);
-  }
-  res.json(list);
+  const updated = await prisma.shoppingList.update({
+    where: { id },
+    data: { name: req.body.name ?? list.name },
+    include: { items: true },
+  });
+  res.json({
+    id: updated.id,
+    user_id: updated.userId,
+    name: updated.name,
+    created_at: updated.createdAt,
+    completed: updated.completed,
+    items: updated.items.map((item) => ({
+      id: item.id,
+      list_id: item.listId,
+      grocery_name: item.groceryName,
+      quantity: item.quantity,
+      checked: item.checked,
+    })),
+  });
 });
 
 // POST /shopping-lists/:id/items must come before GET :id
-app.post('/shopping-lists/:id/items', authMiddleware, (req, res) => {
+app.post('/shopping-lists/:id/items', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const list = shoppingLists.find((l) => l.id === id && l.user_id === req.user.id);
+  const list = await prisma.shoppingList.findFirst({
+    where: { id, userId: req.user.id },
+    include: { items: true },
+  });
   if (!list) return res.status(404).json({ detail: 'List not found' });
   if (list.completed) return res.status(400).json({ detail: 'Cannot add items to completed list' });
-  
   const { grocery_name, quantity } = req.body || {};
   if (!grocery_name) return res.status(400).json({ detail: 'grocery_name is required' });
-  
-  const newItem = {
-    id: nextShoppingItemId++,
-    list_id: id,
-    grocery_name: String(grocery_name),
-    quantity: Number(quantity) || 1,
-    checked: false,
-  };
-  list.items.push(newItem);
-  res.status(201).json(list);
+  await prisma.shoppingListItem.create({
+    data: {
+      listId: id,
+      groceryName: String(grocery_name),
+      quantity: Number(quantity) || 1,
+    },
+  });
+  const updated = await prisma.shoppingList.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+  res.status(201).json({
+    id: updated.id,
+    user_id: updated.userId,
+    name: updated.name,
+    created_at: updated.createdAt,
+    completed: updated.completed,
+    items: updated.items.map((item) => ({
+      id: item.id,
+      list_id: item.listId,
+      grocery_name: item.groceryName,
+      quantity: item.quantity,
+      checked: item.checked,
+    })),
+  });
 });
 
-app.post('/shopping-lists/:id/complete', authMiddleware, (req, res) => {
+app.post('/shopping-lists/:id/complete', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const list = shoppingLists.find((l) => l.id === id && l.user_id === req.user.id);
+  const list = await prisma.shoppingList.findFirst({
+    where: { id, userId: req.user.id },
+    include: { items: true },
+  });
   if (!list) return res.status(404).json({ detail: 'Not found' });
-  list.completed = true;
-  res.json(list);
+  const updated = await prisma.shoppingList.update({
+    where: { id },
+    data: { completed: true },
+    include: { items: true },
+  });
+  res.json({
+    id: updated.id,
+    user_id: updated.userId,
+    name: updated.name,
+    created_at: updated.createdAt,
+    completed: updated.completed,
+    items: updated.items.map((item) => ({
+      id: item.id,
+      list_id: item.listId,
+      grocery_name: item.groceryName,
+      quantity: item.quantity,
+      checked: item.checked,
+    })),
+  });
 });
 
-app.put('/shopping-lists/:listId/items/:itemId/toggle', authMiddleware, (req, res) => {
+app.put('/shopping-lists/:listId/items/:itemId/toggle', authMiddleware, async (req, res) => {
   const listId = Number(req.params.listId);
   const itemId = Number(req.params.itemId);
-  const list = shoppingLists.find((l) => l.id === listId && l.user_id === req.user.id);
+  const list = await prisma.shoppingList.findFirst({
+    where: { id: listId, userId: req.user.id },
+  });
   if (!list) return res.status(404).json({ detail: 'List not found' });
-  const item = list.items.find((i) => i.id === itemId);
+  const item = await prisma.shoppingListItem.findFirst({
+    where: { id: itemId, listId },
+  });
   if (!item) return res.status(404).json({ detail: 'Item not found' });
-  item.checked = !item.checked;
-  res.json(list);
+  await prisma.shoppingListItem.update({
+    where: { id: itemId },
+    data: { checked: !item.checked },
+  });
+  const updatedList = await prisma.shoppingList.findUnique({
+    where: { id: listId },
+    include: { items: true },
+  });
+  res.json({
+    id: updatedList.id,
+    user_id: updatedList.userId,
+    name: updatedList.name,
+    created_at: updatedList.createdAt,
+    completed: updatedList.completed,
+    items: updatedList.items.map((i) => ({
+      id: i.id,
+      list_id: i.listId,
+      grocery_name: i.groceryName,
+      quantity: i.quantity,
+      checked: i.checked,
+    })),
+  });
 });
 
-app.get('/shopping-lists/:id', authMiddleware, (req, res) => {
+app.get('/shopping-lists/:id', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const list = shoppingLists.find((l) => l.id === id && l.user_id === req.user.id);
+  const list = await prisma.shoppingList.findFirst({
+    where: { id, userId: req.user.id },
+    include: { items: true },
+  });
   if (!list) return res.status(404).json({ detail: 'Not found' });
-  res.json(list);
+  res.json({
+    id: list.id,
+    user_id: list.userId,
+    name: list.name,
+    created_at: list.createdAt,
+    completed: list.completed,
+    items: list.items.map((item) => ({
+      id: item.id,
+      list_id: item.listId,
+      grocery_name: item.groceryName,
+      quantity: item.quantity,
+      checked: item.checked,
+    })),
+  });
 });
 
 // Helper: Text mit Gemini übersetzen
@@ -371,13 +829,13 @@ async function analyzeImageWithGemini(imageBuffer, mimeType) {
     try {
       // Verwende gemini-2.5-flash (aktuellste Version)
       model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-      console.log('✅ Verwende Modell: gemini-2.5-flash');
     } catch (error) {
-      console.warn('⚠️ gemini-2.5-flash nicht verfügbar, verwende gemini-2.5-pro');
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('⚠️ gemini-2.5-flash nicht verfügbar, verwende gemini-2.5-pro');
+        }
       // Fallback auf gemini-2.5-pro
       try {
         model = genAI.getGenerativeModel({ model: 'gemini-2.5-pro' });
-        console.log('✅ Verwende Modell: gemini-2.5-pro');
       } catch (error2) {
         console.error('❌ Weder gemini-2.5-flash noch gemini-2.5-pro verfügbar:', error2.message);
         throw new Error('Kein verfügbares Gemini 2.5 Modell gefunden');
@@ -408,7 +866,6 @@ WICHTIG:
     const response = await result.response;
     const text = response.text();
     
-    console.log('📝 Gemini Rohtext-Antwort:', text);
     
     // Extrahiere Lebensmittel aus der Antwort
     const foods = text
@@ -420,10 +877,11 @@ WICHTIG:
       .map(f => f.replace(/^[-•]\s*/, '')) // Entferne Bullet Points
       .filter(f => f.length > 0);
 
-    console.log('🔍 Extrahierte Lebensmittel:', foods);
 
     if (foods.length === 0) {
-      console.warn('⚠️ Keine Lebensmittel extrahiert, verwende Fallback');
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('⚠️ Keine Lebensmittel extrahiert, verwende Fallback');
+      }
       return ['Milk', 'Eggs', 'Tomatoes']; // Fallback
     }
 
@@ -436,12 +894,13 @@ WICHTIG:
 
 // Helper: Spoonacular Recipe API für Rezeptvorschläge (mit KI-Lernen basierend auf gekochten Rezepten)
 async function getRecipeSuggestions(ingredients, userId) {
-  // Hole gekochte Rezepte des Users für personalisierte Vorschläge
-  const userCookedRecipes = cookedRecipes.filter((r) => r.user_id === userId);
-  const cookedRecipeIds = userCookedRecipes.map((r) => r.recipe_id);
+  const userCookedRecipes = await prisma.cookedRecipe.findMany({
+    where: { userId },
+  });
+  const cookedRecipeIds = userCookedRecipes.map((r) => r.recipeId);
   const preferredRecipeTitles = userCookedRecipes
-    .filter((r) => r.rating && r.rating >= 4) // Nur gut bewertete Rezepte
-    .map((r) => r.recipe_title.toLowerCase());
+    .filter((r) => r.rating && r.rating >= 4)
+    .map((r) => r.recipeTitle.toLowerCase());
   
   if (!SPOONACULAR_API_KEY) {
     // Fallback: Stub-Daten wenn API Key fehlt
@@ -535,13 +994,12 @@ async function getRecipeSuggestions(ingredients, userId) {
           const recipeData = {
             id: recipe.id,
             title: recipe.title || detail.title || 'Unnamed Recipe',
-            image: recipe.image || detail.image || 'https://via.placeholder.com/400',
+            image: recipe.image || detail.image || null,
             used_ingredients: usedIng,
             missed_ingredients: missedIng,
             likes: detail.aggregateLikes || 0,
             sourceUrl: detail.sourceUrl || '',
           };
-          console.log('🍳 Rezept-Daten vorbereitet:', recipeData.id, '-', recipeData.title);
           return recipeData;
         } catch (err) {
           console.error(`Fehler beim Laden von Rezept ${recipe.id}:`, err.message);
@@ -549,7 +1007,7 @@ async function getRecipeSuggestions(ingredients, userId) {
           return {
             id: recipe.id,
             title: recipe.title,
-            image: recipe.image || 'https://via.placeholder.com/400',
+            image: recipe.image || null,
             used_ingredients: (Array.isArray(recipe.usedIngredients) ? recipe.usedIngredients : []).map(ing => ({
               name: ing.name,
               amount: ing.amount || 1,
@@ -566,8 +1024,6 @@ async function getRecipeSuggestions(ingredients, userId) {
       })
     );
 
-    console.log('🍳 Alle Rezept-Details vorbereitet:', recipeDetails.length);
-    console.log('🍳 Rezept-IDs:', recipeDetails.map(r => r.id));
     return recipeDetails;
   } catch (error) {
     console.error('Spoonacular API Fehler:', error.message);
@@ -583,7 +1039,6 @@ async function getRecipeSuggestions(ingredients, userId) {
         sourceUrl: '',
       },
     ];
-    console.log('🍳 Fallback-Rezepte zurückgegeben:', fallbackRecipes.length);
     return fallbackRecipes;
   }
 }
@@ -595,55 +1050,42 @@ app.post('/photo-recognition/analyze-fridge', authMiddleware, upload.single('fil
       return res.status(400).json({ detail: 'No file uploaded' });
     }
 
-    console.log('📸 Foto-Analyse gestartet für User:', req.user.id);
-    console.log('📦 Datei-Info:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      hasBuffer: !!req.file.buffer
-    });
+    const llmQuotaOk = await consumeQuotaOrRespond(res, req.user.id, 'LLM', LLM_TOKEN_COST_ANALYZE);
+    if (!llmQuotaOk) return;
+    const recipeQuotaOk = await consumeQuotaOrRespond(res, req.user.id, 'RECIPE', RECIPE_CALL_COST_ANALYZE);
+    if (!recipeQuotaOk) return;
 
     let recognizedFoods = [];
 
     // Schritt 1: Bildanalyse mit Gemini
-    console.log('🔑 Gemini API Key Status:', {
-      hasKey: !!GEMINI_API_KEY,
-      keyLength: GEMINI_API_KEY ? GEMINI_API_KEY.length : 0,
-      genAIInitialized: !!genAI
-    });
-
     if (genAI && GEMINI_API_KEY) {
       try {
-        console.log('🚀 Rufe Gemini API auf...');
-        console.log('⏱️  Startzeit:', new Date().toISOString());
         recognizedFoods = await analyzeImageWithGemini(req.file.buffer, req.file.mimetype);
-        console.log('⏱️  Endzeit:', new Date().toISOString());
-        console.log('✅ Gemini erkannte Lebensmittel:', recognizedFoods);
-        console.log('📊 Anzahl erkannte Lebensmittel:', recognizedFoods.length);
         
         if (!recognizedFoods || recognizedFoods.length === 0) {
-          console.warn('⚠️ Gemini hat keine Lebensmittel zurückgegeben, verwende Fallback');
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('⚠️ Gemini hat keine Lebensmittel zurückgegeben, verwende Fallback');
+          }
           recognizedFoods = ['Milk', 'Eggs', 'Tomatoes', 'Cheese', 'Butter'];
         }
       } catch (error) {
         console.error('❌ Gemini Fehler, verwende Fallback:', error.message);
-        console.error('❌ Gemini Fehler Stack:', error.stack);
-        console.error('❌ Gemini Fehler Details:', JSON.stringify(error, null, 2));
         // Fallback auf Stub-Daten
         recognizedFoods = ['Milk', 'Eggs', 'Tomatoes', 'Cheese', 'Butter'];
-        console.log('📦 Fallback-Daten verwendet:', recognizedFoods);
       }
     } else {
       // Fallback wenn kein API Key gesetzt
-      console.warn('⚠️ Gemini API Key fehlt oder genAI nicht initialisiert!');
-      console.warn('⚠️ genAI ist:', genAI ? 'initialisiert' : 'NULL');
-      console.warn('⚠️ GEMINI_API_KEY ist:', GEMINI_API_KEY ? 'gesetzt (' + GEMINI_API_KEY.substring(0, 10) + '...)' : 'NICHT gesetzt');
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('⚠️ Gemini API Key fehlt, verwende Stub-Daten');
+      }
       recognizedFoods = ['Milk', 'Eggs', 'Tomatoes', 'Cheese', 'Butter'];
-      console.log('📦 Stub-Daten verwendet:', recognizedFoods);
     }
 
     // Schritt 2: Hole User's aktuelles Inventar für bessere Rezeptvorschläge
-    const userGroceries = groceries.filter((g) => g.user_id === req.user.id);
+    const userGroceries = await prisma.grocery.findMany({
+      where: { userId: req.user.id },
+      select: { name: true },
+    });
     const availableIngredients = [
       ...recognizedFoods,
       ...userGroceries.map((g) => g.name),
@@ -652,47 +1094,40 @@ app.post('/photo-recognition/analyze-fridge', authMiddleware, upload.single('fil
     console.log('🥘 Verfügbare Zutaten für Rezeptvorschläge:', availableIngredients);
 
     // Schritt 3: Hole Rezeptvorschläge von Spoonacular (mit KI-Lernen basierend auf gekochten Rezepten)
-    console.log('🍳 Hole Rezeptvorschläge von Spoonacular...');
     const recipeSuggestions = await getRecipeSuggestions(availableIngredients, req.user.id);
     console.log('✅ Rezeptvorschläge erhalten:', recipeSuggestions.length, 'Rezepte');
 
     // Schritt 4: Speichere Rezepte automatisch für die Rezepte-Seite
-    console.log('💾 Prüfe Rezepte zum Speichern für User', req.user.id);
-    console.log('💾 Rezeptvorschläge erhalten:', recipeSuggestions.length);
     const savedRecipeIds = [];
     for (const recipe of recipeSuggestions) {
       if (!recipe || !recipe.id) {
+        if (process.env.NODE_ENV !== 'production') {
         console.warn('⚠️ Ungültiges Rezept übersprungen:', recipe);
+      }
         continue;
       }
       
-      // Prüfe ob Rezept bereits gespeichert ist
-      const existing = savedRecipes.find(
-        (r) => r.user_id === req.user.id && r.recipe_id === recipe.id
-      );
+      const existing = await prisma.savedRecipe.findFirst({
+        where: { userId: req.user.id, recipeId: recipe.id },
+      });
       
       if (!existing) {
-        const saved = {
-          id: nextSavedRecipeId++,
-          user_id: req.user.id,
-          recipe_id: recipe.id,
-          title: recipe.title || 'Unnamed Recipe',
-          image: recipe.image || 'https://via.placeholder.com/400',
-          used_ingredients: recipe.used_ingredients || [],
-          missed_ingredients: recipe.missed_ingredients || [],
-          likes: recipe.likes || 0,
-          sourceUrl: recipe.sourceUrl || '',
-          saved_at: new Date().toISOString(),
-        };
-        savedRecipes.push(saved);
+        const saved = await prisma.savedRecipe.create({
+          data: {
+            userId: req.user.id,
+            recipeId: recipe.id,
+            title: recipe.title || 'Unnamed Recipe',
+            image: recipe.image || null,
+            usedIngredients: recipe.used_ingredients || [],
+            missedIngredients: recipe.missed_ingredients || [],
+            likes: recipe.likes || 0,
+            sourceUrl: recipe.sourceUrl || '',
+          },
+        });
         savedRecipeIds.push(saved.id);
-        console.log('✅ Rezept gespeichert:', saved.id, '-', saved.title);
-      } else {
-        console.log('ℹ️ Rezept bereits vorhanden:', recipe.id, '-', recipe.title);
       }
     }
-    console.log('💾 Gesamt gespeichert:', savedRecipeIds.length, 'neue Rezepte');
-    console.log('💾 Gesamt gespeicherte Rezepte für User:', savedRecipes.filter(r => r.user_id === req.user.id).length);
+    const totalRecipes = await prisma.savedRecipe.count({ where: { userId: req.user.id } });
 
     // Stelle sicher, dass immer Arrays zurückgegeben werden (auch wenn leer)
     const response = {
@@ -701,11 +1136,6 @@ app.post('/photo-recognition/analyze-fridge', authMiddleware, upload.single('fil
       message: GEMINI_API_KEY ? 'Analyse erfolgreich (Gemini + Spoonacular)' : 'Analyse erfolgreich (Stub-Daten)',
     };
 
-    console.log('📤 Sende Antwort:', {
-      recognized_foods_count: response.recognized_foods.length,
-      recipe_suggestions_count: response.recipe_suggestions.length,
-      message: response.message
-    });
 
     res.json(response);
   } catch (error) {
@@ -714,24 +1144,33 @@ app.post('/photo-recognition/analyze-fridge', authMiddleware, upload.single('fil
   }
 });
 
-app.post('/photo-recognition/add-recognized-groceries', authMiddleware, (req, res) => {
+app.post('/photo-recognition/add-recognized-groceries', authMiddleware, async (req, res) => {
   const { food_items } = req.body || {};
   if (!Array.isArray(food_items)) return res.status(400).json({ detail: 'food_items must be array' });
-  const created = food_items.map((name) => {
-    const item = {
-      id: nextGroceryId++,
-      user_id: req.user.id,
-      name: String(name),
-      quantity: 1,
-      unit: 'pcs',
-      category: 'Other',
-      added_date: new Date().toISOString(),
-      low_stock_threshold: 0,
-    };
-    groceries.push(item);
-    return item;
-  });
-  res.status(201).json({ created });
+  const createdItems = [];
+  for (const name of food_items) {
+    const item = await prisma.grocery.create({
+      data: {
+        userId: req.user.id,
+        name: String(name),
+        quantity: 1,
+        unit: 'pcs',
+        category: 'Other',
+        lowStockThreshold: 0,
+      },
+    });
+    createdItems.push({
+      id: item.id,
+      user_id: item.userId,
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      category: item.category,
+      added_date: item.addedAt,
+      low_stock_threshold: item.lowStockThreshold,
+    });
+  }
+  res.status(201).json({ created: createdItems });
 });
 
 // Rezept-Details von Spoonacular
@@ -747,7 +1186,7 @@ app.get('/photo-recognition/recipe-details/:recipeId', authMiddleware, async (re
         ingredients: ['Sample Ingredient 1', 'Sample Ingredient 2'],
         instructions: 'Mix ingredients and cook.',
         servings: 2,
-        image: 'https://via.placeholder.com/400',
+        image: null,
         sourceUrl: '',
       });
     }
@@ -792,75 +1231,99 @@ app.get('/photo-recognition/recipe-details/:recipeId', authMiddleware, async (re
 });
 
 // Gekochte Rezepte speichern (für KI-Lernen)
-app.post('/photo-recognition/cooked-recipe', authMiddleware, (req, res) => {
+app.post('/photo-recognition/cooked-recipe', authMiddleware, async (req, res) => {
   const { recipe_id, recipe_title, rating } = req.body || {};
   if (!recipe_id || !recipe_title) {
     return res.status(400).json({ detail: 'recipe_id und recipe_title erforderlich' });
   }
 
-  const cooked = {
-    id: nextCookedRecipeId++,
-    user_id: req.user.id,
-    recipe_id: Number(recipe_id),
-    recipe_title: String(recipe_title),
-    cooked_at: new Date().toISOString(),
-    rating: rating != null ? Number(rating) : undefined,
-  };
-  cookedRecipes.push(cooked);
-  res.status(201).json(cooked);
+  const cooked = await prisma.cookedRecipe.create({
+    data: {
+      userId: req.user.id,
+      recipeId: Number(recipe_id),
+      recipeTitle: String(recipe_title),
+      rating: rating != null ? Number(rating) : null,
+    },
+  });
+  res.status(201).json({
+    id: cooked.id,
+    user_id: cooked.userId,
+    recipe_id: cooked.recipeId,
+    recipe_title: cooked.recipeTitle,
+    cooked_at: cooked.cookedAt,
+    rating: cooked.rating,
+  });
 });
 
 // Gekochte Rezepte abrufen (für zukünftige personalisierte Vorschläge)
-app.get('/photo-recognition/cooked-recipes', authMiddleware, (req, res) => {
-  const userCooked = cookedRecipes.filter((r) => r.user_id === req.user.id);
-  res.json(userCooked);
+app.get('/photo-recognition/cooked-recipes', authMiddleware, async (req, res) => {
+  const userCooked = await prisma.cookedRecipe.findMany({
+    where: { userId: req.user.id },
+    orderBy: { cookedAt: 'desc' },
+  });
+  res.json(
+    userCooked.map((r) => ({
+      id: r.id,
+      user_id: r.userId,
+      recipe_id: r.recipeId,
+      recipe_title: r.recipeTitle,
+      cooked_at: r.cookedAt,
+      rating: r.rating,
+    }))
+  );
 });
 
 // Gespeicherte Rezepte abrufen (für Rezepte-Seite)
-app.get('/recipes', authMiddleware, (req, res) => {
-  console.log('📖 Hole gespeicherte Rezepte für User:', req.user.id);
-  console.log('📖 Gesamt gespeicherte Rezepte:', savedRecipes.length);
+app.get('/recipes', authMiddleware, async (req, res) => {
   
-  const userRecipes = savedRecipes
-    .filter((r) => r.user_id === req.user.id)
-    .sort((a, b) => new Date(b.saved_at) - new Date(a.saved_at)); // Neueste zuerst
+  const [userRecipes, cookedForUser] = await Promise.all([
+    prisma.savedRecipe.findMany({
+      where: { userId: req.user.id },
+      orderBy: { savedAt: 'desc' },
+    }),
+    prisma.cookedRecipe.findMany({
+      where: { userId: req.user.id },
+    }),
+  ]);
   
-  console.log('📖 Rezepte für User gefunden:', userRecipes.length);
-  
-  // Füge "gekocht" Status hinzu
-  const userCookedIds = cookedRecipes
-    .filter((r) => r.user_id === req.user.id)
-    .map((r) => r.recipe_id);
-  
+  const userCookedIds = new Set(cookedForUser.map((r) => r.recipeId));
   const recipesWithStatus = userRecipes.map((recipe) => ({
-    ...recipe,
-    is_cooked: userCookedIds.includes(recipe.recipe_id),
-    cooked_info: cookedRecipes.find(
-      (r) => r.user_id === req.user.id && r.recipe_id === recipe.recipe_id
-    ),
+    id: recipe.id,
+    user_id: recipe.userId,
+    recipe_id: recipe.recipeId,
+    title: recipe.title,
+    image: recipe.image,
+    used_ingredients: recipe.usedIngredients || [],
+    missed_ingredients: recipe.missedIngredients || [],
+    likes: recipe.likes,
+    sourceUrl: recipe.sourceUrl,
+    saved_at: recipe.savedAt,
+    ready_in_minutes: recipe.readyInMinutes,
+    servings: recipe.servings,
+    instructions: recipe.instructions,
+    is_custom: recipe.isCustom,
+    is_cooked: userCookedIds.has(recipe.recipeId),
+    cooked_info: cookedForUser.find((r) => r.recipeId === recipe.recipeId) || null,
   }));
   
-  console.log('📖 Sende', recipesWithStatus.length, 'Rezepte');
   res.json(recipesWithStatus);
 });
 
 // Einzelnes Rezept löschen
-app.delete('/recipes/:id', authMiddleware, (req, res) => {
+app.delete('/recipes/:id', authMiddleware, async (req, res) => {
   const id = Number(req.params.id);
-  const index = savedRecipes.findIndex(
-    (r) => r.id === id && r.user_id === req.user.id
-  );
-  
-  if (index === -1) {
+  const recipe = await prisma.savedRecipe.findFirst({
+    where: { id, userId: req.user.id },
+  });
+  if (!recipe) {
     return res.status(404).json({ detail: 'Rezept nicht gefunden' });
   }
-  
-  savedRecipes.splice(index, 1);
+  await prisma.savedRecipe.delete({ where: { id } });
   res.json({ success: true });
 });
 
 // Eigenes Rezept hinzufügen
-app.post('/recipes', authMiddleware, (req, res) => {
+app.post('/recipes', authMiddleware, async (req, res) => {
   try {
     const { title, image, ready_in_minutes, servings, ingredients, instructions, is_custom } = req.body || {};
     
@@ -876,35 +1339,47 @@ app.post('/recipes', authMiddleware, (req, res) => {
       return res.status(400).json({ detail: 'Anleitung erforderlich' });
     }
     
-    // Generiere eine eindeutige recipe_id für eigene Rezepte (negative Zahlen)
     const customRecipeId = -Date.now();
     
-    const newRecipe = {
-      id: nextSavedRecipeId++,
-      user_id: req.user.id,
-      recipe_id: customRecipeId,
-      title: title.trim(),
-      image: image || '/smart-pantry-favicon.png',
-      ready_in_minutes: ready_in_minutes || 30,
-      servings: servings || 4,
-      used_ingredients: ingredients.map((ing, idx) => ({
-        id: idx + 1,
-        name: ing.name,
-        amount: ing.amount || 1,
-        unit: ing.unit || ''
-      })),
-      missed_ingredients: [],
-      instructions: instructions.trim(),
-      likes: 0,
-      sourceUrl: '',
-      saved_at: new Date().toISOString(),
-      is_custom: true
-    };
+    const saved = await prisma.savedRecipe.create({
+      data: {
+        userId: req.user.id,
+        recipeId: customRecipeId,
+        title: title.trim(),
+        image: image || '/smart-pantry-favicon.png',
+        readyInMinutes: ready_in_minutes || 30,
+        servings: servings || 4,
+        usedIngredients: ingredients.map((ing, idx) => ({
+          id: idx + 1,
+          name: ing.name,
+          amount: ing.amount || 1,
+          unit: ing.unit || '',
+        })),
+        missedIngredients: [],
+        instructions: instructions.trim(),
+        likes: 0,
+        sourceUrl: '',
+        isCustom: is_custom ?? true,
+        ingredientsJson: ingredients,
+      },
+    });
     
-    savedRecipes.push(newRecipe);
-    
-    console.log('✅ Eigenes Rezept gespeichert:', newRecipe.title);
-    res.status(201).json(newRecipe);
+    res.status(201).json({
+      id: saved.id,
+      user_id: saved.userId,
+      recipe_id: saved.recipeId,
+      title: saved.title,
+      image: saved.image,
+      ready_in_minutes: saved.readyInMinutes,
+      servings: saved.servings,
+      used_ingredients: saved.usedIngredients || [],
+      missed_ingredients: saved.missedIngredients || [],
+      instructions: saved.instructions,
+      likes: saved.likes,
+      sourceUrl: saved.sourceUrl,
+      saved_at: saved.savedAt,
+      is_custom: saved.isCustom,
+    });
   } catch (error) {
     console.error('❌ Fehler beim Speichern des Rezepts:', error);
     res.status(500).json({ detail: 'Fehler beim Speichern des Rezepts' });
@@ -930,10 +1405,11 @@ app.post('/photo-recognition/translate-instructions', authMiddleware, async (req
       return res.json({ translated_text: text }); // Original zurückgeben
     }
 
+    const quotaOk = await consumeQuotaOrRespond(res, req.user.id, 'LLM', LLM_TOKEN_COST_TRANSLATION);
+    if (!quotaOk) return;
+
     try {
-      console.log('🌍 Übersetze Rezept-Anleitung ins', targetLanguage);
       const translated = await translateTextWithGemini(text, targetLanguage);
-      console.log('✅ Übersetzung erfolgreich');
       res.json({ translated_text: translated });
     } catch (error) {
       console.error('❌ Übersetzungsfehler:', error.message);
@@ -965,12 +1441,14 @@ app.post('/photo-recognition/translate-title', authMiddleware, async (req, res) 
       return res.json({ translated_title: title }); // Original zurückgeben
     }
 
+    const quotaOk = await consumeQuotaOrRespond(res, req.user.id, 'LLM', LLM_TOKEN_COST_TRANSLATION);
+    if (!quotaOk) return;
+
     try {
       console.log('🌍 Übersetze Rezept-Titel ins', targetLanguage);
       const translated = await translateTextWithGemini(title, targetLanguage);
       // Clean up: Entferne mögliche zusätzliche Text aus der Antwort
       const cleanTitle = translated.split('\n')[0].trim().split('.')[0].trim();
-      console.log('✅ Titel-Übersetzung erfolgreich');
       res.json({ translated_title: cleanTitle || translated });
     } catch (error) {
       console.error('❌ Titel-Übersetzungsfehler:', error.message);
@@ -1003,17 +1481,21 @@ app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req,
     }
 
     try {
-      console.log('🌍 Übersetze', ingredients.length, 'Zutaten ins', targetLanguage);
       
       // Erstelle eine kommagetrennte Liste der Zutaten
       const ingredientNames = ingredients.map(ing => typeof ing === 'string' ? ing : ing.name || ing);
+      
+      const translationCost =
+        LLM_TOKEN_COST_TRANSLATION * Math.max(1, ingredientNames.length);
+      const quotaOk = await consumeQuotaOrRespond(res, req.user.id, 'LLM', translationCost);
+      if (!quotaOk) return;
       
       // Übersetze jede Zutat einzeln für bessere Qualität
       const translatedNames = [];
       for (const ingName of ingredientNames) {
         try {
           const translatedText = await translateTextWithGemini(
-            `Übersetze nur diesen einen Lebensmittel-Zutaten-Namen ins Deutsche (ohne Mengenangaben, nur der Zutaten-Name): ${ingName}`,
+            `Übersetze nur diesen einen Lebensmittel-Zutaten-Namen ins ${targetLanguage === 'de' ? 'Deutsche' : 'Englische'} (ohne Mengenangaben, nur der Zutaten-Name): ${ingName}`,
             targetLanguage
           );
           // Clean up: Entferne mögliche zusätzliche Text aus der Antwort
@@ -1039,7 +1521,6 @@ app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req,
         };
       });
       
-      console.log('✅ Zutaten-Übersetzung erfolgreich');
       res.json({ translated_ingredients: translatedIngredients });
     } catch (error) {
       console.error('❌ Zutaten-Übersetzungsfehler:', error.message);
@@ -1055,42 +1536,65 @@ app.post('/photo-recognition/translate-ingredients', authMiddleware, async (req,
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 // Optional Auth Middleware für Chat/Issue Endpoints
-function optionalAuthMiddleware(req, res, next) {
-  if (AUTH_DISABLED) {
-    const demoUser = ensureDemoUser();
-    req.user = { id: demoUser.id, email: demoUser.email };
-    req.isAuthenticated = true;
-    return next();
-  }
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (token) {
-    try {
-      const payload = jwt.verify(token, JWT_SECRET);
-      req.user = { id: payload.sub, email: payload.email };
+async function optionalAuthMiddleware(req, res, next) {
+  try {
+    if (AUTH_DISABLED) {
+      const demoUser = await ensureDemoUser();
+      req.user = { id: demoUser.id, email: demoUser.email, role: demoUser.role };
       req.isAuthenticated = true;
-    } catch (e) {
-      req.isAuthenticated = false;
+      return next();
     }
-  } else {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (token) {
+      try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+        if (user) {
+          req.user = { id: user.id, email: user.email, role: user.role };
+          req.isAuthenticated = true;
+          return next();
+        }
+      } catch (error) {
+        console.warn('Optional auth failed:', error.message);
+      }
+    }
     req.isAuthenticated = false;
+    next();
+  } catch (error) {
+    console.error('Optional auth error:', error);
+    req.isAuthenticated = false;
+    next();
   }
-  next();
 }
 
 // Chat Endpoints (optional auth)
 app.post('/chat/message', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { message, context, is_authenticated } = req.body || {};
-    const authenticated = req.isAuthenticated || is_authenticated === true;
+    const { message, context } = req.body || {};
+    const authenticated = req.isAuthenticated === true;
     
     if (!message) {
       return res.status(400).json({ detail: 'Nachricht erforderlich' });
     }
 
+    if (!authenticated) {
+      return res.json({
+        response:
+          '🔒 Der Smart Pantry Assistent steht vollumfänglich nur nach dem Login zur Verfügung. Melde dich an, um KI-gestützte Antworten und personalisierte Hilfe zu erhalten.',
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({ detail: 'Not authenticated' });
+    }
+
     if (!genAI || !GEMINI_API_KEY) {
       return res.status(503).json({ detail: 'Chat-Service nicht verfügbar' });
     }
+
+    const quotaOk = await consumeQuotaOrRespond(res, req.user.id, 'LLM', LLM_TOKEN_COST_CHAT);
+    if (!quotaOk) return;
 
     try {
       let model;
@@ -1152,8 +1656,8 @@ Antworte hilfreich, projektbezogen und motiviere zur Anmeldung:`;
 // GitHub Issue erstellen (optional auth)
 app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
   try {
-    const { title, body, labels = [], is_authenticated } = req.body || {};
-    const authenticated = req.isAuthenticated || is_authenticated === true;
+    const { title, body, labels = [] } = req.body || {};
+    const authenticated = req.isAuthenticated === true;
     
     if (!title || !body) {
       return res.status(400).json({ detail: 'Title und Body erforderlich' });
@@ -1172,20 +1676,12 @@ app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
     if (!GITHUB_TOKEN) {
       console.warn('⚠️ GITHUB_TOKEN nicht gesetzt, Issue kann nicht erstellt werden');
       // Erstelle Issue-Template URL mit vorausgefüllten Daten
-      try {
-        const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-        return res.status(503).json({ 
-          detail: 'GitHub Integration nicht konfiguriert',
-          fallback_url: issueTemplateUrl,
-          message: 'Bitte erstelle das Issue manuell über den bereitgestellten Link'
-        });
-      } catch (urlError) {
-        console.error('Fehler beim Erstellen der Issue-Template URL:', urlError);
-        return res.status(503).json({ 
-          detail: 'GitHub Integration nicht konfiguriert',
-          fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
-        });
-      }
+      const issueTemplateUrl = createIssueTemplateUrl(title, body);
+      return res.status(503).json({ 
+        detail: 'GitHub Integration nicht konfiguriert',
+        fallback_url: issueTemplateUrl,
+        message: 'Bitte erstelle das Issue manuell über den bereitgestellten Link'
+      });
     }
 
     try {
@@ -1216,7 +1712,6 @@ app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
         }
       );
 
-      console.log('✅ GitHub Issue erstellt:', githubResponse.data.html_url);
       res.json({
         success: true,
         data: {
@@ -1229,7 +1724,9 @@ app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
       
       // Wenn der Fehler wegen nicht existierender Labels ist, versuche es ohne Labels
       if (error.response?.status === 422 && error.response?.data?.errors?.some((e) => e.resource === 'Label')) {
-        console.log('⚠️ Label-Fehler erkannt, versuche ohne Labels...');
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('⚠️ Label-Fehler erkannt, versuche ohne Labels...');
+        }
         try {
           const githubResponse = await axios.post(
             'https://api.github.com/repos/Jacha93/smart-pantry/issues',
@@ -1245,7 +1742,6 @@ app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
             }
           );
 
-          console.log('✅ GitHub Issue erstellt (ohne Labels):', githubResponse.data.html_url);
           return res.json({
             success: true,
             data: {
@@ -1256,7 +1752,7 @@ app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
         } catch (retryError) {
           console.error('❌ Retry ohne Labels fehlgeschlagen:', retryError.response?.data || retryError.message);
           // Fallback zu Issue-Template URL
-          const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+          const issueTemplateUrl = createIssueTemplateUrl(title, body);
           return res.status(500).json({ 
             detail: 'Fehler beim Erstellen des GitHub Issues',
             fallback_url: issueTemplateUrl,
@@ -1266,39 +1762,23 @@ app.post('/chat/create-issue', optionalAuthMiddleware, async (req, res) => {
       }
       
       // Erstelle Issue-Template URL mit vorausgefüllten Daten als Fallback
-      try {
-        const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-        res.status(500).json({ 
-          detail: 'Fehler beim Erstellen des GitHub Issues',
-          fallback_url: issueTemplateUrl,
-          github_error: error.response?.data?.message || error.message
-        });
-      } catch (urlError) {
-        console.error('Fehler beim Erstellen der Issue-Template URL:', urlError);
-        res.status(500).json({ 
-          detail: 'Fehler beim Erstellen des GitHub Issues',
-          fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new',
-          github_error: error.response?.data?.message || error.message
-        });
-      }
+      const issueTemplateUrl = createIssueTemplateUrl(title, body);
+      res.status(500).json({ 
+        detail: 'Fehler beim Erstellen des GitHub Issues',
+        fallback_url: issueTemplateUrl,
+        github_error: error.response?.data?.message || error.message
+      });
     }
   } catch (error) {
     console.error('Issue-Endpoint Fehler:', error);
     // Versuche auch hier eine Fallback-URL zu erstellen
-    try {
-      const title = req.body?.title || 'Issue';
-      const body = req.body?.body || '';
-      const issueTemplateUrl = `https://github.com/Jacha93/smart-pantry/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-      res.status(500).json({ 
-        detail: 'Fehler beim Issue-Endpoint',
-        fallback_url: issueTemplateUrl
-      });
-    } catch (urlError) {
-      res.status(500).json({ 
-        detail: 'Fehler beim Issue-Endpoint',
-        fallback_url: 'https://github.com/Jacha93/smart-pantry/issues/new'
-      });
-    }
+    const title = req.body?.title || 'Issue';
+    const body = req.body?.body || '';
+    const issueTemplateUrl = createIssueTemplateUrl(title, body);
+    res.status(500).json({ 
+      detail: 'Fehler beim Issue-Endpoint',
+      fallback_url: issueTemplateUrl
+    });
   }
 });
 
@@ -1331,21 +1811,17 @@ try {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+async function shutdown(signal, exitCode = 0) {
+  console.log(`${signal} signal received: closing HTTP server`);
+  await prisma.$disconnect();
   server.close(() => {
     console.log('HTTP server closed');
-    process.exit(0);
+    process.exit(exitCode);
   });
-});
+}
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Unhandled Promise Rejections abfangen
 process.on('unhandledRejection', (reason, promise) => {
@@ -1355,9 +1831,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
-  server.close(() => {
-    process.exit(1);
-  });
+  shutdown('UNCAUGHT_EXCEPTION', 1);
 });
 
 
