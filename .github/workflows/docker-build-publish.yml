@@ -6,6 +6,8 @@ on:
       - main
       - dev
       - agent
+    tags:
+      - 'v*'  # Nur Version-Tags, nicht alle Tags
   pull_request:
     branches: 
       - main

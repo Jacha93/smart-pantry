@@ -83,7 +83,18 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      {limitError && (
+        <div className="mb-4">
+          <UpgradePrompt
+            limitType={limitError.limitType}
+            currentValue={limitError.current}
+            limit={limitError.limit}
+            onDismiss={() => setLimitError(null)}
+          />
+        </div>
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
