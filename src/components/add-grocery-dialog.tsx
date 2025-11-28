@@ -19,7 +19,6 @@ import { groceriesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { UpgradePrompt } from '@/components/upgrade-prompt';
-import { useState } from 'react';
 
 const grocerySchema = z.object({
   name: z.string().min(1, 'Name is required'),
