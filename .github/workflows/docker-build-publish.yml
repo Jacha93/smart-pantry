@@ -60,6 +60,14 @@ jobs:
         run: |
           echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
+      # Version aus package.json lesen (für dev/nightly Tags)
+      - name: Read package version
+        id: package-version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Package Version: $VERSION"
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -76,11 +84,18 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             type=semver,pattern={{major}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             
-            # Andere Branches
+            # Dev Branch Tags (mit Version)
             type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
             type=raw,value=nightly,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=${{ steps.package-version.outputs.version }}-dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=${{ steps.package-version.outputs.version }}-nightly,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=raw,value=${{ steps.package-version.outputs.version }}-nightly-${{ github.sha }},enable=${{ github.ref == 'refs/heads/dev' }}
+            
+            # Agent Branch Tags (mit Version)
             type=raw,value=agent,enable=${{ github.ref == 'refs/heads/agent' }}
             type=raw,value=pre-alpha,enable=${{ github.ref == 'refs/heads/agent' }}
+            type=raw,value=${{ steps.package-version.outputs.version }}-pre-alpha,enable=${{ github.ref == 'refs/heads/agent' }}
+            type=raw,value=${{ steps.package-version.outputs.version }}-pre-alpha-${{ github.sha }},enable=${{ github.ref == 'refs/heads/agent' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

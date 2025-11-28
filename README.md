@@ -113,9 +113,16 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
 
 - **Latest**: `ghcr.io/jacha93/smart-pantry:latest` (nur von main)
 - **Versioned**: `ghcr.io/jacha93/smart-pantry:v0.0.5` (Semantic Versioning via Semantic Release)
-- **Nightly**: `ghcr.io/jacha93/smart-pantry:nightly` (von dev branch)
-- **Dev**: `ghcr.io/jacha93/smart-pantry:dev` (von dev branch)
-- **Pre-Alpha**: `ghcr.io/jacha93/smart-pantry:pre-alpha` (von agent branch)
+- **Dev/Nightly** (von dev branch):
+  - `ghcr.io/jacha93/smart-pantry:dev` (immer aktuellster dev Build)
+  - `ghcr.io/jacha93/smart-pantry:nightly` (immer aktuellster nightly Build)
+  - `ghcr.io/jacha93/smart-pantry:0.0.5-dev` (Version + Suffix)
+  - `ghcr.io/jacha93/smart-pantry:0.0.5-nightly` (Version + Suffix)
+  - `ghcr.io/jacha93/smart-pantry:0.0.5-nightly-<sha>` (Version + Suffix + Git SHA für eindeutige Identifikation)
+- **Pre-Alpha** (von agent branch):
+  - `ghcr.io/jacha93/smart-pantry:pre-alpha` (immer aktuellster agent Build)
+  - `ghcr.io/jacha93/smart-pantry:0.0.5-pre-alpha` (Version + Suffix)
+  - `ghcr.io/jacha93/smart-pantry:0.0.5-pre-alpha-<sha>` (Version + Suffix + Git SHA)
 
 **Versionierung**: Die Version wird automatisch durch [Semantic Release](https://github.com/semantic-release/semantic-release) basierend auf Commit-Messages berechnet:
 - `feat:` → Minor Version (v0.0.5 → v0.1.0)
