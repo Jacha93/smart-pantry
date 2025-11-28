@@ -10,7 +10,10 @@ COPY backend/package*.json ./
 RUN npm ci
 # Copy Prisma schema and generate client
 COPY backend/prisma ./prisma
-RUN npx prisma generate
+# Generate Prisma Client (muss im backend Verzeichnis ausgeführt werden)
+RUN cd /app/backend && npx prisma generate --schema=./prisma/schema.prisma
+# Verify that generated client exists
+RUN ls -la /app/backend/generated/prisma || (echo "ERROR: Prisma Client wurde nicht generiert!" && exit 1)
 # Remove dev dependencies after Prisma generation
 RUN npm prune --production
 
