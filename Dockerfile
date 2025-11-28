@@ -54,8 +54,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install dumb-init and netcat for database health check
+RUN apk add --no-cache dumb-init netcat-openbsd
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -76,10 +76,14 @@ COPY --from=frontend-builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=frontend-builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=frontend-builder --chown=nextjs:nodejs /app/public ./public
 
-# Create startup script that runs both services
+# Create startup script that runs migrations and then both services
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'set -e' >> /app/start.sh && \
-    echo 'echo "Starting backend on port 8000..."' >> /app/start.sh && \
+    echo 'echo "Waiting for database to be ready..."' >> /app/start.sh && \
+    echo 'until nc -z smart-pantry-postgres 5432; do sleep 1; done' >> /app/start.sh && \
+    echo 'echo "Database is ready. Running Prisma migrations..."' >> /app/start.sh && \
+    echo 'cd /app/backend && npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start.sh && \
+    echo 'echo "Migrations completed. Starting backend on port 8000..."' >> /app/start.sh && \
     echo 'cd /app/backend && node server.js &' >> /app/start.sh && \
     echo 'BACKEND_PID=$!' >> /app/start.sh && \
     echo 'echo "Backend started with PID $BACKEND_PID"' >> /app/start.sh && \
