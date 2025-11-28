@@ -22,11 +22,27 @@ model User {
   passwordHash     String
   role             UserRole       @default(USER)
   encryptedProfile String?
-  quotaLlmTokens   Int            @default(15000)
-  quotaRecipeCalls Int            @default(100)
+  quotaLlmTokens   Int            @default(5000)   // Free Tier: ~2-3 Foto-Analysen
+  quotaRecipeCalls Int            @default(6)      // Free Tier: 6x "neue Rezepte" = 18 Rezepte (3 pro Call)
   llmTokensUsed    Int            @default(0)
   recipeCallsUsed  Int            @default(0)
   quotaResetAt     DateTime       @default(now())
+  
+  // Tier-spezifische Limits (Free Tier Defaults)
+  maxCacheRecipeSuggestions Int?  @default(12)  // Free: 12, Basic: 30, Pro: -1 (unbegrenzt)
+  maxChatMessages           Int?  @default(4)    // Free: 4, Basic: 16, Pro: 50
+  maxCacheRecipeSearchViaChat Int? @default(4)  // Free: 4, Basic: 20, Pro: 100
+  maxGroceriesWithExpiry    Int?  @default(10)   // Free: 10, Basic: 100, Pro: -1 (unbegrenzt)
+  maxGroceriesTotal         Int?  @default(20)   // Free: 20, Basic: 250, Pro: -1 (unbegrenzt)
+  notificationsEnabled      Boolean @default(false) // Free: false, Paid: true
+  hasPrioritySupport        Boolean @default(false) // Nur Pro Tier
+  
+  // Tracking für monatliche Limits
+  cacheRecipeSuggestionsUsed Int @default(0)  // Verwendete Cache-Vorschläge (monatlich)
+  chatMessagesUsed          Int @default(0)   // Verwendete Chat-Nachrichten (monatlich)
+  cacheRecipeSearchViaChatUsed Int @default(0) // Verwendete Rezeptsuche via Chat (monatlich)
+  monthlyLimitResetAt      DateTime @default(now()) // Reset-Datum für monatliche Limits
+  
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   refreshTokens    RefreshToken[]

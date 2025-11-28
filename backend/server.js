@@ -197,14 +197,28 @@ async function rotateRefreshToken(oldToken, req) {
 }
 
 async function resetQuotaIfNeeded(user) {
-  if (!user.quotaResetAt || user.quotaResetAt <= new Date()) {
-    return prisma.user.update({
+  const now = new Date();
+  const shouldResetQuota = !user.quotaResetAt || new Date(user.quotaResetAt) <= now;
+  const shouldResetMonthly = !user.monthlyLimitResetAt || new Date(user.monthlyLimitResetAt) <= now;
+  
+  if (shouldResetQuota || shouldResetMonthly) {
+    const updateData = {};
+    if (shouldResetQuota) {
+      updateData.llmTokensUsed = 0;
+      updateData.recipeCallsUsed = 0;
+      updateData.quotaResetAt = new Date(Date.now() + QUOTA_RESET_INTERVAL_MS);
+    }
+    if (shouldResetMonthly) {
+      updateData.cacheRecipeSuggestionsUsed = 0;
+      updateData.chatMessagesUsed = 0;
+      updateData.cacheRecipeSearchViaChatUsed = 0;
+      // Reset auf ersten Tag des nächsten Monats
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      updateData.monthlyLimitResetAt = nextMonth;
+    }
+    return await prisma.user.update({
       where: { id: user.id },
-      data: {
-        llmTokensUsed: 0,
-        recipeCallsUsed: 0,
-        quotaResetAt: new Date(Date.now() + QUOTA_RESET_INTERVAL_MS),
-      },
+      data: updateData,
     });
   }
   return user;
@@ -259,6 +273,110 @@ async function consumeQuotaOrRespond(res, userId, type, amount) {
     }
     throw error;
   }
+}
+
+// Helper: Prüfe Tier-Limits
+async function checkTierLimit(userId, limitType) {
+  if (AUTH_DISABLED) return { allowed: true, limit: -1, used: 0 };
+  
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    const err = new Error('USER_NOT_FOUND');
+    err.status = 404;
+    throw err;
+  }
+
+  let limit, used, count;
+  
+  switch (limitType) {
+    case 'groceries_total':
+      limit = user.maxGroceriesTotal ?? 20; // Free Tier Default
+      count = await prisma.grocery.count({ where: { userId } });
+      return { allowed: limit === -1 || count < limit, limit, used: count };
+    
+    case 'groceries_with_expiry':
+      limit = user.maxGroceriesWithExpiry ?? 10; // Free Tier Default
+      count = await prisma.grocery.count({ where: { userId, expiryDate: { not: null } } });
+      return { allowed: limit === -1 || count < limit, limit, used: count };
+    
+    case 'cache_recipe_suggestions':
+      limit = user.maxCacheRecipeSuggestions ?? 12; // Free Tier Default
+      used = user.cacheRecipeSuggestionsUsed ?? 0;
+      return { allowed: limit === -1 || used < limit, limit, used };
+    
+    case 'chat_messages':
+      limit = user.maxChatMessages ?? 4; // Free Tier Default
+      used = user.chatMessagesUsed ?? 0;
+      return { allowed: limit === -1 || used < limit, limit, used };
+    
+    case 'cache_recipe_search_via_chat':
+      limit = user.maxCacheRecipeSearchViaChat ?? 4; // Free Tier Default
+      used = user.cacheRecipeSearchViaChatUsed ?? 0;
+      return { allowed: limit === -1 || used < limit, limit, used };
+    
+    default:
+      return { allowed: true, limit: -1, used: 0 };
+  }
+}
+
+// Helper: Prüfe ob Benachrichtigungen erlaubt sind
+async function canSendNotifications(userId) {
+  if (AUTH_DISABLED) return true;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  return user?.notificationsEnabled ?? false;
+}
+
+// Helper: Verbrauche monatliches Limit
+async function consumeMonthlyLimit(userId, limitType) {
+  if (AUTH_DISABLED) return true;
+  let user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    const err = new Error('USER_NOT_FOUND');
+    err.status = 404;
+    throw err;
+  }
+  user = await resetQuotaIfNeeded(user);
+  
+  let field;
+  switch (limitType) {
+    case 'cache_recipe_suggestions':
+      field = 'cacheRecipeSuggestionsUsed';
+      break;
+    case 'chat_messages':
+      field = 'chatMessagesUsed';
+      break;
+    case 'cache_recipe_search_via_chat':
+      field = 'cacheRecipeSearchViaChatUsed';
+      break;
+    default:
+      return true;
+  }
+  
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      [field]: { increment: 1 },
+    },
+  });
+  return true;
+}
+
+// Helper: Prüfe und verbrauche monatliches Limit
+async function checkAndConsumeMonthlyLimit(userId, limitType) {
+  const check = await checkTierLimit(userId, limitType);
+  if (!check.allowed) {
+    const err = new Error('MONTHLY_LIMIT_EXCEEDED');
+    err.status = 402;
+    err.detail = limitType === 'cache_recipe_suggestions'
+      ? `Du hast dein Kontingent von ${check.limit} Rezeptvorschlägen aus dem Cache erreicht. Upgrade für mehr Vorschläge!`
+      : limitType === 'chat_messages'
+      ? `Du hast dein Kontingent von ${check.limit} Chat-Nachrichten erreicht. Upgrade für mehr Nachrichten!`
+      : `Du hast dein Kontingent von ${check.limit} Rezeptsuche via Chat erreicht. Upgrade für mehr Suchen!`;
+    err.limit = limitType;
+    throw err;
+  }
+  await consumeMonthlyLimit(userId, limitType);
+  return true;
 }
 
 async function authMiddleware(req, res, next) {
@@ -385,6 +503,45 @@ app.post('/auth/logout', async (req, res) => {
   }
 });
 
+// Endpoint: User Limits abrufen
+app.get('/user/limits', authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+    
+    const totalGroceries = await prisma.grocery.count({ where: { userId: req.user.id } });
+    const groceriesWithExpiry = await prisma.grocery.count({ 
+      where: { userId: req.user.id, expiryDate: { not: null } } 
+    });
+    
+    res.json({
+      quotaLlmTokens: user.quotaLlmTokens,
+      quotaRecipeCalls: user.quotaRecipeCalls,
+      llmTokensUsed: user.llmTokensUsed,
+      recipeCallsUsed: user.recipeCallsUsed,
+      maxCacheRecipeSuggestions: user.maxCacheRecipeSuggestions ?? 12,
+      maxChatMessages: user.maxChatMessages ?? 4,
+      maxCacheRecipeSearchViaChat: user.maxCacheRecipeSearchViaChat ?? 4,
+      maxGroceriesWithExpiry: user.maxGroceriesWithExpiry ?? 10,
+      maxGroceriesTotal: user.maxGroceriesTotal ?? 20,
+      notificationsEnabled: user.notificationsEnabled ?? false,
+      hasPrioritySupport: user.hasPrioritySupport ?? false,
+      currentGroceriesTotal: totalGroceries,
+      currentGroceriesWithExpiry: groceriesWithExpiry,
+      cacheRecipeSuggestionsUsed: user.cacheRecipeSuggestionsUsed ?? 0,
+      chatMessagesUsed: user.chatMessagesUsed ?? 0,
+      cacheRecipeSearchViaChatUsed: user.cacheRecipeSearchViaChatUsed ?? 0,
+      quotaResetAt: user.quotaResetAt,
+      monthlyLimitResetAt: user.monthlyLimitResetAt ?? user.createdAt,
+    });
+  } catch (error) {
+    console.error('User limits error:', error);
+    res.status(500).json({ detail: 'Fehler beim Abrufen der Limits' });
+  }
+});
+
 app.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
@@ -456,6 +613,29 @@ app.post('/groceries', authMiddleware, async (req, res) => {
   if (!name || quantity == null || !unit || !category || low_stock_threshold == null) {
     return res.status(400).json({ detail: 'Missing fields' });
   }
+  
+  // Prüfe Gesamt-Lebensmittel-Limit
+  const totalLimit = await checkTierLimit(req.user.id, 'groceries_total');
+  if (!totalLimit.allowed) {
+    return res.status(402).json({ 
+      detail: `Du hast das Limit von ${totalLimit.limit} Lebensmitteln erreicht. Upgrade deinen Plan für unbegrenzte Lebensmittel.`,
+      limit: 'groceries_total',
+      limitReached: true
+    });
+  }
+  
+  // Prüfe MHD-Limit (nur wenn expiry_date gesetzt)
+  if (expiry_date) {
+    const expiryLimit = await checkTierLimit(req.user.id, 'groceries_with_expiry');
+    if (!expiryLimit.allowed) {
+      return res.status(402).json({ 
+        detail: `Du hast das Limit von ${expiryLimit.limit} Lebensmitteln mit MHD erreicht. Upgrade deinen Plan für mehr Lebensmittel mit MHD.`,
+        limit: 'groceries_with_expiry',
+        limitReached: true
+      });
+    }
+  }
+  
   const item = await prisma.grocery.create({
     data: {
       userId: req.user.id,
@@ -1093,7 +1273,21 @@ app.post('/photo-recognition/analyze-fridge', authMiddleware, upload.single('fil
 
     console.log('🥘 Verfügbare Zutaten für Rezeptvorschläge:', availableIngredients);
 
-    // Schritt 3: Hole Rezeptvorschläge von Spoonacular (mit KI-Lernen basierend auf gekochten Rezepten)
+    // Schritt 3: Prüfe Cache-Vorschläge-Limit
+    try {
+      await checkAndConsumeMonthlyLimit(req.user.id, 'cache_recipe_suggestions');
+    } catch (error) {
+      if (error.status === 402) {
+        return res.status(402).json({ 
+          detail: error.detail, 
+          limit: error.limit,
+          limitReached: true
+        });
+      }
+      throw error;
+    }
+
+    // Schritt 4: Hole Rezeptvorschläge von Spoonacular (mit KI-Lernen basierend auf gekochten Rezepten)
     const recipeSuggestions = await getRecipeSuggestions(availableIngredients, req.user.id);
     console.log('✅ Rezeptvorschläge erhalten:', recipeSuggestions.length, 'Rezepte');
 
@@ -1591,6 +1785,37 @@ app.post('/chat/message', optionalAuthMiddleware, async (req, res) => {
 
     if (!genAI || !GEMINI_API_KEY) {
       return res.status(503).json({ detail: 'Chat-Service nicht verfügbar' });
+    }
+
+    // Prüfe Chat-Message-Limit
+    try {
+      await checkAndConsumeMonthlyLimit(req.user.id, 'chat_messages');
+    } catch (error) {
+      if (error.status === 402) {
+        return res.status(402).json({ 
+          detail: error.detail, 
+          limit: error.limit,
+          limitReached: true
+        });
+      }
+      throw error;
+    }
+
+    // Prüfe ob es eine Rezeptsuche ist (via Chat)
+    const isRecipeSearch = /rezept|recipe|koch|kochen|zutat|ingredient/i.test(message);
+    if (isRecipeSearch) {
+      try {
+        await checkAndConsumeMonthlyLimit(req.user.id, 'cache_recipe_search_via_chat');
+      } catch (error) {
+        if (error.status === 402) {
+          return res.status(402).json({ 
+            detail: error.detail, 
+            limit: error.limit,
+            limitReached: true
+          });
+        }
+        throw error;
+      }
     }
 
     const quotaOk = await consumeQuotaOrRespond(res, req.user.id, 'LLM', LLM_TOKEN_COST_CHAT);

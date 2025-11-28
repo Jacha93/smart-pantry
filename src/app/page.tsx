@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { auth, authDisabled } from '@/lib/auth';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { LoginDialog } from '@/components/login-dialog';
+import { Footer } from '@/components/footer';
 import { useI18n } from '@/hooks/use-i18n';
 import { 
   Package, 
@@ -346,25 +347,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-3">
-              <Image
-                src="/smart-pantry-favicon.png"
-                alt="Smart Pantry Icon"
-                width={24}
-                height={24}
-                className="rounded-lg"
-              />
-              <span className="text-foreground font-medium">{t('nav.appTitle')}</span>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {t('landing.footer')}
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Login Dialog */}
       <LoginDialog 

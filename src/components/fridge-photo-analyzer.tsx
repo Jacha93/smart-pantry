@@ -8,6 +8,7 @@ import { Camera, Upload, Plus, ChefHat, Loader2 } from 'lucide-react';
 import { photoRecognitionAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { RecipeDetailsModal } from './recipe-details-modal';
+import { RecipeSuggestionsGrid } from './recipe-suggestions-grid';
 import { useI18n } from '@/hooks/use-i18n';
 
 
@@ -217,8 +218,13 @@ export function FridgePhotoAnalyzer() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {(analysisResult.recipe_suggestions || []).map((recipe) => (
+              <RecipeSuggestionsGrid 
+                recipes={analysisResult.recipe_suggestions || []}
+                onRecipeClick={(recipeId) => {
+                  setSelectedRecipeId(recipeId);
+                  setIsRecipeModalOpen(true);
+                }}
+              />
                   <Card key={recipe.id} className="overflow-hidden">
                     <div className="aspect-video relative">
                       <img

@@ -18,6 +18,8 @@ import { GROCERY_CATEGORIES, UNITS } from '@/types';
 import { groceriesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { UpgradePrompt } from '@/components/upgrade-prompt';
+import { useState } from 'react';
 
 const grocerySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -37,6 +39,7 @@ interface AddGroceryDialogProps {
 export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [limitError, setLimitError] = useState<{ limitType: 'groceries_total' | 'groceries_with_expiry', limit: number, current: number } | null>(null);
   const { t } = useI18n();
 
   const {
@@ -64,8 +67,16 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
       reset();
       onGroceryAdded();
     } catch (error: unknown) {
-      const apiError = error as { response?: { data?: { detail?: string } } };
-      toast.error(apiError.response?.data?.detail || t('groceries.failedToAdd'));
+      const apiError = error as { response?: { data?: { detail?: string; limit?: string; limitReached?: boolean } } };
+      if (apiError.response?.data?.limitReached && apiError.response?.data?.limit) {
+        const limitType = apiError.response.data.limit as 'groceries_total' | 'groceries_with_expiry';
+        // Parse limit from error message or use default
+        const limitMatch = apiError.response.data.detail?.match(/(\d+)/);
+        const limit = limitMatch ? parseInt(limitMatch[1]) : (limitType === 'groceries_total' ? 20 : 10);
+        setLimitError({ limitType, limit, current: limit });
+      } else {
+        toast.error(apiError.response?.data?.detail || t('groceries.failedToAdd'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +212,8 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

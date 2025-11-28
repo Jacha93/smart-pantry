@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { auth, authDisabled } from '@/lib/auth';
 import { LogOut, ShoppingCart, Package, Camera, ChefHat } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { Footer } from '@/components/footer';
 import { useI18n } from '@/hooks/use-i18n';
 
 export default function DashboardLayout({
@@ -45,7 +46,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <nav className="glass-card border-b border-white/20 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -106,9 +107,10 @@ export default function DashboardLayout({
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 flex-1">
         {children}
       </main>
+      <Footer />
     </div>
   );
 }
