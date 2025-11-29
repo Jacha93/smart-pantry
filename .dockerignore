@@ -23,13 +23,12 @@ compose*.yml
 **/.env.*.local
 
 # Dependencies (werden im Container installiert)
+# WICHTIG: package-lock.json und yarn.lock werden BENÖTIGT für npm ci!
 node_modules
 **/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-yarn.lock
 .pnp
 .pnp.js
 
