@@ -135,14 +135,19 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Explicitly handle OPTIONS requests for CORS preflight
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.sendStatus(204);
+// Explicitly handle OPTIONS requests for CORS preflight (Express 5 compatible)
+// Express 5 verwendet path-to-regexp v6, das '*' nicht mehr unterstützt
+// Daher verwenden wir einen Middleware-Ansatz statt app.options('*')
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    return res.sendStatus(204);
+  }
+  next();
 });
 
 let demoUserCache = null;

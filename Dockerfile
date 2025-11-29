@@ -95,6 +95,8 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "Waiting for database to be ready..."' >> /app/start.sh && \
     echo 'until nc -z smart-pantry-postgres 5432; do sleep 1; done' >> /app/start.sh && \
     echo 'echo "Database is ready. Running Prisma migrations..."' >> /app/start.sh && \
+    echo 'echo "Checking migrations directory..."' >> /app/start.sh && \
+    echo 'ls -la /app/backend/prisma/migrations/ || echo "Migrations directory not found"' >> /app/start.sh && \
     echo 'cd /app/backend && npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start.sh && \
     echo 'echo "Migrations completed. Starting backend on port ${BACKEND_PORT:-8000}..."' >> /app/start.sh && \
     echo 'cd /app/backend && node server.js &' >> /app/start.sh && \
