@@ -40,12 +40,21 @@ export function AdBlockerDetector() {
       let adBlockerDetected = false;
       let checksCompleted = 0;
       const totalChecks = 2;
+      let scriptLoaded = false;
+      let scriptErrored = false;
 
       const checkAndShow = () => {
         checksCompleted++;
         // Only show popup if adblocker detected AND user is not authenticated
-        // We show popup if EITHER method detects adblocker (OR logic, not AND)
+        // WICHTIG: Wenn Script erfolgreich lädt, ist definitiv KEIN AdBlocker aktiv
+        // In diesem Fall ignorieren wir die DOM-Methode
         if (checksCompleted >= totalChecks) {
+          // Wenn Script erfolgreich geladen wurde, ist definitiv kein AdBlocker aktiv
+          if (scriptLoaded) {
+            console.log('Script loaded successfully - definitively NO AdBlocker');
+            adBlockerDetected = false;
+          }
+          
           if (adBlockerDetected && !isAuthenticated) {
             console.log('AdBlocker detected - showing popup');
             setShowDialog(true);
@@ -88,8 +97,6 @@ export function AdBlockerDetector() {
       }, 500);
 
       // Method 2: Try to load a known ad script URL
-      let scriptLoaded = false;
-      let scriptErrored = false;
       const testScript = document.createElement('script');
       testScript.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
       testScript.async = true;
@@ -106,8 +113,9 @@ export function AdBlockerDetector() {
       testScript.onload = () => {
         // Script loaded successfully - NO adblocker blocking this
         scriptLoaded = true;
-        console.log('Script loaded successfully - no AdBlocker detected');
-        // If script loads successfully, there is NO adblocker
+        console.log('Script loaded successfully - definitively NO AdBlocker');
+        // If script loads successfully, there is DEFINITELY NO adblocker
+        // Set this BEFORE checkAndShow so it overrides any DOM detection
         adBlockerDetected = false;
         if (testScript.parentNode) {
           testScript.parentNode.removeChild(testScript);
