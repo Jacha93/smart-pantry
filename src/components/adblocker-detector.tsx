@@ -54,12 +54,15 @@ export function AdBlockerDetector() {
                          fakeAd.style.display === 'none' ||
                          fakeAd.style.visibility === 'hidden';
         
-        document.body.removeChild(fakeAd);
+        if (fakeAd.parentNode) {
+          document.body.removeChild(fakeAd);
+        }
 
         if (isBlocked && !isAuthenticated) {
+          console.log('AdBlocker detected via DOM element');
           setShowDialog(true);
         }
-      }, 100);
+      }, 200);
     };
 
     // Run detection after a short delay

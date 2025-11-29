@@ -8,7 +8,7 @@
 # 1. Erstelle .env aus .env.example: cp .env.example .env
 # 2. Fülle .env mit echten Werten (Secrets, API Keys, etc.)
 # 3. Starte: docker compose up -d
-# 4. Führe Migrationen aus: docker compose exec app npx prisma migrate deploy
+# 4. Führe Migrationen aus: docker compose exec smart-pantry-app npx prisma migrate deploy
 #
 # Für lokale Entwicklung nutze: compose.dev.yml
 # docker compose -f compose.dev.yml up -d
@@ -39,7 +39,7 @@ services:
       - smart-pantry-network
 
   # Smart Pantry Application (Frontend + Backend kombiniert)
-  app:
+  smart-pantry-app:
     image: ghcr.io/jacha93/smart-pantry:latest
     container_name: smart-pantry-app
     restart: unless-stopped
@@ -65,8 +65,8 @@ services:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 90s
 
 volumes:
   postgres-data:

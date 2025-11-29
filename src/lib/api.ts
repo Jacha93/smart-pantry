@@ -113,7 +113,9 @@ api.interceptors.response.use(
     // Detect ERR_BLOCKED_BY_CLIENT (adblocker blocking requests)
     if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') || 
         error.code === 'ERR_BLOCKED_BY_CLIENT' ||
-        (error.response === undefined && error.request && error.message?.includes('blocked'))) {
+        (error.response === undefined && error.request && error.message?.includes('blocked')) ||
+        (error.message?.includes('Failed to fetch') && error.request === undefined)) {
+      console.log('AdBlocker detected via API error:', error.message);
       setAdBlockerDetected(true);
     }
     const status = error.response?.status;

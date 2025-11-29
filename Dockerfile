@@ -4,6 +4,8 @@
 # Stage 1: Backend Dependencies & Prisma Client
 # ============================================
 FROM node:20-alpine AS backend-deps
+# Update npm to latest version
+RUN npm install -g npm@latest
 WORKDIR /app/backend
 COPY backend/package*.json ./
 # Install all dependencies (including devDependencies for Prisma)
@@ -31,6 +33,8 @@ RUN ls -la /app/backend/node_modules/@prisma/client/package.json || (echo "ERROR
 # Stage 2: Frontend Builder
 # ============================================
 FROM node:20-alpine AS frontend-builder
+# Update npm to latest version
+RUN npm install -g npm@latest
 WORKDIR /app
 
 # Copy frontend package files
@@ -56,11 +60,13 @@ RUN npm run build
 # Stage 3: Production
 # ============================================
 FROM node:20-alpine AS runner
+# Update npm to latest version
+RUN npm install -g npm@latest
 
 WORKDIR /app
 
-# Install dumb-init and netcat for database health check
-RUN apk add --no-cache dumb-init netcat-openbsd
+# Install dumb-init, netcat and wget for health checks
+RUN apk add --no-cache dumb-init netcat-openbsd wget
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
@@ -90,7 +96,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'until nc -z smart-pantry-postgres 5432; do sleep 1; done' >> /app/start.sh && \
     echo 'echo "Database is ready. Running Prisma migrations..."' >> /app/start.sh && \
     echo 'cd /app/backend && npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start.sh && \
-    echo 'echo "Migrations completed. Starting backend on port 8000..."' >> /app/start.sh && \
+    echo 'echo "Migrations completed. Starting backend on port ${BACKEND_PORT:-8000}..."' >> /app/start.sh && \
     echo 'cd /app/backend && node server.js &' >> /app/start.sh && \
     echo 'BACKEND_PID=$!' >> /app/start.sh && \
     echo 'echo "Backend started with PID $BACKEND_PID"' >> /app/start.sh && \
