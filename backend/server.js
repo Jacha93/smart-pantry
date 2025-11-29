@@ -120,9 +120,32 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS Configuration - erlaube Requests vom Frontend
-// WICHTIG: In Production sollte dies auf spezifische Origins beschränkt werden
-// Verwende einfache Konfiguration für maximale Kompatibilität
+// EXPLIZITE CORS-Header für ALLE Requests (inkl. OPTIONS Preflight)
+// Dies stellt sicher, dass CORS-Header immer gesetzt werden, auch wenn cors() fehlschlägt
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Setze CORS-Header für alle Requests
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Behandle OPTIONS Preflight-Requests explizit
+  if (req.method === 'OPTIONS') {
+    console.log('OPTIONS Preflight Request:', req.path);
+    return res.sendStatus(204);
+  }
+  
+  next();
+});
+
+// CORS-Middleware als zusätzliche Sicherheit
 app.use(cors({
   origin: true, // Erlaube alle Origins (automatisch aus req.headers.origin)
   credentials: true,

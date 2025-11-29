@@ -94,6 +94,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 placeholder={t('auth.email')}
                 {...register('email')}
               />
@@ -106,6 +107,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 placeholder={t('auth.password')}
                 {...register('password')}
               />

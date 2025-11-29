@@ -105,6 +105,7 @@ export function LoginDialog({ isOpen, onOpenChange, onSuccess }: LoginDialogProp
             <Input
               id="dialog-email"
               type="email"
+              autoComplete="email"
               placeholder={t('auth.email')}
               {...register('email')}
             />
@@ -117,6 +118,7 @@ export function LoginDialog({ isOpen, onOpenChange, onSuccess }: LoginDialogProp
             <Input
               id="dialog-password"
               type="password"
+              autoComplete="current-password"
               placeholder={t('auth.password')}
               {...register('password')}
             />

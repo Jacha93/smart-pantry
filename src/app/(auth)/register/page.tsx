@@ -124,6 +124,7 @@ export default function RegisterPage() {
               <Input
                 id="name"
                 type="text"
+                autoComplete="name"
                 placeholder={t('auth.name')}
                 {...register('name')}
               />
@@ -136,6 +137,7 @@ export default function RegisterPage() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="email"
                 placeholder={t('auth.email')}
                 {...register('email')}
               />
@@ -148,6 +150,7 @@ export default function RegisterPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="new-password"
                 placeholder={t('auth.password')}
                 {...register('password')}
               />
@@ -160,6 +163,7 @@ export default function RegisterPage() {
               <Input
                 id="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 placeholder={t('auth.confirmPassword')}
                 {...register('confirmPassword')}
               />
