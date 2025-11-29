@@ -7,7 +7,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.DATABASE_URL) {
 }
 
 const express = require('express');
-const cors = require('cors');
+// cors wird nicht mehr verwendet - manuelle CORS-Implementierung
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
@@ -120,42 +120,37 @@ app.use((req, res, next) => {
   next();
 });
 
-// EXPLIZITE CORS-Header für ALLE Requests (inkl. OPTIONS Preflight)
-// Dies stellt sicher, dass CORS-Header immer gesetzt werden, auch wenn cors() fehlschlägt
+// MANUELLE CORS-Implementierung für volle Kontrolle
+// cors() wird NICHT verwendet, um Konflikte zu vermeiden
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
-  // Setze CORS-Header für alle Requests
+  // Setze CORS-Header für ALLE Requests (inkl. OPTIONS)
+  // WICHTIG: Header müssen VOR dem Senden der Response gesetzt werden
   if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
+    // Erlaube spezifischen Origin (für credentials: true)
+    res.setHeader('Access-Control-Allow-Origin', origin);
   } else {
-    res.header('Access-Control-Allow-Origin', '*');
+    // Fallback für Requests ohne Origin
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
+  
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Type');
   
   // Behandle OPTIONS Preflight-Requests explizit
+  // WICHTIG: Dies muss VOR allen anderen Middlewares sein
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS Preflight Request:', req.path);
-    return res.sendStatus(204);
+    console.log('✅ OPTIONS Preflight Request received:', req.path, 'Origin:', origin);
+    console.log('✅ Sending 204 response with CORS headers');
+    return res.status(204).end(); // Explizit .end() verwenden statt sendStatus()
   }
   
   next();
 });
-
-// CORS-Middleware als zusätzliche Sicherheit
-app.use(cors({
-  origin: true, // Erlaube alle Origins (automatisch aus req.headers.origin)
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Length', 'Content-Type'],
-  maxAge: 86400, // 24 Stunden
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-}));
 app.use(express.json());
 
 let demoUserCache = null;

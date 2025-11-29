@@ -50,7 +50,7 @@ services:
       - .env
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
-      - "${BACKEND_PORT:-8000}:8000"
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     environment:
       # Database Connection (wird aus .env Variablen gebaut)
       # WICHTIG: Innerhalb des Docker-Netzwerks ist der Port immer 5432 (Container-Standard)
@@ -58,7 +58,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
       
       # Frontend API URL (wird automatisch aus BACKEND_PORT gebaut, kann in .env überschrieben werden)
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-8000}}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-3001}}
     networks:
       - smart-pantry-network
     healthcheck:

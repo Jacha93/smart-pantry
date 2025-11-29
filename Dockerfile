@@ -98,7 +98,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "Checking migrations directory..."' >> /app/start.sh && \
     echo 'ls -la /app/backend/prisma/migrations/ || echo "Migrations directory not found"' >> /app/start.sh && \
     echo 'cd /app/backend && npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start.sh && \
-    echo 'echo "Migrations completed. Starting backend on port ${BACKEND_PORT:-8000}..."' >> /app/start.sh && \
+    echo 'echo "Migrations completed. Starting backend on port ${BACKEND_PORT:-3001}..."' >> /app/start.sh && \
     echo 'cd /app/backend && node server.js &' >> /app/start.sh && \
     echo 'BACKEND_PID=$!' >> /app/start.sh && \
     echo 'echo "Backend started with PID $BACKEND_PID"' >> /app/start.sh && \
@@ -113,13 +113,13 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV BACKEND_PORT=8000
+ENV BACKEND_PORT=3001
 ENV HOSTNAME="0.0.0.0"
 # NEXT_PUBLIC_API_URL wird in compose.yml aus BACKEND_PORT gebaut
-# ENV NEXT_PUBLIC_API_URL=http://localhost:8000
+# ENV NEXT_PUBLIC_API_URL=http://localhost:3001
 
 # Expose ports
-EXPOSE 3000 8000
+EXPOSE 3000 3001
 
 USER nextjs
 

@@ -53,7 +53,7 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
 4. **Backend-Umgebungsvariablen setzen (`backend/.env`)**
    ```env
-   PORT=8000
+   BACKEND_PORT=3001
    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/smart_pantry?schema=public
    PERSONAL_DATA_KEY=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff  # 32 Byte Hex
    JWT_SECRET=dev_secret_change_me_in_production
@@ -69,7 +69,7 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
 5. **Frontend-Umgebungsvariablen (`.env.local`)**
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:8000
+   NEXT_PUBLIC_API_URL=http://localhost:3001
    NEXT_PUBLIC_AUTH_DISABLED=false
    ```
 
@@ -92,7 +92,7 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
    ```
 
    - Frontend: http://localhost:3000  
-   - Backend: http://localhost:8000  
+   - Backend: http://localhost:3001  
 
 ## 🔓 Demo-Modus (Login deaktivieren)
 
@@ -160,7 +160,7 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
 
 Die App läuft dann auf:
 - **Frontend**: http://localhost:3000 (oder dein konfigurierter Port)
-- **Backend**: http://localhost:8000
+- **Backend**: http://localhost:3001
 - **PostgreSQL**: localhost:5432
 
 #### Umgebungsvariablen konfigurieren

@@ -18,11 +18,11 @@ const getApiBaseUrl = (): string => {
     // Fallback: Baue URL aus window.location (für lokale Entwicklung)
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '3001';
     return `${protocol}//${hostname}:${port}`;
   }
   // Server-side: Verwende NEXT_PUBLIC_API_URL oder Fallback
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 };
 
 const API_BASE_URL = getApiBaseUrl();
