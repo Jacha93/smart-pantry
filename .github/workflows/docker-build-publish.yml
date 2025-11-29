@@ -63,12 +63,25 @@ jobs:
           echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       # Version aus package.json lesen (für dev/nightly Tags)
+      # Synchronisiere Version zwischen Root und Backend package.json
+      - name: Sync package.json versions
+        run: |
+          ROOT_VERSION=$(node -p "require('./package.json').version")
+          BACKEND_VERSION=$(node -p "require('./backend/package.json').version")
+          echo "📦 Root version: $ROOT_VERSION"
+          echo "📦 Backend version: $BACKEND_VERSION"
+          # Synchronisiere Backend-Version mit Root-Version
+          if [ "$ROOT_VERSION" != "$BACKEND_VERSION" ]; then
+            echo "🔄 Synchronisiere Backend-Version von $BACKEND_VERSION auf $ROOT_VERSION"
+            node -e "const pkg = require('./backend/package.json'); pkg.version = '$ROOT_VERSION'; require('fs').writeFileSync('./backend/package.json', JSON.stringify(pkg, null, 2) + '\n');"
+          fi
+      
       - name: Read package version
         id: package-version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Package Version: $VERSION"
+          echo "📦 Final Package Version: $VERSION"
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -86,7 +99,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             type=semver,pattern={{major}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             
-            # Dev Branch Tags (mit Version)
+            # Dev Branch Tags (mit Version, KEIN latest!)
             type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
             type=raw,value=nightly,enable=${{ github.ref == 'refs/heads/dev' }}
             type=raw,value=${{ steps.package-version.outputs.version }}-dev,enable=${{ github.ref == 'refs/heads/dev' }}
