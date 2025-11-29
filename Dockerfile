@@ -13,7 +13,7 @@ COPY backend/prisma ./prisma
 # Generate Prisma Client (muss im backend Verzeichnis ausgeführt werden)
 # WICHTIG: DATABASE_URL muss für generate gesetzt sein (auch wenn nicht verwendet)
 # Prisma 7 benötigt DATABASE_URL auch für generate, auch wenn sie nicht verwendet wird
-RUN cd /app/backend && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate --schema=./prisma/schema.prisma
+RUN cd /app/backend && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
 # Verify that generated client exists (Standard-Pfad: node_modules/.prisma/client)
 RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Prisma Client wurde nicht generiert!" && exit 1)
 # Verify that @prisma/client runtime exists
@@ -88,7 +88,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "Waiting for database to be ready..."' >> /app/start.sh && \
     echo 'until nc -z smart-pantry-postgres 5432; do sleep 1; done' >> /app/start.sh && \
     echo 'echo "Database is ready. Running Prisma migrations..."' >> /app/start.sh && \
-    echo 'cd /app/backend && npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start.sh && \
+    echo 'cd /app/backend && npx prisma migrate deploy' >> /app/start.sh && \
     echo 'echo "Migrations completed. Starting backend on port 8000..."' >> /app/start.sh && \
     echo 'cd /app/backend && node server.js &' >> /app/start.sh && \
     echo 'BACKEND_PID=$!' >> /app/start.sh && \
