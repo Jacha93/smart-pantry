@@ -99,18 +99,13 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             type=semver,pattern={{major}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             
-            # Dev Branch Tags (mit Version, KEIN latest!)
+            # Dev Branch Tags (reduziert: nur dev und nightly, keine Version-Tags)
             type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
             type=raw,value=nightly,enable=${{ github.ref == 'refs/heads/dev' }}
-            type=raw,value=${{ steps.package-version.outputs.version }}-dev,enable=${{ github.ref == 'refs/heads/dev' }}
-            type=raw,value=${{ steps.package-version.outputs.version }}-nightly,enable=${{ github.ref == 'refs/heads/dev' }}
-            type=raw,value=${{ steps.package-version.outputs.version }}-nightly-${{ github.sha }},enable=${{ github.ref == 'refs/heads/dev' }}
             
-            # Agent Branch Tags (mit Version)
+            # Agent Branch Tags (reduziert: nur agent und pre-alpha)
             type=raw,value=agent,enable=${{ github.ref == 'refs/heads/agent' }}
             type=raw,value=pre-alpha,enable=${{ github.ref == 'refs/heads/agent' }}
-            type=raw,value=${{ steps.package-version.outputs.version }}-pre-alpha,enable=${{ github.ref == 'refs/heads/agent' }}
-            type=raw,value=${{ steps.package-version.outputs.version }}-pre-alpha-${{ github.sha }},enable=${{ github.ref == 'refs/heads/agent' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5

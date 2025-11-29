@@ -53,23 +53,23 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
 4. **Backend-Umgebungsvariablen setzen (`backend/.env`)**
    ```env
-   BACKEND_PORT=3001
-   DATABASE_URL=postgresql://postgres:postgres@localhost:5432/smart_pantry?schema=public
-   PERSONAL_DATA_KEY=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff  # 32 Byte Hex
-   JWT_SECRET=dev_secret_change_me_in_production
+   BACKEND_PORT=CHANGE_TO_YOUR_BACKEND_PORT
+   DATABASE_URL=postgresql://postgres:CHANGE_ME_PASSWORD@localhost:CHANGE_TO_YOUR_POSTGRES_PORT/smart_pantry?schema=public
+   PERSONAL_DATA_KEY=CHANGE_ME_64_CHAR_HEX_KEY
+   JWT_SECRET=CHANGE_ME_JWT_SECRET
    REFRESH_TOKEN_TTL_MS=2592000000
    QUOTA_RESET_INTERVAL_MS=2592000000
-   LLM_TOKEN_COST_CHAT=500
-   LLM_TOKEN_COST_TRANSLATION=200
-   LLM_TOKEN_COST_ANALYZE=1500
-   RECIPE_CALL_COST_ANALYZE=1
-   GEMINI_API_KEY=dein_gemini_api_key
-   SPOONACULAR_API_KEY=dein_spoonacular_api_key
+   LLM_TOKEN_COST_CHAT=CHANGE_ME
+   LLM_TOKEN_COST_TRANSLATION=CHANGE_ME
+   LLM_TOKEN_COST_ANALYZE=CHANGE_ME
+   RECIPE_CALL_COST_ANALYZE=CHANGE_ME
+   GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+   SPOONACULAR_API_KEY=YOUR_SPOONACULAR_API_KEY
    ```
 
 5. **Frontend-Umgebungsvariablen (`.env.local`)**
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:3001
+   NEXT_PUBLIC_API_URL=http://localhost:CHANGE_TO_YOUR_BACKEND_PORT
    NEXT_PUBLIC_AUTH_DISABLED=false
    ```
 
@@ -91,8 +91,8 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
    npm run dev
    ```
 
-   - Frontend: http://localhost:3000  
-   - Backend: http://localhost:3001  
+   - Frontend: http://localhost:CHANGE_TO_YOUR_FRONTEND_PORT  
+   - Backend: http://localhost:CHANGE_TO_YOUR_BACKEND_PORT  
 
 ## 🔓 Demo-Modus (Login deaktivieren)
 
@@ -159,8 +159,8 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
    **Was macht das?** Diese Migration erstellt alle Datenbank-Tabellen (User, Grocery, Recipes, etc.) in deiner PostgreSQL-Datenbank. Beim ersten Start ist die Datenbank leer - die Migration richtet die komplette Struktur ein.
 
 Die App läuft dann auf:
-- **Frontend**: http://localhost:3000 (oder dein konfigurierter Port)
-- **Backend**: http://localhost:3001
+- **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (konfigurierbar in .env)
+- **Backend**: http://localhost:${BACKEND_PORT:-3001} (konfigurierbar in .env)
 - **PostgreSQL**: Nur im Docker-Netzwerk erreichbar (kein externer Zugriff)
 
 #### Umgebungsvariablen konfigurieren
@@ -171,12 +171,15 @@ Die `.env.example` Datei enthält alle benötigten Variablen mit Beschreibungen:
 - **Security**: `JWT_SECRET`, `PERSONAL_DATA_KEY` (64 Hex-Zeichen)
 - **API Keys**: `GEMINI_API_KEY`, `SPOONACULAR_API_KEY`, `GITHUB_TOKEN` (optional)
 - **Quoten**: `LLM_TOKEN_COST_*`, `RECIPE_CALL_COST_*`
-- **Frontend**: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_AUTH_DISABLED`
+- **Frontend**: `NEXT_PUBLIC_AUTH_DISABLED`
 
 **Wichtig**: 
 - `PERSONAL_DATA_KEY` generieren mit: `openssl rand -hex 32`
 - `JWT_SECRET` sollte mindestens 32 zufällige Zeichen sein
 - Alle Passwörter sollten stark und eindeutig sein
+- **`NEXT_PUBLIC_API_URL` wird automatisch von `compose.yml` gesetzt** - nicht in `.env` setzen!
+  - `compose.yml` setzt: `NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT}`
+  - Wenn du `NEXT_PUBLIC_API_URL` in `.env` setzt, überschreibt es die automatische Konfiguration
 
 ### Lokale Entwicklung
 
