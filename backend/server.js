@@ -111,17 +111,20 @@ if (AUTH_DISABLED) {
   );
 }
 
+// Logging-Middleware für alle Requests (vor CORS)
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+    origin: req.headers.origin,
+    'user-agent': req.headers['user-agent']?.substring(0, 50),
+  });
+  next();
+});
+
 // CORS Configuration - erlaube Requests vom Frontend
 // WICHTIG: In Production sollte dies auf spezifische Origins beschränkt werden
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Erlaube Requests ohne Origin (z.B. Postman, mobile apps, same-origin requests)
-    if (!origin) return callback(null, true);
-    
-    // Erlaube alle Origins (für Flexibilität - in Production einschränken!)
-    // Dies behebt CORS-Probleme beim Zugriff vom Frontend
-    callback(null, true);
-  },
+// Verwende einfache Konfiguration für maximale Kompatibilität
+app.use(cors({
+  origin: true, // Erlaube alle Origins (automatisch aus req.headers.origin)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -129,26 +132,7 @@ const corsOptions = {
   maxAge: 86400, // 24 Stunden
   preflightContinue: false,
   optionsSuccessStatus: 204,
-};
-
-// WICHTIG: OPTIONS-Middleware muss VOR cors() kommen, damit sie ausgeführt wird
-// cors() mit preflightContinue: false beendet OPTIONS-Requests bereits
-// Daher müssen wir OPTIONS explizit VOR cors() behandeln
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    const origin = req.headers.origin;
-    res.header('Access-Control-Allow-Origin', origin || '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Max-Age', '86400');
-    return res.sendStatus(204);
-  }
-  next();
-});
-
-// CORS muss VOR express.json() sein
-app.use(cors(corsOptions));
+}));
 app.use(express.json());
 
 let demoUserCache = null;
