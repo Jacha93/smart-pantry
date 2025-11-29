@@ -80,6 +80,9 @@ RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Pr
 COPY --chown=nextjs:nodejs backend/package*.json ./backend/
 COPY --chown=nextjs:nodejs backend/server.js ./backend/
 COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
+# Verify migrations are copied
+RUN ls -la /app/backend/prisma/migrations/ || (echo "ERROR: Migrations directory not found!" && exit 1)
+RUN ls -la /app/backend/prisma/migrations/0001_init/migration.sql || (echo "ERROR: Migration file not found!" && exit 1)
 # prisma.config.ts wird in Prisma 6.x nicht benötigt (nur Prisma 7+)
 # COPY --chown=nextjs:nodejs backend/prisma.config.ts ./backend/
 COPY --chown=nextjs:nodejs backend/utils ./backend/utils
