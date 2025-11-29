@@ -43,15 +43,20 @@ export function AdBlockerDetector() {
 
       const checkAndShow = () => {
         checksCompleted++;
+        // Only show popup if adblocker detected AND user is not authenticated
+        // We show popup if EITHER method detects adblocker (OR logic, not AND)
         if (checksCompleted >= totalChecks) {
           if (adBlockerDetected && !isAuthenticated) {
             console.log('AdBlocker detected - showing popup');
             setShowDialog(true);
+          } else {
+            console.log('No AdBlocker detected or user is authenticated');
           }
         }
       };
 
       // Method 1: Create a fake ad element that adblockers typically block
+      // This method is less reliable, so we use it as secondary check
       const fakeAd = document.createElement('div');
       fakeAd.innerHTML = '&nbsp;';
       fakeAd.className = 'adsbox';
@@ -63,17 +68,20 @@ export function AdBlockerDetector() {
       document.body.appendChild(fakeAd);
 
       setTimeout(() => {
-        const isBlocked = fakeAd.offsetHeight === 0 || 
-                         fakeAd.offsetWidth === 0 ||
-                         fakeAd.style.display === 'none' ||
-                         fakeAd.style.visibility === 'hidden' ||
-                         window.getComputedStyle(fakeAd).display === 'none';
+        // Check if element was blocked/hidden by adblocker
+        // Only check if element is completely removed or has display:none from adblocker
+        const computedStyle = window.getComputedStyle(fakeAd);
+        const isBlocked = computedStyle.display === 'none' && 
+                         computedStyle.visibility === 'hidden';
         
         if (fakeAd.parentNode) {
           document.body.removeChild(fakeAd);
         }
 
+        // Only set adBlockerDetected if we're SURE it's blocked
+        // Don't rely on offsetHeight/offsetWidth as they can be 0 for other reasons
         if (isBlocked) {
+          console.log('AdBlocker detected via DOM element');
           adBlockerDetected = true;
         }
         checkAndShow();
@@ -88,6 +96,7 @@ export function AdBlockerDetector() {
       testScript.onerror = () => {
         // Script failed to load - likely adblocker
         scriptErrored = true;
+        console.log('AdBlocker detected via script error');
         adBlockerDetected = true;
         if (testScript.parentNode) {
           testScript.parentNode.removeChild(testScript);
@@ -95,17 +104,21 @@ export function AdBlockerDetector() {
         checkAndShow();
       };
       testScript.onload = () => {
-        // Script loaded - no adblocker blocking this
+        // Script loaded successfully - NO adblocker blocking this
         scriptLoaded = true;
+        console.log('Script loaded successfully - no AdBlocker detected');
+        // If script loads successfully, there is NO adblocker
+        adBlockerDetected = false;
         if (testScript.parentNode) {
           testScript.parentNode.removeChild(testScript);
         }
         checkAndShow();
       };
-      // Timeout fallback
+      // Timeout fallback - if script doesn't load or error in 2 seconds, might be blocked
       setTimeout(() => {
         if (!scriptLoaded && !scriptErrored) {
           // Script didn't load in time - might be blocked
+          console.log('AdBlocker detected via timeout (script did not load)');
           adBlockerDetected = true;
           if (testScript.parentNode) {
             testScript.parentNode.removeChild(testScript);
