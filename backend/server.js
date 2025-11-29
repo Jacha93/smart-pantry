@@ -2074,8 +2074,7 @@ app.use((err, req, res, next) => {
 // Error-Handling für Server-Start
 let server;
 try {
-  // WICHTIG: In Docker muss der Server auf 0.0.0.0 hören, nicht auf localhost
-  // localhost würde nur innerhalb des Containers erreichbar sein
+  // In Docker muss der Server auf 0.0.0.0 hören für Port-Mapping
   const HOST = process.env.HOSTNAME || '0.0.0.0';
   server = app.listen(PORT, HOST, () => {
     console.log(`✅ API listening on http://${HOST}:${PORT}`);

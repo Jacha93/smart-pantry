@@ -153,7 +153,7 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
 
 4. **Prisma Migrations ausführen** (einmalig nach erstem Start)
    ```bash
-   docker compose exec app npx prisma migrate deploy
+   docker compose exec smart-pantry-app npx prisma migrate deploy
    ```
    
    **Was macht das?** Diese Migration erstellt alle Datenbank-Tabellen (User, Grocery, Recipes, etc.) in deiner PostgreSQL-Datenbank. Beim ersten Start ist die Datenbank leer - die Migration richtet die komplette Struktur ein.
@@ -161,7 +161,7 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
 Die App läuft dann auf:
 - **Frontend**: http://localhost:3000 (oder dein konfigurierter Port)
 - **Backend**: http://localhost:3001
-- **PostgreSQL**: localhost:5432
+- **PostgreSQL**: Nur im Docker-Netzwerk erreichbar (kein externer Zugriff)
 
 #### Umgebungsvariablen konfigurieren
 
@@ -254,7 +254,7 @@ Siehe [LICENSE.md](./LICENSE.md) für Details.
 
 **Production (nach jedem Update):**
 ```bash
-docker compose exec app npx prisma migrate deploy
+docker compose exec smart-pantry-app npx prisma migrate deploy
 ```
 
 **Development (erstellt neue Migration):**
@@ -281,11 +281,11 @@ Prisma Migrations sind **idempotent** und **inkrementell**:
 **Beispiel:**
 ```bash
 # Beim ersten Start
-docker compose exec app npx prisma migrate deploy
+docker compose exec smart-pantry-app npx prisma migrate deploy
 # → Führt Migration 0001_init aus (erstellt alle Tabellen)
 
 # Später, nach Code-Update mit neuer Migration
-docker compose exec app npx prisma migrate deploy
+docker compose exec smart-pantry-app npx prisma migrate deploy
 # → Führt NUR die neue Migration aus (z.B. 0002_add_notifications)
 # → Bestehende Daten bleiben unverändert!
 ```

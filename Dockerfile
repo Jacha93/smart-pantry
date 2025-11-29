@@ -123,7 +123,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV BACKEND_PORT=3001
-ENV HOSTNAME="0.0.0.0"
+# HOSTNAME wird in server.js gesetzt (Fallback: 0.0.0.0 für Docker)
 # NEXT_PUBLIC_API_URL wird in compose.yml aus BACKEND_PORT gebaut
 # ENV NEXT_PUBLIC_API_URL=http://localhost:3001
 
