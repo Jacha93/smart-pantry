@@ -57,10 +57,13 @@ next-env.d.ts
 docker-compose.override.yml
 
 # Database backups
-*.sql
+# *.sql # Commented out to allow migrations to be tracked
 *.sql.gz
 backups/
 *.backup
+
+# Exception: Prisma migrations should be tracked
+!backend/prisma/migrations/**/*.sql
 
 # IDE
 .vscode/

@@ -79,7 +79,13 @@ COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/node_modules ./backe
 RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Prisma Client fehlt im finalen Image!" && exit 1)
 COPY --chown=nextjs:nodejs backend/package*.json ./backend/
 COPY --chown=nextjs:nodejs backend/server.js ./backend/
-COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
+# Copy Prisma schema first
+COPY --chown=nextjs:nodejs backend/prisma/schema.prisma ./backend/prisma/schema.prisma
+# Copy migrations directory explicitly
+COPY --chown=nextjs:nodejs backend/prisma/migrations ./backend/prisma/migrations
+# Verify migrations are copied
+RUN ls -la /app/backend/prisma/migrations/ || (echo "ERROR: Migrations directory not found!" && exit 1)
+RUN ls -la /app/backend/prisma/migrations/0001_init/migration.sql || (echo "ERROR: Migration file not found!" && exit 1)
 # Verify migrations are copied
 RUN ls -la /app/backend/prisma/migrations/ || (echo "ERROR: Migrations directory not found!" && exit 1)
 RUN ls -la /app/backend/prisma/migrations/0001_init/migration.sql || (echo "ERROR: Migration file not found!" && exit 1)
