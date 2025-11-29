@@ -80,16 +80,23 @@ export function AdBlockerDetector() {
       }, 500);
 
       // Method 2: Try to load a known ad script URL
+      let scriptLoaded = false;
+      let scriptErrored = false;
       const testScript = document.createElement('script');
       testScript.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
       testScript.async = true;
       testScript.onerror = () => {
         // Script failed to load - likely adblocker
+        scriptErrored = true;
         adBlockerDetected = true;
+        if (testScript.parentNode) {
+          testScript.parentNode.removeChild(testScript);
+        }
         checkAndShow();
       };
       testScript.onload = () => {
         // Script loaded - no adblocker blocking this
+        scriptLoaded = true;
         if (testScript.parentNode) {
           testScript.parentNode.removeChild(testScript);
         }
@@ -97,12 +104,12 @@ export function AdBlockerDetector() {
       };
       // Timeout fallback
       setTimeout(() => {
-        if (testScript.parentNode) {
-          testScript.parentNode.removeChild(testScript);
-        }
-        if (!testScript.onload.called) {
+        if (!scriptLoaded && !scriptErrored) {
           // Script didn't load in time - might be blocked
           adBlockerDetected = true;
+          if (testScript.parentNode) {
+            testScript.parentNode.removeChild(testScript);
+          }
           checkAndShow();
         }
       }, 2000);
