@@ -131,16 +131,13 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// CORS muss VOR express.json() sein
-app.use(cors(corsOptions));
-app.use(express.json());
-
-// Explicitly handle OPTIONS requests for CORS preflight (Express 5 compatible)
-// Express 5 verwendet path-to-regexp v6, das '*' nicht mehr unterstützt
-// Daher verwenden wir einen Middleware-Ansatz statt app.options('*')
+// WICHTIG: OPTIONS-Middleware muss VOR cors() kommen, damit sie ausgeführt wird
+// cors() mit preflightContinue: false beendet OPTIONS-Requests bereits
+// Daher müssen wir OPTIONS explizit VOR cors() behandeln
 app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    const origin = req.headers.origin;
+    res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     res.header('Access-Control-Allow-Credentials', 'true');
@@ -149,6 +146,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// CORS muss VOR express.json() sein
+app.use(cors(corsOptions));
+app.use(express.json());
 
 let demoUserCache = null;
 
@@ -2071,8 +2072,11 @@ app.use((err, req, res, next) => {
 // Error-Handling für Server-Start
 let server;
 try {
-  server = app.listen(PORT, () => {
-    console.log(`✅ API listening on http://localhost:${PORT}`);
+  // WICHTIG: In Docker muss der Server auf 0.0.0.0 hören, nicht auf localhost
+  // localhost würde nur innerhalb des Containers erreichbar sein
+  const HOST = process.env.HOSTNAME || '0.0.0.0';
+  server = app.listen(PORT, HOST, () => {
+    console.log(`✅ API listening on http://${HOST}:${PORT}`);
   });
 
   server.on('error', (error) => {

@@ -37,31 +37,37 @@ export function AdBlockerDetector() {
         return;
       }
 
-      let adBlockerDetected = false;
-      let checksCompleted = 0;
-      const totalChecks = 2;
-      let scriptLoaded = false;
-      let scriptErrored = false;
+      // Use a ref-like approach with a shared object to track state
+      const detectionState = {
+        scriptLoaded: false,
+        scriptErrored: false,
+        domCheckCompleted: false,
+        scriptCheckCompleted: false,
+      };
 
-      const checkAndShow = () => {
-        checksCompleted++;
-        // Only show popup if adblocker detected AND user is not authenticated
-        // WICHTIG: Wenn Script erfolgreich lädt, ist definitiv KEIN AdBlocker aktiv
-        // In diesem Fall ignorieren wir die DOM-Methode
-        if (checksCompleted >= totalChecks) {
-          // Wenn Script erfolgreich geladen wurde, ist definitiv kein AdBlocker aktiv
-          if (scriptLoaded) {
-            console.log('Script loaded successfully - definitively NO AdBlocker');
-            adBlockerDetected = false;
-          }
-          
-          if (adBlockerDetected && !isAuthenticated) {
-            console.log('AdBlocker detected - showing popup');
-            setShowDialog(true);
-          } else {
-            console.log('No AdBlocker detected or user is authenticated');
-          }
+      const evaluateAndShow = () => {
+        // Both checks must be completed before evaluation
+        if (!detectionState.domCheckCompleted || !detectionState.scriptCheckCompleted) {
+          return;
         }
+
+        // WICHTIG: Wenn Script erfolgreich lädt, ist definitiv KEIN AdBlocker aktiv
+        // In diesem Fall ignorieren wir die DOM-Methode komplett
+        if (detectionState.scriptLoaded) {
+          console.log('Script loaded successfully - definitively NO AdBlocker');
+          return; // Kein AdBlocker, kein Popup
+        }
+
+        // Wenn Script fehlgeschlagen ist, ist ein AdBlocker aktiv
+        if (detectionState.scriptErrored) {
+          console.log('AdBlocker detected via script error - showing popup');
+          setShowDialog(true);
+          return;
+        }
+
+        // Fallback: Wenn Script weder geladen noch fehlgeschlagen ist (Timeout),
+        // verwenden wir die DOM-Methode als Indikator
+        console.log('Script check inconclusive - using DOM method as fallback');
       };
 
       // Method 1: Create a fake ad element that adblockers typically block
@@ -78,7 +84,6 @@ export function AdBlockerDetector() {
 
       setTimeout(() => {
         // Check if element was blocked/hidden by adblocker
-        // Only check if element is completely removed or has display:none from adblocker
         const computedStyle = window.getComputedStyle(fakeAd);
         const isBlocked = computedStyle.display === 'none' && 
                          computedStyle.visibility === 'hidden';
@@ -87,53 +92,58 @@ export function AdBlockerDetector() {
           document.body.removeChild(fakeAd);
         }
 
-        // Only set adBlockerDetected if we're SURE it's blocked
-        // Don't rely on offsetHeight/offsetWidth as they can be 0 for other reasons
+        // DOM check completed
+        detectionState.domCheckCompleted = true;
+        
+        // Only log, don't set adBlockerDetected here - script method is primary
         if (isBlocked) {
-          console.log('AdBlocker detected via DOM element');
-          adBlockerDetected = true;
+          console.log('DOM element potentially blocked (secondary check)');
         }
-        checkAndShow();
+        
+        evaluateAndShow();
       }, 500);
 
-      // Method 2: Try to load a known ad script URL
+      // Method 2: Try to load a known ad script URL (PRIMARY METHOD)
       const testScript = document.createElement('script');
       testScript.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
       testScript.async = true;
+      
       testScript.onerror = () => {
         // Script failed to load - likely adblocker
-        scriptErrored = true;
+        detectionState.scriptErrored = true;
+        detectionState.scriptCheckCompleted = true;
         console.log('AdBlocker detected via script error');
-        adBlockerDetected = true;
         if (testScript.parentNode) {
           testScript.parentNode.removeChild(testScript);
         }
-        checkAndShow();
+        evaluateAndShow();
       };
+      
       testScript.onload = () => {
         // Script loaded successfully - NO adblocker blocking this
-        scriptLoaded = true;
+        detectionState.scriptLoaded = true;
+        detectionState.scriptCheckCompleted = true;
         console.log('Script loaded successfully - definitively NO AdBlocker');
-        // If script loads successfully, there is DEFINITELY NO adblocker
-        // Set this BEFORE checkAndShow so it overrides any DOM detection
-        adBlockerDetected = false;
         if (testScript.parentNode) {
           testScript.parentNode.removeChild(testScript);
         }
-        checkAndShow();
+        evaluateAndShow();
       };
-      // Timeout fallback - if script doesn't load or error in 2 seconds, might be blocked
+      
+      // Timeout fallback - if script doesn't load or error in 3 seconds, consider it blocked
       setTimeout(() => {
-        if (!scriptLoaded && !scriptErrored) {
-          // Script didn't load in time - might be blocked
+        if (!detectionState.scriptLoaded && !detectionState.scriptErrored) {
+          // Script didn't load in time - likely blocked
+          detectionState.scriptErrored = true;
+          detectionState.scriptCheckCompleted = true;
           console.log('AdBlocker detected via timeout (script did not load)');
-          adBlockerDetected = true;
           if (testScript.parentNode) {
             testScript.parentNode.removeChild(testScript);
           }
-          checkAndShow();
+          evaluateAndShow();
         }
-      }, 2000);
+      }, 3000);
+      
       document.head.appendChild(testScript);
     };
 

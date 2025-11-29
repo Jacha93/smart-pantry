@@ -10,9 +10,17 @@ export function cn(...inputs: ClassValue[]) {
  * otherwise falls back to a manual implementation.
  */
 export function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
+  try {
+    // Check if crypto.randomUUID is available and callable
+    if (typeof crypto !== 'undefined' && 
+        typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch (error) {
+    // If crypto.randomUUID throws an error, fall back to manual implementation
+    console.warn('crypto.randomUUID() not available, using fallback:', error);
   }
+  
   // Fallback for browsers that don't support crypto.randomUUID()
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
