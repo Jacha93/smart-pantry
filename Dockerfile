@@ -69,6 +69,7 @@ RUN ls -la /app/backend/node_modules/.prisma/client/index.js || (echo "ERROR: Pr
 COPY --chown=nextjs:nodejs backend/package*.json ./backend/
 COPY --chown=nextjs:nodejs backend/server.js ./backend/
 COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
+COPY --chown=nextjs:nodejs backend/prisma.config.ts ./backend/
 COPY --chown=nextjs:nodejs backend/utils ./backend/utils
 
 # Copy built frontend (standalone output)
@@ -82,7 +83,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo 'echo "Waiting for database to be ready..."' >> /app/start.sh && \
     echo 'until nc -z smart-pantry-postgres 5432; do sleep 1; done' >> /app/start.sh && \
     echo 'echo "Database is ready. Running Prisma migrations..."' >> /app/start.sh && \
-    echo 'cd /app/backend && npx prisma migrate deploy --schema=./prisma/schema.prisma' >> /app/start.sh && \
+    echo 'cd /app/backend && npx prisma migrate deploy' >> /app/start.sh && \
     echo 'echo "Migrations completed. Starting backend on port 8000..."' >> /app/start.sh && \
     echo 'cd /app/backend && node server.js &' >> /app/start.sh && \
     echo 'BACKEND_PID=$!' >> /app/start.sh && \
