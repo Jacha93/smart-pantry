@@ -26,8 +26,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-smart_pantry}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+    # SICHERHEIT: Kein Port-Mapping - Datenbank nur im Docker-Netzwerk erreichbar
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -52,12 +53,7 @@ services:
       - "${FRONTEND_PORT:-3000}:3000"
       - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     environment:
-      # Database Connection (wird aus .env Variablen gebaut)
-      # WICHTIG: Innerhalb des Docker-Netzwerks ist der Port immer 5432 (Container-Standard)
-      # POSTGRES_PORT wird nur für das externe Port-Mapping verwendet
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
-      
-      # Frontend API URL (wird automatisch aus BACKEND_PORT gebaut, kann in .env überschrieben werden)
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-3001}}
     networks:
       - smart-pantry-network
