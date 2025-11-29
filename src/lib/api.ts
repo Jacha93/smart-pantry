@@ -7,25 +7,47 @@ declare module 'axios' {
   }
 }
 
-// API Base URL - wird aus Umgebungsvariable gelesen, Fallback für lokale Entwicklung
-// Im Docker Container wird NEXT_PUBLIC_API_URL automatisch aus BACKEND_PORT gesetzt
+// API Base URL - wird dynamisch zur Laufzeit berechnet
+// WICHTIG: NEXT_PUBLIC_* Variablen werden zur Build-Zeit kompiliert, daher müssen wir
+// zur Laufzeit den Port dynamisch aus window.location ableiten
 const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
-    // Client-side: Verwende NEXT_PUBLIC_API_URL oder baue aus window.location
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (envUrl) return envUrl;
-    
-    // Fallback: Baue URL aus window.location (für lokale Entwicklung)
+    // Client-side: Baue URL dynamisch aus window.location
+    // Dies funktioniert auch wenn NEXT_PUBLIC_API_URL zur Build-Zeit falsch war
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '3001';
-    return `${protocol}//${hostname}:${port}`;
+    
+    // Versuche Port aus NEXT_PUBLIC_API_URL zu extrahieren (falls zur Build-Zeit gesetzt)
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (envUrl) {
+      try {
+        const url = new URL(envUrl);
+        // Verwende Port aus NEXT_PUBLIC_API_URL, aber mit aktuellem hostname
+        // (hostname kann sich ändern, z.B. localhost vs. 192.168.0.95)
+        if (url.port) {
+          return `${protocol}//${hostname}:${url.port}`;
+        }
+      } catch {
+        // Falls URL-Parsing fehlschlägt, verwende Fallback
+      }
+    }
+    
+    // Fallback 1: Verwende explizit gesetzten Port aus NEXT_PUBLIC_BACKEND_PORT
+    if (process.env.NEXT_PUBLIC_BACKEND_PORT) {
+      return `${protocol}//${hostname}:${process.env.NEXT_PUBLIC_BACKEND_PORT}`;
+    }
+    
+    // Fallback 2: Leite Backend-Port aus Frontend-Port ab
+    // Standard: Frontend 3000 -> Backend 3001
+    const frontendPort = window.location.port ? parseInt(window.location.port, 10) : 
+                         (window.location.protocol === 'https:' ? 443 : 80);
+    const backendPort = frontendPort === 3000 ? '3001' : String(frontendPort + 1);
+    
+    return `${protocol}//${hostname}:${backendPort}`;
   }
   // Server-side: Verwende NEXT_PUBLIC_API_URL oder Fallback
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 };
-
-const API_BASE_URL = getApiBaseUrl();
 
 const getStoredToken = (key: string): string | null => {
   if (typeof window === 'undefined') return null;
@@ -48,18 +70,32 @@ const redirectToLogin = () => {
   }
 };
 
+// API Instanzen - baseURL wird dynamisch bei jedem Request berechnet
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 const authlessApi = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+// Interceptor um baseURL dynamisch zu aktualisieren (falls sich Port ändert)
+api.interceptors.request.use((config) => {
+  // Aktualisiere baseURL bei jedem Request zur Laufzeit
+  config.baseURL = getApiBaseUrl();
+  return config;
+});
+
+authlessApi.interceptors.request.use((config) => {
+  // Aktualisiere baseURL bei jedem Request zur Laufzeit
+  config.baseURL = getApiBaseUrl();
+  return config;
 });
 
 // Add auth token to requests

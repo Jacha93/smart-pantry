@@ -55,6 +55,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-3001}}
+      HOSTNAME: 0.0.0.0
     networks:
       - smart-pantry-network
     healthcheck:
