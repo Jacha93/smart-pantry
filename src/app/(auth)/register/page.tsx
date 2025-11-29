@@ -43,13 +43,34 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
+      console.log('Registration attempt:', { email: data.email, name: data.name });
       await auth.register(data.email, data.password, data.name);
+      console.log('Registration successful');
       toast.success(t('common.registrationSuccess'));
       router.push('/login');
     } catch (error: unknown) {
+      console.error('Registration error in component:', error);
       let errorMessage = t('common.registrationFailed');
       
-      const apiError = error as { response?: { data?: { detail?: string | string[] | { message?: string; msg?: string } } } };
+      const apiError = error as { 
+        response?: { 
+          data?: { 
+            detail?: string | string[] | { message?: string; msg?: string } 
+          },
+          status?: number
+        },
+        message?: string,
+        code?: string
+      };
+      
+      // Log detailed error information
+      console.error('API Error details:', {
+        hasResponse: !!apiError.response,
+        status: apiError.response?.status,
+        data: apiError.response?.data,
+        message: apiError.message,
+        code: apiError.code,
+      });
       
       if (apiError.response?.data?.detail) {
         if (typeof apiError.response.data.detail === 'string') {
@@ -65,8 +86,12 @@ export default function RegisterPage() {
         } else if (typeof apiError.response.data.detail === 'object') {
           errorMessage = apiError.response.data.detail.message || apiError.response.data.detail.msg || t('common.registrationFailed');
         }
+      } else if (apiError.message) {
+        // If no response but there's a message (network error, CORS, etc.)
+        errorMessage = apiError.message;
       }
       
+      console.error('Final error message:', errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

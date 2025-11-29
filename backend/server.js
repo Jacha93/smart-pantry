@@ -426,13 +426,28 @@ async function authMiddleware(req, res, next) {
 // Auth routes
 app.post('/auth/register', async (req, res) => {
   try {
+    console.log('Registration request received:', {
+      email: req.body?.email ? 'provided' : 'missing',
+      password: req.body?.password ? 'provided' : 'missing',
+      name: req.body?.name ? 'provided' : 'missing',
+      bodyKeys: Object.keys(req.body || {}),
+    });
+    
     const { email, password, name, profile } = req.body || {};
     if (!email || !password || !name) {
-      return res.status(400).json({ detail: 'Missing required fields' });
+      console.error('Registration failed: Missing required fields', { email: !!email, password: !!password, name: !!name });
+      return res.status(400).json({ detail: 'Missing required fields: email, password, and name are required' });
     }
+    
     const normalizedEmail = normalizeEmail(email);
+    console.log('Checking if user exists:', normalizedEmail);
     const exists = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-    if (exists) return res.status(409).json({ detail: 'User already exists' });
+    if (exists) {
+      console.error('Registration failed: User already exists', normalizedEmail);
+      return res.status(409).json({ detail: 'User already exists' });
+    }
+    
+    console.log('Creating new user:', normalizedEmail);
     const passwordHash = await bcrypt.hash(password, 10);
     const encryptedProfile = profile ? encryptField(JSON.stringify(profile)) : null;
     const user = await prisma.user.create({
@@ -444,12 +459,16 @@ app.post('/auth/register', async (req, res) => {
         quotaResetAt: new Date(),
       },
     });
+    
+    console.log('User created successfully:', user.id, user.email);
     return res
       .status(201)
       .json({ id: user.id, email: user.email, name: user.name, created_at: user.createdAt });
   } catch (error) {
     console.error('Register Error:', error);
-    res.status(500).json({ detail: 'Registration failed' });
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+    res.status(500).json({ detail: error.message || 'Registration failed' });
   }
 });
 

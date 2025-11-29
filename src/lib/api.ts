@@ -68,6 +68,19 @@ api.interceptors.request.use((config) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Log requests for debugging (especially auth endpoints)
+  if (config.url?.includes('/auth/register') || config.url?.includes('/auth/login')) {
+    console.log('API Request:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`,
+      hasData: !!config.data,
+      dataKeys: config.data ? Object.keys(config.data) : [],
+    });
+  }
+  
   return config;
 });
 
@@ -186,6 +199,18 @@ api.interceptors.response.use(
       removeStoredToken(ACCESS_TOKEN_KEY);
       removeStoredToken(REFRESH_TOKEN_KEY);
       redirectToLogin();
+    }
+
+    // Log all errors for debugging (especially registration/login failures)
+    if (url.includes('/auth/register') || url.includes('/auth/login')) {
+      console.error('Auth API Error:', {
+        url,
+        status,
+        message: error.message,
+        response: error.response?.data,
+        code: error.code,
+        request: error.request ? 'Request exists' : 'No request',
+      });
     }
 
     return Promise.reject(error);

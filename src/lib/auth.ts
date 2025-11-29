@@ -46,8 +46,17 @@ export const auth = {
   },
 
   register: async (email: string, password: string, name: string): Promise<User> => {
-    const response = await authAPI.register(email, password, name);
-    return response.data;
+    try {
+      const response = await authAPI.register(email, password, name);
+      return response.data;
+    } catch (error: any) {
+      // Log error for debugging
+      console.error('Registration error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      throw error;
+    }
   },
 
   logout: async () => {
