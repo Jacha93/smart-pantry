@@ -19,14 +19,8 @@ const { encryptField, decryptField } = require('./utils/encryption');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
-// Prisma Client mit expliziter DATABASE_URL initialisieren (Prisma 7 Anforderung)
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-});
+// Prisma Client - DATABASE_URL wird automatisch aus Umgebungsvariable gelesen
+const prisma = new PrismaClient();
 
 // Backend Port wird aus .env geladen (kein Fallback, muss gesetzt sein)
 const PORT = Number(process.env.BACKEND_PORT);
