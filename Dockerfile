@@ -107,7 +107,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV BACKEND_PORT=8000
 ENV HOSTNAME="0.0.0.0"
-ENV NEXT_PUBLIC_API_URL=http://localhost:8000
+# NEXT_PUBLIC_API_URL wird in compose.yml aus BACKEND_PORT gebaut
+# ENV NEXT_PUBLIC_API_URL=http://localhost:8000
 
 # Expose ports
 EXPOSE 3000 8000

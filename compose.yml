@@ -57,8 +57,8 @@ services:
       # POSTGRES_PORT wird nur für das externe Port-Mapping verwendet
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
       
-      # Frontend API URL (kann in .env überschrieben werden)
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      # Frontend API URL (wird automatisch aus BACKEND_PORT gebaut, kann in .env überschrieben werden)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-8000}}
     networks:
       - smart-pantry-network
     healthcheck:

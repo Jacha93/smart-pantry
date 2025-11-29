@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { ChatBubble } from '@/components/chat-bubble';
+import { AdBlockerDetector } from '@/components/adblocker-detector';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({
         {children}
         <Toaster />
         <ChatBubble />
+        <AdBlockerDetector />
       </body>
     </html>
   );

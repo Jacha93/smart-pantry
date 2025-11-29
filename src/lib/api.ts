@@ -7,7 +7,25 @@ declare module 'axios' {
   }
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// API Base URL - wird aus Umgebungsvariable gelesen, Fallback für lokale Entwicklung
+// Im Docker Container wird NEXT_PUBLIC_API_URL automatisch aus BACKEND_PORT gesetzt
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    // Client-side: Verwende NEXT_PUBLIC_API_URL oder baue aus window.location
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (envUrl) return envUrl;
+    
+    // Fallback: Baue URL aus window.location (für lokale Entwicklung)
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    const port = process.env.NEXT_PUBLIC_BACKEND_PORT || '8000';
+    return `${protocol}//${hostname}:${port}`;
+  }
+  // Server-side: Verwende NEXT_PUBLIC_API_URL oder Fallback
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 const getStoredToken = (key: string): string | null => {
   if (typeof window === 'undefined') return null;
@@ -79,10 +97,25 @@ const refreshAccessToken = async (): Promise<string | null> => {
   return access_token;
 };
 
+// Track adblocker detection
+let adBlockerDetected = false;
+export const setAdBlockerDetected = (detected: boolean) => {
+  adBlockerDetected = detected;
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('adblocker-detected', { detail: detected }));
+  }
+};
+
 // Handle auth errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Detect ERR_BLOCKED_BY_CLIENT (adblocker blocking requests)
+    if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') || 
+        error.code === 'ERR_BLOCKED_BY_CLIENT' ||
+        (error.response === undefined && error.request && error.message?.includes('blocked'))) {
+      setAdBlockerDetected(true);
+    }
     const status = error.response?.status;
     const originalRequest = error.config;
     const url = originalRequest?.url || '';

@@ -9,6 +9,7 @@ import { Plus, Minus, X, Loader2, ChefHat, Clock, Users, ImageIcon } from 'lucid
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 import { api } from '@/lib/api';
+import { generateUUID } from '@/lib/utils';
 
 interface Ingredient {
   id: string;
@@ -32,7 +33,7 @@ export function AddRecipeDialog({ onRecipeAdded }: AddRecipeDialogProps) {
   const [servings, setServings] = useState(4);
   const [prepTime, setPrepTime] = useState(30);
   const [ingredients, setIngredients] = useState<Ingredient[]>([
-    { id: crypto.randomUUID(), name: '', amount: 1, unit: '' }
+    { id: generateUUID(), name: '', amount: 1, unit: '' }
   ]);
   const [instructions, setInstructions] = useState('');
 
@@ -41,7 +42,7 @@ export function AddRecipeDialog({ onRecipeAdded }: AddRecipeDialogProps) {
     setImageUrl('');
     setServings(4);
     setPrepTime(30);
-    setIngredients([{ id: crypto.randomUUID(), name: '', amount: 1, unit: '' }]);
+    setIngredients([{ id: generateUUID(), name: '', amount: 1, unit: '' }]);
     setInstructions('');
   };
 
@@ -111,7 +112,7 @@ export function AddRecipeDialog({ onRecipeAdded }: AddRecipeDialogProps) {
 
   // Zutat hinzufügen
   const addIngredient = () => {
-    setIngredients([...ingredients, { id: crypto.randomUUID(), name: '', amount: 1, unit: '' }]);
+    setIngredients([...ingredients, { id: generateUUID(), name: '', amount: 1, unit: '' }]);
   };
 
   // Zutat entfernen
