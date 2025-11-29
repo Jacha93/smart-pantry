@@ -111,7 +111,25 @@ if (AUTH_DISABLED) {
   );
 }
 
-app.use(cors());
+// CORS Configuration - erlaube Requests vom Frontend
+// WICHTIG: In Production sollte dies auf spezifische Origins beschränkt werden
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Erlaube Requests ohne Origin (z.B. Postman, mobile apps, same-origin requests)
+    if (!origin) return callback(null, true);
+    
+    // Erlaube alle Origins (für Flexibilität - in Production einschränken!)
+    // Dies behebt CORS-Probleme beim Zugriff vom Frontend
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400, // 24 Stunden
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 let demoUserCache = null;
