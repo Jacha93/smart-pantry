@@ -72,6 +72,8 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
    NEXT_INTERNAL_API_URL=http://localhost:CHANGE_TO_YOUR_BACKEND_PORT
    NEXT_PUBLIC_BACKEND_PORT=CHANGE_TO_YOUR_BACKEND_PORT
    NEXT_PUBLIC_AUTH_DISABLED=false
+   # Optional: Aktiviert lokalen Mock-Login ohne Backend/Datenbank
+   NEXT_PUBLIC_USE_MOCK_AUTH=true
    # Optional: Nur setzen, wenn das Backend öffentlich unter einer festen Domain erreichbar ist
    # NEXT_PUBLIC_API_URL=https://api.smartpantry.example
    ```
@@ -98,6 +100,18 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
    - Frontend: http://localhost:CHANGE_TO_YOUR_FRONTEND_PORT  
    - Backend: http://localhost:CHANGE_TO_YOUR_BACKEND_PORT  
+
+### Lokale Tests ohne Backend oder Datenbank
+
+Wenn du das Projekt auf einem Entwicklungsrechner ohne PostgreSQL oder Docker ausführst, kannst du den neuen **Mock-Auth-Modus** aktivieren:
+
+- Setze in deiner `.env.local` oder `.env`:
+  ```env
+  NEXT_PUBLIC_USE_MOCK_AUTH=true
+  NEXT_PUBLIC_AUTH_DISABLED=false
+  ```
+- Damit werden Registrierung und Login komplett im Browser (LocalStorage) abgewickelt.  
+- Sobald du auf einem Server mit echter Datenbank arbeitest, stelle `NEXT_PUBLIC_USE_MOCK_AUTH=false` (oder entferne die Variable), damit das Frontend wieder mit dem Express-Backend spricht.
 
 ## 🔓 Demo-Modus (Login deaktivieren)
 
@@ -179,13 +193,14 @@ Die `.env.example` Datei enthält alle benötigten Variablen mit Beschreibungen:
 - **Security**: `JWT_SECRET`, `PERSONAL_DATA_KEY` (64 Hex-Zeichen)
 - **API Keys**: `GEMINI_API_KEY`, `SPOONACULAR_API_KEY`, `GITHUB_TOKEN` (optional)
 - **Quoten**: `LLM_TOKEN_COST_*`, `RECIPE_CALL_COST_*`
-- **Frontend**: `NEXT_PUBLIC_AUTH_DISABLED`, `NEXT_INTERNAL_API_URL` (Server-zu-Server), optional `NEXT_PUBLIC_API_URL`
+- **Frontend**: `NEXT_PUBLIC_AUTH_DISABLED`, `NEXT_PUBLIC_USE_MOCK_AUTH`, `NEXT_INTERNAL_API_URL` (Server-zu-Server), optional `NEXT_PUBLIC_API_URL`
 
 **Wichtig**: 
 - `PERSONAL_DATA_KEY` generieren mit: `openssl rand -hex 32`
 - `JWT_SECRET` sollte mindestens 32 zufällige Zeichen sein
 - Alle Passwörter sollten stark und eindeutig sein
 - **Container-Ports sind fest**: Frontend 3000, Backend 3001. Passe nur die Host-Ports (`FRONTEND_PORT`, `BACKEND_PORT`) in `.env` an.
+- **`NEXT_PUBLIC_USE_MOCK_AUTH`** auf `true` setzen, wenn du lokal ohne Datenbank/Docker arbeiten möchtest. Auf dem Server auf `false` lassen.
 - **`NEXT_INTERNAL_API_URL`** zeigt im Docker-Netzwerk standardmäßig auf `http://smart-pantry-backend:3001`
 - **`NEXT_PUBLIC_API_URL`** nur setzen, wenn das Backend unter einer extern erreichbaren Domain liegt. Standardmäßig ermittelt das Frontend die URL anhand des Browser-Hosts.
 
