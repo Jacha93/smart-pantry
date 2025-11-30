@@ -54,8 +54,14 @@ API_KEYS_SETUP.md
 *_INTERN.md
 
 # Scripts (lokal, nicht für Image)
-scripts/
+# WICHTIG: Start-Scripte MÜSSEN rein, alle anderen raus
+scripts/*
+!scripts/start-backend.sh
+!scripts/start-frontend.sh
+# *.sh generell ignorieren, aber Start-Scripte erlauben
 *.sh
+!scripts/start-backend.sh
+!scripts/start-frontend.sh
 
 # IDE & Editor
 .vscode
