@@ -88,6 +88,8 @@ services:
       NEXT_PUBLIC_BACKEND_PORT: ${BACKEND_PORT:-3001}
       # Interne API-URL für SSR/Server-Kommunikation im Docker-Netzwerk (immer der Service-Port)
       NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://smart-pantry-backend:3001}
+      # Mock-Auth in Produktion deaktivieren
+      NEXT_PUBLIC_USE_MOCK_AUTH: ${NEXT_PUBLIC_USE_MOCK_AUTH:-false}
     
     # Dynamisches Port-Mapping: Host Port : Container Port
     # Container Port ist fix 3000.

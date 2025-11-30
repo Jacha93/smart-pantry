@@ -28,37 +28,8 @@ const SERVER_BASE_URL =
 // zur Laufzeit den Port dynamisch aus window.location ableiten
 const getApiBaseUrl = (): string => {
   if (typeof window !== 'undefined') {
-    // Client-side: Baue URL dynamisch aus window.location
-    // Dies funktioniert auch wenn NEXT_PUBLIC_API_URL zur Build-Zeit falsch war
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    
-    // Prüfe Runtime Config (window.__ENV)
-    const runtimeApiUrl = window.__ENV?.NEXT_PUBLIC_API_URL;
-    const runtimeBackendPort = window.__ENV?.NEXT_PUBLIC_BACKEND_PORT;
-
-    // 1. Priorität: Runtime API URL (falls gesetzt)
-    // Aber Achtung: Wenn es localhost ist und wir nicht auf localhost sind, ist es nutzlos
-    if (runtimeApiUrl && !runtimeApiUrl.includes('localhost')) {
-        return runtimeApiUrl;
-    }
-    
-    // 2. Priorität: Dynamischer Port
-    // Fallback 1: Verwende explizit gesetzten Port aus NEXT_PUBLIC_BACKEND_PORT (Runtime oder Build time)
-    const envBackendPort = runtimeBackendPort || process.env.NEXT_PUBLIC_BACKEND_PORT;
-    
-    if (envBackendPort) {
-      return `${protocol}//${hostname}:${envBackendPort}`;
-    }
-    
-    // Fallback 2: Leite Backend-Port aus Frontend-Port ab
-    // Standard: Frontend 3000 -> Backend 3001
-    const frontendPort = window.location.port ? parseInt(window.location.port, 10) : 
-                         (window.location.protocol === 'https:' ? 443 : 80);
-    
-    const backendPort = frontendPort === 3000 ? '3001' : String(frontendPort + 1);
-    
-    return `${protocol}//${hostname}:${backendPort}`;
+    // Client-seitig immer über Next.js Proxy laufen
+    return '/api';
   }
   // Server-side: Präferiere interne URL (Docker / SSR)
   return SERVER_BASE_URL;
