@@ -41,7 +41,20 @@ const getApiBaseUrl = (): string => {
     // Standard: Frontend 3000 -> Backend 3001
     const frontendPort = window.location.port ? parseInt(window.location.port, 10) : 
                          (window.location.protocol === 'https:' ? 443 : 80);
-    const backendPort = frontendPort === 3000 ? '3001' : String(frontendPort + 1);
+    
+    // WICHTIG: Wenn der Frontend-Port 3000 ist, erwarten wir das Backend üblicherweise auf 3001
+    // ABER: Wenn der Nutzer custom ports verwendet (z.B. Frontend 3000, Backend 8010),
+    // müssen wir wissen, auf welchem Port das Backend läuft.
+    // NEXT_PUBLIC_BACKEND_PORT ist dafür der Schlüssel.
+    // Wenn das nicht gesetzt ist, raten wir:
+    
+    // Logik: 
+    // 1. Wenn NEXT_PUBLIC_BACKEND_PORT da ist -> Nimm das (wird in compose.yml injected!)
+    // 2. Wenn nicht -> Nimm frontendPort + 1 (Fallback für simple Setups)
+    
+    const backendPort = process.env.NEXT_PUBLIC_BACKEND_PORT 
+      ? process.env.NEXT_PUBLIC_BACKEND_PORT 
+      : (frontendPort === 3000 ? '3001' : String(frontendPort + 1));
     
     return `${protocol}//${hostname}:${backendPort}`;
   }
