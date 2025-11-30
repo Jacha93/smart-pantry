@@ -1,11 +1,54 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { ChatBubble } from '@/components/chat-bubble';
 import { AdBlockerDetector } from '@/components/adblocker-detector';
 
 const inter = Inter({ subsets: ['latin'] });
+
+const runtimeConfigScript = `
+(function () {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.__ENV = Object.assign({}, window.__ENV, {
+    NEXT_PUBLIC_BACKEND_PORT: ${JSON.stringify(process.env.NEXT_PUBLIC_BACKEND_PORT ?? '')},
+    NEXT_PUBLIC_API_URL: ${JSON.stringify(process.env.NEXT_PUBLIC_API_URL ?? '')},
+  });
+
+  try {
+    if (!window.crypto) {
+      window.crypto = {};
+    }
+
+    var cryptoObj = window.crypto;
+    if (typeof cryptoObj.randomUUID !== 'function') {
+      var fallbackRandomUUID = function () {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+          var r = Math.random() * 16 | 0;
+          var v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
+      };
+
+      try {
+        Object.defineProperty(cryptoObj, 'randomUUID', {
+          value: fallbackRandomUUID,
+          configurable: true,
+          writable: true,
+        });
+      } catch {
+        cryptoObj.randomUUID = fallbackRandomUUID;
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to polyfill crypto.randomUUID', error);
+  }
+})();
+`;
 
 export const metadata: Metadata = {
   title: 'Smart Pantry',
@@ -28,32 +71,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Runtime Environment Injection
-              window.__ENV = {
-                NEXT_PUBLIC_BACKEND_PORT: '${process.env.NEXT_PUBLIC_BACKEND_PORT || ''}',
-                NEXT_PUBLIC_API_URL: '${process.env.NEXT_PUBLIC_API_URL || ''}',
-              };
-
-              // Polyfill for crypto.randomUUID
-              if (typeof window !== 'undefined' && !window.crypto) {
-                // @ts-ignore
-                window.crypto = {};
-              }
-              if (typeof window !== 'undefined' && window.crypto && !window.crypto.randomUUID) {
-                // @ts-ignore
-                window.crypto.randomUUID = function() {
-                  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                  });
-                };
-              }
-            `,
-          }}
-        />
+        <Script id="runtime-env" strategy="beforeInteractive">
+          {runtimeConfigScript}
+        </Script>
       </head>
       <body className={inter.className}>
         {children}

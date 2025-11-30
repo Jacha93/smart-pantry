@@ -16,6 +16,13 @@ declare global {
   }
 }
 
+const SERVER_BASE_URL =
+  process.env.NEXT_INTERNAL_API_URL ||
+  process.env.API_INTERNAL_URL ||
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:3001';
+
 // API Base URL - wird dynamisch zur Laufzeit berechnet
 // WICHTIG: NEXT_PUBLIC_* Variablen werden zur Build-Zeit kompiliert, daher müssen wir
 // zur Laufzeit den Port dynamisch aus window.location ableiten
@@ -53,8 +60,8 @@ const getApiBaseUrl = (): string => {
     
     return `${protocol}//${hostname}:${backendPort}`;
   }
-  // Server-side: Verwende NEXT_PUBLIC_API_URL oder Fallback
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  // Server-side: Präferiere interne URL (Docker / SSR)
+  return SERVER_BASE_URL;
 };
 
 const getStoredToken = (key: string): string | null => {

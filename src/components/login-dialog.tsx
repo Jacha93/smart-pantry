@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -25,9 +24,10 @@ interface LoginDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  onRegisterClick?: () => void;
 }
 
-export function LoginDialog({ isOpen, onOpenChange, onSuccess }: LoginDialogProps) {
+export function LoginDialog({ isOpen, onOpenChange, onSuccess, onRegisterClick }: LoginDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { t } = useI18n();
@@ -90,6 +90,13 @@ export function LoginDialog({ isOpen, onOpenChange, onSuccess }: LoginDialogProp
     onOpenChange(false);
   };
 
+  const handleRegisterLinkClick = () => {
+    handleClose();
+    if (onRegisterClick) {
+      onRegisterClick();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -132,9 +139,13 @@ export function LoginDialog({ isOpen, onOpenChange, onSuccess }: LoginDialogProp
         </form>
         <div className="mt-4 text-center text-sm text-muted-foreground">
           {t('auth.noAccount')}{' '}
-          <Link href="/register" className="text-primary hover:text-primary/80 hover:underline transition-colors" onClick={handleClose}>
+          <button
+            type="button"
+            onClick={handleRegisterLinkClick}
+            className="text-primary hover:text-primary/80 hover:underline transition-colors"
+          >
             {t('auth.signUp')}
-          </Link>
+          </button>
         </div>
       </DialogContent>
     </Dialog>

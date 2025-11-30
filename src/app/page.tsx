@@ -58,6 +58,16 @@ export default function LandingPage() {
     };
   }, []);
 
+  const openLoginDialog = () => {
+    setIsRegisterDialogOpen(false);
+    setIsLoginDialogOpen(true);
+  };
+
+  const openRegisterDialog = () => {
+    setIsLoginDialogOpen(false);
+    setIsRegisterDialogOpen(true);
+  };
+
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
     router.push('/groceries');
@@ -65,9 +75,7 @@ export default function LandingPage() {
   };
 
   const handleRegisterSuccess = () => {
-    // Optional: Auto-login or show success message then open login
-    setIsRegisterDialogOpen(false);
-    setIsLoginDialogOpen(true);
+    openLoginDialog();
   };
 
   const features = [
@@ -154,20 +162,18 @@ export default function LandingPage() {
                   </div>
                 ) : (
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex items-center gap-2"
-                      onClick={() => setIsLoginDialogOpen(true)}
+                      onClick={openLoginDialog}
                     >
                       <LogIn className="h-4 w-4" />
                       {t('auth.signIn')}
                     </Button>
-                    <Link href="/register">
-                      <Button className="flex items-center gap-2">
-                        {t('auth.signUp')}
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
+                    <Button className="flex items-center gap-2" onClick={openRegisterDialog}>
+                      {t('auth.signUp')}
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 )
               )}
@@ -206,17 +212,19 @@ export default function LandingPage() {
                     </Link>
                   ) : (
                     <>
-                      <Link href="/register">
-                        <Button size="lg" className="text-lg px-8 py-6 flex items-center gap-2">
-                          {t('landing.getStarted')}
-                          <ArrowRight className="h-5 w-5" />
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="outline" 
-                        size="lg" 
+                      <Button
+                        size="lg"
                         className="text-lg px-8 py-6 flex items-center gap-2"
-                        onClick={() => setIsLoginDialogOpen(true)}
+                        onClick={openRegisterDialog}
+                      >
+                        {t('landing.getStarted')}
+                        <ArrowRight className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="text-lg px-8 py-6 flex items-center gap-2"
+                        onClick={openLoginDialog}
                       >
                         <LogIn className="h-5 w-5" />
                         {t('auth.signIn')}
@@ -333,17 +341,19 @@ export default function LandingPage() {
                 </Link>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/register">
-                    <Button size="lg" className="text-lg px-10 py-6 flex items-center gap-2">
-                      {t('landing.getStarted')}
-                      <ArrowRight className="h-5 w-5" />
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
+                  <Button
+                    size="lg"
+                    className="text-lg px-10 py-6 flex items-center gap-2"
+                    onClick={openRegisterDialog}
+                  >
+                    {t('landing.getStarted')}
+                    <ArrowRight className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
                     className="text-lg px-10 py-6"
-                    onClick={() => setIsLoginDialogOpen(true)}
+                    onClick={openLoginDialog}
                   >
                     {t('auth.signIn')}
                   </Button>
@@ -358,10 +368,18 @@ export default function LandingPage() {
       <Footer />
 
       {/* Login Dialog */}
-      <LoginDialog 
-        isOpen={isLoginDialogOpen} 
+      <LoginDialog
+        isOpen={isLoginDialogOpen}
         onOpenChange={setIsLoginDialogOpen}
         onSuccess={handleLoginSuccess}
+        onRegisterClick={openRegisterDialog}
+      />
+
+      <RegisterDialog
+        isOpen={isRegisterDialogOpen}
+        onOpenChange={setIsRegisterDialogOpen}
+        onSuccess={handleRegisterSuccess}
+        onLoginClick={openLoginDialog}
       />
     </div>
   );

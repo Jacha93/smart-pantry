@@ -48,13 +48,13 @@ services:
       # Setze internen Hostname für Listen
       HOSTNAME: 0.0.0.0
       
-      # Backend-Port explizit setzen (falls in .env nicht vorhanden)
-      BACKEND_PORT: ${BACKEND_PORT:-3001}
+      # Backend hört im Container immer auf Port 3001
+      BACKEND_PORT: 3001
     
     # Dynamisches Port-Mapping: Host Port : Container Port
-    # Container Port = BACKEND_PORT (via environment/env_file)
+    # Container Port ist fix (3001). FRONTEND_PORT/ BACKEND_PORT in .env steuern NUR den Host-Port.
     ports:
-      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
+      - "${BACKEND_PORT:-3001}:3001"
     networks:
       - smart-pantry-network
     healthcheck:
@@ -78,20 +78,21 @@ services:
       - .env
     environment:
       # Next.js hört auf die Variable PORT
-      # Wir mappen hier unseren gewünschten FRONTEND_PORT auf die interne PORT Variable
-      PORT: ${FRONTEND_PORT:-3000}
+      # Container-Port ist fix 3000; das Mapping passiert unten
+      PORT: 3000
       HOSTNAME: 0.0.0.0
       
-      # Backend-Erreichbarkeit für Server-Side-Rendering (SSR) im Docker-Netzwerk
-      # Falls nicht gesetzt, nutzen wir den Service-Namen und den internen Port
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://smart-pantry-backend:${BACKEND_PORT:-3001}}
-      
+      # Öffentliche API-URL optional überschreiben (Standard: Host & Port des Browsers)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
       # Fallback für Client-Side, falls URL nicht automatisch erkannt wird
       NEXT_PUBLIC_BACKEND_PORT: ${BACKEND_PORT:-3001}
+      # Interne API-URL für SSR/Server-Kommunikation im Docker-Netzwerk (immer der Service-Port)
+      NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://smart-pantry-backend:3001}
     
     # Dynamisches Port-Mapping: Host Port : Container Port
+    # Container Port ist fix 3000.
     ports:
-      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+      - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - smart-pantry-network
     healthcheck:

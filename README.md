@@ -69,9 +69,14 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
 5. **Frontend-Umgebungsvariablen (`.env.local`)**
    ```env
-   NEXT_PUBLIC_API_URL=http://localhost:CHANGE_TO_YOUR_BACKEND_PORT
+   NEXT_INTERNAL_API_URL=http://localhost:CHANGE_TO_YOUR_BACKEND_PORT
+   NEXT_PUBLIC_BACKEND_PORT=CHANGE_TO_YOUR_BACKEND_PORT
    NEXT_PUBLIC_AUTH_DISABLED=false
+   # Optional: Nur setzen, wenn das Backend öffentlich unter einer festen Domain erreichbar ist
+   # NEXT_PUBLIC_API_URL=https://api.smartpantry.example
    ```
+   > `NEXT_INTERNAL_API_URL` wird nur für serverseitige Requests des Next.js-Backends verwendet.  
+   > Lässt du `NEXT_PUBLIC_API_URL` leer, nutzt das Frontend automatisch die Domain und den Port des Browsers.
 
 6. **Prisma Migrations ausführen**
    ```bash
@@ -159,9 +164,12 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
    **Was macht das?** Diese Migration erstellt alle Datenbank-Tabellen (User, Grocery, Recipes, etc.) in deiner PostgreSQL-Datenbank. Beim ersten Start ist die Datenbank leer - die Migration richtet die komplette Struktur ein.
 
 Die App läuft dann auf:
-- **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (konfigurierbar in .env)
-- **Backend**: http://localhost:${BACKEND_PORT:-3001} (konfigurierbar in .env)
+- **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (Host-Port, frei belegbar über `.env`)
+- **Backend**: http://localhost:${BACKEND_PORT:-3001} (Host-Port, frei belegbar über `.env`)
 - **PostgreSQL**: Nur im Docker-Netzwerk erreichbar (kein externer Zugriff)
+
+> Intern lauschen die Container immer auf **3000 (Frontend)** bzw. **3001 (Backend)**.  
+> Die Variablen `FRONTEND_PORT` und `BACKEND_PORT` steuern ausschließlich das Port-Mapping auf dem Host (`HOST_PORT:CONTAINER_PORT`).
 
 #### Umgebungsvariablen konfigurieren
 
@@ -171,15 +179,15 @@ Die `.env.example` Datei enthält alle benötigten Variablen mit Beschreibungen:
 - **Security**: `JWT_SECRET`, `PERSONAL_DATA_KEY` (64 Hex-Zeichen)
 - **API Keys**: `GEMINI_API_KEY`, `SPOONACULAR_API_KEY`, `GITHUB_TOKEN` (optional)
 - **Quoten**: `LLM_TOKEN_COST_*`, `RECIPE_CALL_COST_*`
-- **Frontend**: `NEXT_PUBLIC_AUTH_DISABLED`
+- **Frontend**: `NEXT_PUBLIC_AUTH_DISABLED`, `NEXT_INTERNAL_API_URL` (Server-zu-Server), optional `NEXT_PUBLIC_API_URL`
 
 **Wichtig**: 
 - `PERSONAL_DATA_KEY` generieren mit: `openssl rand -hex 32`
 - `JWT_SECRET` sollte mindestens 32 zufällige Zeichen sein
 - Alle Passwörter sollten stark und eindeutig sein
-- **`NEXT_PUBLIC_API_URL` wird automatisch von `compose.yml` gesetzt** - nicht in `.env` setzen!
-  - `compose.yml` setzt: `NEXT_PUBLIC_API_URL=http://localhost:${BACKEND_PORT}`
-  - Wenn du `NEXT_PUBLIC_API_URL` in `.env` setzt, überschreibt es die automatische Konfiguration
+- **Container-Ports sind fest**: Frontend 3000, Backend 3001. Passe nur die Host-Ports (`FRONTEND_PORT`, `BACKEND_PORT`) in `.env` an.
+- **`NEXT_INTERNAL_API_URL`** zeigt im Docker-Netzwerk standardmäßig auf `http://smart-pantry-backend:3001`
+- **`NEXT_PUBLIC_API_URL`** nur setzen, wenn das Backend unter einer extern erreichbaren Domain liegt. Standardmäßig ermittelt das Frontend die URL anhand des Browser-Hosts.
 
 ### Lokale Entwicklung
 
