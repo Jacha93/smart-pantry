@@ -40,8 +40,17 @@ const filterHeaders = (headers: Headers) => {
 
 const isBodylessMethod = (method: string) => method === 'GET' || method === 'HEAD';
 
-const forwardRequest = async (request: NextRequest, params: { path?: string[] }) => {
-  const targetUrl = buildTargetUrl(params.path || [], request.nextUrl.search);
+type RouteParams = { path?: string[] };
+
+const resolveParams = async (params: RouteParams | Promise<RouteParams>): Promise<RouteParams> =>
+  Promise.resolve(params).catch(() => ({ path: [] }));
+
+const forwardRequest = async (
+  request: NextRequest,
+  params: RouteParams | Promise<RouteParams>
+): Promise<NextResponse> => {
+  const resolvedParams = await resolveParams(params);
+  const targetUrl = buildTargetUrl(resolvedParams.path || [], request.nextUrl.search);
   const method = request.method.toUpperCase();
   const headers = filterHeaders(request.headers);
 
@@ -84,27 +93,31 @@ const forwardRequest = async (request: NextRequest, params: { path?: string[] })
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest, context: { params: { path: string[] } }) {
+type Context =
+  | { params: RouteParams }
+  | { params: Promise<RouteParams> };
+
+export async function GET(request: NextRequest, context: Context) {
   return forwardRequest(request, context.params);
 }
 
-export async function POST(request: NextRequest, context: { params: { path: string[] } }) {
+export async function POST(request: NextRequest, context: Context) {
   return forwardRequest(request, context.params);
 }
 
-export async function PUT(request: NextRequest, context: { params: { path: string[] } }) {
+export async function PUT(request: NextRequest, context: Context) {
   return forwardRequest(request, context.params);
 }
 
-export async function PATCH(request: NextRequest, context: { params: { path: string[] } }) {
+export async function PATCH(request: NextRequest, context: Context) {
   return forwardRequest(request, context.params);
 }
 
-export async function DELETE(request: NextRequest, context: { params: { path: string[] } }) {
+export async function DELETE(request: NextRequest, context: Context) {
   return forwardRequest(request, context.params);
 }
 
-export async function OPTIONS(request: NextRequest, context: { params: { path: string[] } }) {
+export async function OPTIONS(request: NextRequest, context: Context) {
   return forwardRequest(request, context.params);
 }
 
