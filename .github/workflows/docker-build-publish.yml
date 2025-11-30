@@ -63,13 +63,17 @@ jobs:
           # Start with tags from metadata-action
           TAGS="${{ steps.meta.outputs.tags }}"
           
+          # Ensure repository name is lowercase
+          REPO_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          FULL_IMAGE_NAME="${{ env.REGISTRY }}/$REPO_LOWER"
+          
           # Logic for dev branch: Add vX.X.X-dev and vX.X.X-nightly
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
             echo "Adding dev/nightly version tags..."
             # Append new tags (newline separated is fine for build-push-action)
             TAGS="${TAGS}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${PACKAGE_VERSION}-dev
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${PACKAGE_VERSION}-nightly"
+            ${FULL_IMAGE_NAME}:v${PACKAGE_VERSION}-dev
+            ${FULL_IMAGE_NAME}:v${PACKAGE_VERSION}-nightly"
           fi
           
           # Output multiline string to GITHUB_OUTPUT
