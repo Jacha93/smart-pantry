@@ -2,50 +2,29 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches: 
+    branches:
       - main
       - dev
-      - agent
     tags:
-      - 'v*'  # Nur Version-Tags, nicht alle Tags
-  pull_request:
-    branches: 
-      - main
-      - dev
-      - agent
-  workflow_dispatch:
+      - 'v*.*.*'
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Erlaubt das Erstellen von Releases und Tags
-      packages: write # Erlaubt das Pushen von Docker Images
-      issues: write   # Optional: Wenn der Bot Kommentare zu Issues schreiben soll
-      pull-requests: write # Optional: s.o.
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # WICHTIG: Volle History laden, damit Semantic Release die Commits analysieren kann
 
-      # Semantic Release (Nur auf main)
-      # Analysiert Commits, erstellt Release auf GitHub und berechnet Version
-      - name: Semantic Release
-        id: semantic
-        if: github.ref == 'refs/heads/main'
-        uses: cycjimmy/semantic-release-action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          semantic_version: 19
-          extra_plugins: |
-            @semantic-release/changelog
-            @semantic-release/git
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,63 +36,56 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Repository Namen in Kleinbuchstaben umwandeln für Docker Kompatibilität
-      - name: Lowercase Repository Name
-        run: |
-          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
-      # Version aus package.json lesen (für dev/nightly Tags)
-      # Synchronisiere Version zwischen Root und Backend package.json
-      - name: Sync package.json versions
-        run: |
-          ROOT_VERSION=$(node -p "require('./package.json').version")
-          BACKEND_VERSION=$(node -p "require('./backend/package.json').version")
-          echo "📦 Root version: $ROOT_VERSION"
-          echo "📦 Backend version: $BACKEND_VERSION"
-          # Synchronisiere Backend-Version mit Root-Version
-          if [ "$ROOT_VERSION" != "$BACKEND_VERSION" ]; then
-            echo "🔄 Synchronisiere Backend-Version von $BACKEND_VERSION auf $ROOT_VERSION"
-            node -e "const pkg = require('./backend/package.json'); pkg.version = '$ROOT_VERSION'; require('fs').writeFileSync('./backend/package.json', JSON.stringify(pkg, null, 2) + '\n');"
-          fi
-      
-      - name: Read package version
-        id: package-version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "📦 Final Package Version: $VERSION"
-
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}
-          # Tagging Strategie:
-          # main (Release) -> latest, v1.2.3 (semver), v1.2 (major.minor), v1 (major)
-          # dev            -> dev, nightly
-          # agent          -> agent, pre-alpha
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Main Branch Tags (Semantic Versioning)
+            # Branch 'main' -> latest
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=semver,pattern={{version}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
-            type=semver,pattern={{major}},value=${{ steps.semantic.outputs.new_release_version }},enable=${{ github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true' }}
             
-            # Dev Branch Tags (reduziert: nur dev und nightly, keine Version-Tags)
-            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            # Tag push -> 1.2.3, 1.2, 1
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            
+            # Branch 'dev' -> nightly, dev
             type=raw,value=nightly,enable=${{ github.ref == 'refs/heads/dev' }}
-            
-            # Agent Branch Tags (reduziert: nur agent und pre-alpha)
-            type=raw,value=agent,enable=${{ github.ref == 'refs/heads/agent' }}
-            type=raw,value=pre-alpha,enable=${{ github.ref == 'refs/heads/agent' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
+
+      - name: Generate custom version tags
+        id: custom_tags
+        run: |
+          # Read version from package.json using jq for safety
+          PACKAGE_VERSION=$(jq -r .version package.json)
+          echo "Detected project version: $PACKAGE_VERSION"
+          
+          # Start with tags from metadata-action
+          TAGS="${{ steps.meta.outputs.tags }}"
+          
+          # Logic for dev branch: Add vX.X.X-dev and vX.X.X-nightly
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            echo "Adding dev/nightly version tags..."
+            # Append new tags (newline separated is fine for build-push-action)
+            TAGS="${TAGS}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${PACKAGE_VERSION}-dev
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${PACKAGE_VERSION}-nightly"
+          fi
+          
+          # Output multiline string to GITHUB_OUTPUT
+          {
+            echo 'final_tags<<EOF'
+            echo "$TAGS"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
+          push: true
+          # This builds ONE image and pushes it with ALL generated tags
+          tags: ${{ steps.custom_tags.outputs.final_tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-

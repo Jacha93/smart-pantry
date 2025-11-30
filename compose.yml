@@ -1,34 +1,22 @@
 # ============================================
 # Smart Pantry - Docker Compose (Production)
 # ============================================
-# Diese Datei ist für Production-Deployment gedacht.
-# Docker Compose erkennt diese Datei automatisch (Standard-Name).
-# 
-# Verwendung:
-# 1. Erstelle .env aus .env.example: cp .env.example .env
-# 2. Fülle .env mit echten Werten (Secrets, API Keys, etc.)
-# 3. Starte: docker compose up -d
-# 4. Führe Migrationen aus: docker compose exec smart-pantry-app npx prisma migrate deploy
-#
-# Für lokale Entwicklung nutze: compose.dev.yml
-# docker compose -f compose.dev.yml up -d
-# ============================================
-
 services:
-  # PostgreSQL Datenbank
+  # ==========================================
+  # Database Service
+  # ==========================================
   smart-pantry-postgres:
     image: postgres:16-alpine
     container_name: smart-pantry-db
     restart: unless-stopped
     env_file:
       - .env
+    # Wir nutzen hier explizit environment für Docker-interne Configs,
+    # die von den .env Werten abweichen könnten oder wichtig für das Image sind.
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-smart_pantry}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-    # SICHERHEIT: Kein Port-Mapping - Datenbank nur im Docker-Netzwerk erreichbar
-    # ports:
-    #   - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -39,31 +27,79 @@ services:
     networks:
       - smart-pantry-network
 
-  # Smart Pantry Application (Frontend + Backend kombiniert)
-  smart-pantry-app:
+  # ==========================================
+  # Backend Service
+  # ==========================================
+  smart-pantry-backend:
     image: ghcr.io/jacha93/smart-pantry:latest
-    container_name: smart-pantry-app
+    container_name: smart-pantry-backend
     restart: unless-stopped
+    command: ["/app/start-backend.sh"]
     depends_on:
       smart-pantry-postgres:
         condition: service_healthy
     env_file:
       - .env
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     environment:
+      # WICHTIG: Überschreibe DATABASE_URL für Docker-Netzwerk (Hostname = Service Name)
+      # .env hat normalerweise 'localhost', was im Container nicht funktioniert
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:${BACKEND_PORT:-3001}}
+      
+      # Setze internen Hostname für Listen
       HOSTNAME: 0.0.0.0
+      
+      # Backend-Port explizit setzen (falls in .env nicht vorhanden)
+      BACKEND_PORT: ${BACKEND_PORT:-3001}
+    
+    # Dynamisches Port-Mapping: Host Port : Container Port
+    # Container Port = BACKEND_PORT (via environment/env_file)
+    ports:
+      - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     networks:
       - smart-pantry-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${BACKEND_PORT:-3001}/health"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 90s
+      retries: 3
+      start_period: 30s
+
+  # ==========================================
+  # Frontend Service
+  # ==========================================
+  smart-pantry-frontend:
+    image: ghcr.io/jacha93/smart-pantry:latest
+    container_name: smart-pantry-frontend
+    restart: unless-stopped
+    command: ["/app/start-frontend.sh"]
+    depends_on:
+      - smart-pantry-backend
+    env_file:
+      - .env
+    environment:
+      # Next.js hört auf die Variable PORT
+      # Wir mappen hier unseren gewünschten FRONTEND_PORT auf die interne PORT Variable
+      PORT: ${FRONTEND_PORT:-3000}
+      HOSTNAME: 0.0.0.0
+      
+      # Backend-Erreichbarkeit für Server-Side-Rendering (SSR) im Docker-Netzwerk
+      # Falls nicht gesetzt, nutzen wir den Service-Namen und den internen Port
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://smart-pantry-backend:${BACKEND_PORT:-3001}}
+      
+      # Fallback für Client-Side, falls URL nicht automatisch erkannt wird
+      NEXT_PUBLIC_BACKEND_PORT: ${BACKEND_PORT:-3001}
+    
+    # Dynamisches Port-Mapping: Host Port : Container Port
+    ports:
+      - "${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}"
+    networks:
+      - smart-pantry-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${FRONTEND_PORT:-3000}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgres-data:

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "clean": "rm -rf .next",
-    "dev:clean": "npm run clean && npm run dev"
+    "dev:clean": "npm run clean && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"cd backend && npm run dev\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -41,6 +42,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "^16.0.0",
     "tailwindcss": "^4",
