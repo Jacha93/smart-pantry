@@ -173,6 +173,11 @@ export const translations: Translations = {
 
   // Common
   'common.loading': { en: 'Loading...', de: 'Laden...' },
+  'common.register': { en: 'Register', de: 'Registrieren' },
+  'common.name': { en: 'Name', de: 'Name' },
+  'common.email': { en: 'Email', de: 'E-Mail' },
+  'common.password': { en: 'Password', de: 'Passwort' },
+  'common.confirmPassword': { en: 'Confirm Password', de: 'Passwort bestätigen' },
   'common.search': { en: 'Search groceries...', de: 'Lebensmittel suchen...' },
   'common.filterCategory': { en: 'Filter by category', de: 'Nach Kategorie filtern' },
   'common.allCategories': { en: 'All Categories', de: 'Alle Kategorien' },

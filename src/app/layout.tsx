@@ -14,11 +14,13 @@ const runtimeConfigScript = `
     return;
   }
 
-  window.__ENV = Object.assign({}, window.__ENV, {
+  // Runtime Environment Variables
+  window.__ENV = Object.assign({}, window.__ENV || {}, {
     NEXT_PUBLIC_BACKEND_PORT: ${JSON.stringify(process.env.NEXT_PUBLIC_BACKEND_PORT ?? '')},
     NEXT_PUBLIC_API_URL: ${JSON.stringify(process.env.NEXT_PUBLIC_API_URL ?? '')},
   });
 
+  // Crypto Polyfill
   try {
     if (!window.crypto) {
       window.crypto = {};
@@ -34,18 +36,29 @@ const runtimeConfigScript = `
         });
       };
 
+      // Try Object.defineProperty first, fallback to direct assignment
       try {
         Object.defineProperty(cryptoObj, 'randomUUID', {
           value: fallbackRandomUUID,
           configurable: true,
           writable: true,
         });
-      } catch {
+      } catch (e) {
+        // Fallback for environments where defineProperty fails
         cryptoObj.randomUUID = fallbackRandomUUID;
       }
+
+      // Verify the polyfill works
+      if (typeof cryptoObj.randomUUID === 'function') {
+        console.log('✓ crypto.randomUUID polyfill loaded successfully');
+      } else {
+        console.error('✗ Failed to load crypto.randomUUID polyfill');
+      }
+    } else {
+      console.log('✓ crypto.randomUUID already available');
     }
   } catch (error) {
-    console.warn('Failed to polyfill crypto.randomUUID', error);
+    console.error('✗ Failed to initialize crypto polyfill:', error);
   }
 })();
 `;
