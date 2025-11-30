@@ -7,6 +7,15 @@ declare module 'axios' {
   }
 }
 
+declare global {
+  interface Window {
+    __ENV?: {
+      NEXT_PUBLIC_BACKEND_PORT?: string;
+      NEXT_PUBLIC_API_URL?: string;
+    };
+  }
+}
+
 // API Base URL - wird dynamisch zur Laufzeit berechnet
 // WICHTIG: NEXT_PUBLIC_* Variablen werden zur Build-Zeit kompiliert, daher müssen wir
 // zur Laufzeit den Port dynamisch aus window.location ableiten
@@ -17,24 +26,22 @@ const getApiBaseUrl = (): string => {
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
     
-    // Versuche Port aus NEXT_PUBLIC_API_URL zu extrahieren (falls zur Build-Zeit gesetzt)
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (envUrl) {
-      try {
-        const url = new URL(envUrl);
-        // Verwende Port aus NEXT_PUBLIC_API_URL, aber mit aktuellem hostname
-        // (hostname kann sich ändern, z.B. localhost vs. 192.168.0.95)
-        if (url.port) {
-          return `${protocol}//${hostname}:${url.port}`;
-        }
-      } catch {
-        // Falls URL-Parsing fehlschlägt, verwende Fallback
-      }
+    // Prüfe Runtime Config (window.__ENV)
+    const runtimeApiUrl = window.__ENV?.NEXT_PUBLIC_API_URL;
+    const runtimeBackendPort = window.__ENV?.NEXT_PUBLIC_BACKEND_PORT;
+
+    // 1. Priorität: Runtime API URL (falls gesetzt)
+    // Aber Achtung: Wenn es localhost ist und wir nicht auf localhost sind, ist es nutzlos
+    if (runtimeApiUrl && !runtimeApiUrl.includes('localhost')) {
+        return runtimeApiUrl;
     }
     
-    // Fallback 1: Verwende explizit gesetzten Port aus NEXT_PUBLIC_BACKEND_PORT
-    if (process.env.NEXT_PUBLIC_BACKEND_PORT) {
-      return `${protocol}//${hostname}:${process.env.NEXT_PUBLIC_BACKEND_PORT}`;
+    // 2. Priorität: Dynamischer Port
+    // Fallback 1: Verwende explizit gesetzten Port aus NEXT_PUBLIC_BACKEND_PORT (Runtime oder Build time)
+    const envBackendPort = runtimeBackendPort || process.env.NEXT_PUBLIC_BACKEND_PORT;
+    
+    if (envBackendPort) {
+      return `${protocol}//${hostname}:${envBackendPort}`;
     }
     
     // Fallback 2: Leite Backend-Port aus Frontend-Port ab
@@ -42,19 +49,7 @@ const getApiBaseUrl = (): string => {
     const frontendPort = window.location.port ? parseInt(window.location.port, 10) : 
                          (window.location.protocol === 'https:' ? 443 : 80);
     
-    // WICHTIG: Wenn der Frontend-Port 3000 ist, erwarten wir das Backend üblicherweise auf 3001
-    // ABER: Wenn der Nutzer custom ports verwendet (z.B. Frontend 3000, Backend 8010),
-    // müssen wir wissen, auf welchem Port das Backend läuft.
-    // NEXT_PUBLIC_BACKEND_PORT ist dafür der Schlüssel.
-    // Wenn das nicht gesetzt ist, raten wir:
-    
-    // Logik: 
-    // 1. Wenn NEXT_PUBLIC_BACKEND_PORT da ist -> Nimm das (wird in compose.yml injected!)
-    // 2. Wenn nicht -> Nimm frontendPort + 1 (Fallback für simple Setups)
-    
-    const backendPort = process.env.NEXT_PUBLIC_BACKEND_PORT 
-      ? process.env.NEXT_PUBLIC_BACKEND_PORT 
-      : (frontendPort === 3000 ? '3001' : String(frontendPort + 1));
+    const backendPort = frontendPort === 3000 ? '3001' : String(frontendPort + 1);
     
     return `${protocol}//${hostname}:${backendPort}`;
   }

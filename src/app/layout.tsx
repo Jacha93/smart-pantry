@@ -31,10 +31,19 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (typeof window.crypto === 'undefined') {
+              // Runtime Environment Injection
+              window.__ENV = {
+                NEXT_PUBLIC_BACKEND_PORT: '${process.env.NEXT_PUBLIC_BACKEND_PORT || ''}',
+                NEXT_PUBLIC_API_URL: '${process.env.NEXT_PUBLIC_API_URL || ''}',
+              };
+
+              // Polyfill for crypto.randomUUID
+              if (typeof window !== 'undefined' && !window.crypto) {
+                // @ts-ignore
                 window.crypto = {};
               }
-              if (typeof window.crypto.randomUUID === 'undefined') {
+              if (typeof window !== 'undefined' && window.crypto && !window.crypto.randomUUID) {
+                // @ts-ignore
                 window.crypto.randomUUID = function() {
                   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);

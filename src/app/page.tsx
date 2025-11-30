@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { auth, authDisabled } from '@/lib/auth';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { LoginDialog } from '@/components/login-dialog';
+import { RegisterDialog } from '@/components/register-dialog';
 import { Footer } from '@/components/footer';
 import { useI18n } from '@/hooks/use-i18n';
 import { 
@@ -29,6 +30,7 @@ export default function LandingPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const router = useRouter();
   const { t } = useI18n();
 
@@ -60,6 +62,12 @@ export default function LandingPage() {
     setIsAuthenticated(true);
     router.push('/groceries');
     router.refresh();
+  };
+
+  const handleRegisterSuccess = () => {
+    // Optional: Auto-login or show success message then open login
+    setIsRegisterDialogOpen(false);
+    setIsLoginDialogOpen(true);
   };
 
   const features = [
