@@ -143,9 +143,23 @@ export const setAdBlockerDetected = (detected: boolean) => {
   }
 };
 
-// Handle auth errors
+// Handle empty responses and normalize data
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Wenn response.data leer ist (leerer String), aber Content-Type JSON ist,
+    // normalisiere zu leeren Array/Objekt basierend auf URL
+    if (response.data === '' && response.headers['content-type']?.includes('application/json')) {
+      const url = response.config?.url || '';
+      // Array-Endpunkte
+      if (url.includes('/groceries') || url.includes('/shopping-lists') || url.includes('/recipes')) {
+        response.data = [];
+      } else {
+        // Objekt-Endpunkte
+        response.data = {};
+      }
+    }
+    return response;
+  },
   async (error) => {
     // Detect ERR_BLOCKED_BY_CLIENT (adblocker blocking requests)
     if (error.message?.includes('ERR_BLOCKED_BY_CLIENT') || 

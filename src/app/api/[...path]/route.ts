@@ -156,8 +156,34 @@ const forwardRequest = async (
     
     if (statusCode === 304) {
       // 304 sollte keinen Body haben, konvertiere zu 200
+      // Für JSON-Endpunkte: Sende leeres JSON-Objekt/Array statt null
       // Die ETag-Header bleiben erhalten, damit der Client weiß, dass nichts geändert wurde
       statusCode = 200;
+      const isJsonEndpoint = contentType.includes('application/json');
+      const body = isJsonEndpoint ? JSON.stringify({}) : null;
+      return new NextResponse(body, {
+        status: statusCode,
+        statusText: response.statusMessage,
+        headers: responseHeaders,
+      });
+    }
+    
+    // Prüfe ob Body leer ist (z.B. bei leeren Arrays)
+    if (response.body.length === 0) {
+      // Wenn Content-Type JSON ist, sende leeres Array/Objekt
+      if (contentType.includes('application/json')) {
+        // Prüfe ob es ein Array-Endpunkt ist (basierend auf URL)
+        const isArrayEndpoint = targetUrl.pathname.includes('/groceries') || 
+                                targetUrl.pathname.includes('/shopping-lists') ||
+                                targetUrl.pathname.includes('/recipes');
+        const body = isArrayEndpoint ? JSON.stringify([]) : JSON.stringify({});
+        return new NextResponse(body, {
+          status: statusCode,
+          statusText: response.statusMessage,
+          headers: responseHeaders,
+        });
+      }
+      // Für andere Content-Types: null body ist OK
       return new NextResponse(null, {
         status: statusCode,
         statusText: response.statusMessage,
