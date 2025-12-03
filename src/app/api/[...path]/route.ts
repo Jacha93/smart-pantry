@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import http from 'http';
+import https from 'https';
+import { URL } from 'url';
 
 const HOP_BY_HOP_HEADERS = new Set([
   'connection',
@@ -79,17 +82,74 @@ const forwardRequest = async (
   }
 
   try {
-    const response = await fetch(targetUrl, {
-      method,
-      headers,
-      body,
-      redirect: 'manual',
+    // Verwende Node.js http/https statt fetch für bessere Docker DNS-Unterstützung
+    const url = new URL(targetUrl);
+    const isHttps = url.protocol === 'https:';
+    const httpModule = isHttps ? https : http;
+    
+    const response = await new Promise<{
+      statusCode: number;
+      statusMessage: string;
+      headers: Record<string, string | string[]>;
+      body: Buffer;
+    }>((resolve, reject) => {
+      const requestOptions = {
+        hostname: url.hostname,
+        port: url.port || (isHttps ? 443 : 80),
+        path: url.pathname + url.search,
+        method,
+        headers: Object.fromEntries(headers.entries()),
+        timeout: 30000, // 30 Sekunden Timeout
+      };
+
+      const req = httpModule.request(requestOptions, (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          resolve({
+            statusCode: res.statusCode || 500,
+            statusMessage: res.statusMessage || 'Internal Server Error',
+            headers: res.headers as Record<string, string | string[]>,
+            body: Buffer.concat(chunks),
+          });
+        });
+      });
+
+      req.on('error', reject);
+      req.on('timeout', () => {
+        req.destroy();
+        reject(new Error('Request timeout'));
+      });
+
+      if (body) {
+        if (typeof body === 'string') {
+          req.write(body);
+          req.end();
+        } else if (body instanceof Buffer) {
+          req.write(body);
+          req.end();
+        } else if (body instanceof FormData) {
+          // FormData wird als Buffer gesendet
+          body.arrayBuffer()
+            .then((buf) => {
+              req.write(Buffer.from(buf));
+              req.end();
+            })
+            .catch(reject);
+          return; // Promise wird in FormData-Handler resolved
+        } else {
+          req.write(body);
+          req.end();
+        }
+      } else {
+        req.end();
+      }
     });
 
-    const responseHeaders = filterHeaders(response.headers);
+    const responseHeaders = filterHeaders(new Headers(response.headers as any));
     return new NextResponse(response.body, {
-      status: response.status,
-      statusText: response.statusText,
+      status: response.statusCode,
+      statusText: response.statusMessage,
       headers: responseHeaders,
     });
   } catch (error) {
@@ -99,6 +159,7 @@ const forwardRequest = async (
       method,
       error: String(error),
       errorCode: (error as any)?.code,
+      errorStack: (error as any)?.stack,
     });
     return NextResponse.json(
       { 
