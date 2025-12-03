@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { auth, authDisabled } from '@/lib/auth';
-import { LogOut, ShoppingCart, Package, Camera, ChefHat } from 'lucide-react';
+import { LogOut, ShoppingCart, Package, Camera, ChefHat, User } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { Footer } from '@/components/footer';
 import { useI18n } from '@/hooks/use-i18n';
@@ -90,6 +90,13 @@ export default function DashboardLayout({
                 >
                   <ChefHat className="h-4 w-4" />
                   <span>{t('nav.recipes')}</span>
+                </Link>
+                <Link
+                  href="/profile"
+                  className="flex items-center space-x-2 text-foreground/90 hover:text-foreground hover:bg-white/10 backdrop-blur-sm px-3 py-2 rounded-lg text-sm font-medium transition-all border border-white/10"
+                >
+                  <User className="h-4 w-4" />
+                  <span>{t('nav.profile')}</span>
                 </Link>
               </div>
             </div>

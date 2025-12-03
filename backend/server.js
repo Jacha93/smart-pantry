@@ -612,23 +612,208 @@ app.get('/me', authMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ detail: 'User not found' });
     const profileString = user.encryptedProfile ? decryptField(user.encryptedProfile) : null;
     const profile = profileString ? JSON.parse(profileString) : null;
+    
+    const totalGroceries = await prisma.grocery.count({ where: { userId: req.user.id } });
+    const groceriesWithExpiry = await prisma.grocery.count({ 
+      where: { userId: req.user.id, expiryDate: { not: null } } 
+    });
+    
     res.json({
       id: user.id,
       email: user.email,
       name: user.name,
       role: user.role,
       profile,
+      createdAt: user.createdAt,
       quotas: {
         llm_tokens_total: user.quotaLlmTokens,
         llm_tokens_used: user.llmTokensUsed,
         recipe_calls_total: user.quotaRecipeCalls,
         recipe_calls_used: user.recipeCallsUsed,
         reset_at: user.quotaResetAt,
+        maxCacheRecipeSuggestions: user.maxCacheRecipeSuggestions ?? 12,
+        maxChatMessages: user.maxChatMessages ?? 4,
+        maxCacheRecipeSearchViaChat: user.maxCacheRecipeSearchViaChat ?? 4,
+        maxGroceriesWithExpiry: user.maxGroceriesWithExpiry ?? 10,
+        maxGroceriesTotal: user.maxGroceriesTotal ?? 20,
+        cacheRecipeSuggestionsUsed: user.cacheRecipeSuggestionsUsed ?? 0,
+        chatMessagesUsed: user.chatMessagesUsed ?? 0,
+        cacheRecipeSearchViaChatUsed: user.cacheRecipeSearchViaChatUsed ?? 0,
+        monthlyLimitResetAt: user.monthlyLimitResetAt ?? user.createdAt,
+        notificationsEnabled: user.notificationsEnabled ?? false,
+        hasPrioritySupport: user.hasPrioritySupport ?? false,
+        currentGroceriesTotal: totalGroceries,
+        currentGroceriesWithExpiry: groceriesWithExpiry,
       },
     });
   } catch (error) {
     console.error('Me endpoint error:', error);
     res.status(500).json({ detail: 'Fehler beim Laden des Profils' });
+  }
+});
+
+// Update user profile (name, email)
+app.put('/me', authMiddleware, async (req, res) => {
+  try {
+    const { name, email } = req.body || {};
+    const updateData = {};
+    
+    if (name !== undefined) {
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ detail: 'Name is required and must not be empty' });
+      }
+      updateData.name = String(name).trim();
+    }
+    
+    if (email !== undefined) {
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ detail: 'Valid email is required' });
+      }
+      const normalizedEmail = normalizeEmail(email);
+      // Check if email is already taken by another user
+      const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+      if (existingUser && existingUser.id !== req.user.id) {
+        return res.status(409).json({ detail: 'Email already in use' });
+      }
+      updateData.email = normalizedEmail;
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ detail: 'No valid fields to update' });
+    }
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: updateData,
+    });
+    
+    res.json({
+      id: updatedUser.id,
+      email: updatedUser.email,
+      name: updatedUser.name,
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ detail: 'Fehler beim Aktualisieren des Profils' });
+  }
+});
+
+// Change password
+app.put('/me/password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ detail: 'Current password and new password are required' });
+    }
+    
+    if (newPassword.length < 8) {
+      return res.status(400).json({ detail: 'New password must be at least 8 characters long' });
+    }
+    
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+    
+    // Verify current password
+    const isValidPassword = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({ detail: 'Current password is incorrect' });
+    }
+    
+    // Hash new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { passwordHash: newPasswordHash },
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ detail: 'Fehler beim Ändern des Passworts' });
+  }
+});
+
+// Get usage statistics for charts
+app.get('/me/usage', authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) return res.status(404).json({ detail: 'User not found' });
+    
+    // Calculate usage percentages
+    const llmTokensPercent = user.quotaLlmTokens > 0 
+      ? Math.min(100, Math.round((user.llmTokensUsed / user.quotaLlmTokens) * 100))
+      : 0;
+    const recipeCallsPercent = user.quotaRecipeCalls > 0
+      ? Math.min(100, Math.round((user.recipeCallsUsed / user.quotaRecipeCalls) * 100))
+      : 0;
+    const cacheSuggestionsPercent = (user.maxCacheRecipeSuggestions ?? 12) > 0 && (user.maxCacheRecipeSuggestions ?? 12) !== -1
+      ? Math.min(100, Math.round(((user.cacheRecipeSuggestionsUsed ?? 0) / (user.maxCacheRecipeSuggestions ?? 12)) * 100))
+      : (user.maxCacheRecipeSuggestions ?? 12) === -1 ? -1 : 0;
+    const chatMessagesPercent = (user.maxChatMessages ?? 4) > 0
+      ? Math.min(100, Math.round(((user.chatMessagesUsed ?? 0) / (user.maxChatMessages ?? 4)) * 100))
+      : 0;
+    const cacheSearchPercent = (user.maxCacheRecipeSearchViaChat ?? 4) > 0
+      ? Math.min(100, Math.round(((user.cacheRecipeSearchViaChatUsed ?? 0) / (user.maxCacheRecipeSearchViaChat ?? 4)) * 100))
+      : 0;
+    
+    const groceriesTotalPercent = (user.maxGroceriesTotal ?? 20) > 0 && (user.maxGroceriesTotal ?? 20) !== -1
+      ? Math.min(100, Math.round((await prisma.grocery.count({ where: { userId: req.user.id } }) / (user.maxGroceriesTotal ?? 20)) * 100))
+      : (user.maxGroceriesTotal ?? 20) === -1 ? -1 : 0;
+    
+    const groceriesWithExpiryPercent = (user.maxGroceriesWithExpiry ?? 10) > 0 && (user.maxGroceriesWithExpiry ?? 10) !== -1
+      ? Math.min(100, Math.round((await prisma.grocery.count({ where: { userId: req.user.id, expiryDate: { not: null } } }) / (user.maxGroceriesWithExpiry ?? 10)) * 100))
+      : (user.maxGroceriesWithExpiry ?? 10) === -1 ? -1 : 0;
+    
+    res.json({
+      llmTokens: {
+        used: user.llmTokensUsed,
+        total: user.quotaLlmTokens,
+        percent: llmTokensPercent,
+      },
+      recipeCalls: {
+        used: user.recipeCallsUsed,
+        total: user.quotaRecipeCalls,
+        percent: recipeCallsPercent,
+      },
+      cacheSuggestions: {
+        used: user.cacheRecipeSuggestionsUsed ?? 0,
+        total: user.maxCacheRecipeSuggestions ?? 12,
+        percent: cacheSuggestionsPercent,
+        unlimited: (user.maxCacheRecipeSuggestions ?? 12) === -1,
+      },
+      chatMessages: {
+        used: user.chatMessagesUsed ?? 0,
+        total: user.maxChatMessages ?? 4,
+        percent: chatMessagesPercent,
+      },
+      cacheSearch: {
+        used: user.cacheRecipeSearchViaChatUsed ?? 0,
+        total: user.maxCacheRecipeSearchViaChat ?? 4,
+        percent: cacheSearchPercent,
+      },
+      groceriesTotal: {
+        used: await prisma.grocery.count({ where: { userId: req.user.id } }),
+        total: user.maxGroceriesTotal ?? 20,
+        percent: groceriesTotalPercent,
+        unlimited: (user.maxGroceriesTotal ?? 20) === -1,
+      },
+      groceriesWithExpiry: {
+        used: await prisma.grocery.count({ where: { userId: req.user.id, expiryDate: { not: null } } }),
+        total: user.maxGroceriesWithExpiry ?? 10,
+        percent: groceriesWithExpiryPercent,
+        unlimited: (user.maxGroceriesWithExpiry ?? 10) === -1,
+      },
+      resetAt: user.quotaResetAt,
+      monthlyResetAt: user.monthlyLimitResetAt ?? user.createdAt,
+    });
+  } catch (error) {
+    console.error('Usage endpoint error:', error);
+    res.status(500).json({ detail: 'Fehler beim Laden der Verbrauchsdaten' });
   }
 });
 

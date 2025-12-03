@@ -279,6 +279,15 @@ export const groceriesAPI = {
   delete: (id: number) => api.delete(`/groceries/${id}`),
 };
 
+// User Profile API
+export const profileAPI = {
+  get: () => api.get('/me'),
+  update: (data: { name?: string; email?: string }) => api.put('/me', data),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.put('/me/password', { currentPassword, newPassword }),
+  getUsage: () => api.get('/me/usage'),
+};
+
 // Shopping Lists API
 export const shoppingListsAPI = {
   getAll: () => api.get('/shopping-lists'),
