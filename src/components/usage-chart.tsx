@@ -14,6 +14,15 @@ export function UsageChart({ usage }: UsageChartProps) {
   const [animatedValues, setAnimatedValues] = useState<Record<string, number[]>>({});
   const [isAnimating, setIsAnimating] = useState(true);
 
+  // Prüfe ob usage gültig ist
+  if (!usage || !usage.llmTokens) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm text-muted-foreground">{t('profile.usage.loading') || 'Loading usage data...'}</p>
+      </div>
+    );
+  }
+
   // Generate historical data points (last 7 days simulation)
   const generateDataPoints = (currentPercent: number, unlimited: boolean = false) => {
     if (unlimited) return Array(7).fill(100);
@@ -35,7 +44,7 @@ export function UsageChart({ usage }: UsageChartProps) {
   };
 
   useEffect(() => {
-    if (!usage) return;
+    if (!usage || !usage.llmTokens) return;
 
     // Animate line chart
     const animationDuration = 1500;
@@ -43,13 +52,13 @@ export function UsageChart({ usage }: UsageChartProps) {
     const stepDuration = animationDuration / steps;
     
     const chartData = {
-      llmTokens: generateDataPoints(usage.llmTokens.percent, false),
-      recipeCalls: generateDataPoints(usage.recipeCalls.percent, false),
-      cacheSuggestions: generateDataPoints(usage.cacheSuggestions.percent, usage.cacheSuggestions.unlimited),
-      chatMessages: generateDataPoints(usage.chatMessages.percent, false),
-      cacheSearch: generateDataPoints(usage.cacheSearch.percent, false),
-      groceriesTotal: generateDataPoints(usage.groceriesTotal.percent, usage.groceriesTotal.unlimited),
-      groceriesWithExpiry: generateDataPoints(usage.groceriesWithExpiry.percent, usage.groceriesWithExpiry.unlimited),
+      llmTokens: generateDataPoints(usage.llmTokens?.percent || 0, false),
+      recipeCalls: generateDataPoints(usage.recipeCalls?.percent || 0, false),
+      cacheSuggestions: generateDataPoints(usage.cacheSuggestions?.percent || 0, usage.cacheSuggestions?.unlimited || false),
+      chatMessages: generateDataPoints(usage.chatMessages?.percent || 0, false),
+      cacheSearch: generateDataPoints(usage.cacheSearch?.percent || 0, false),
+      groceriesTotal: generateDataPoints(usage.groceriesTotal?.percent || 0, usage.groceriesTotal?.unlimited || false),
+      groceriesWithExpiry: generateDataPoints(usage.groceriesWithExpiry?.percent || 0, usage.groceriesWithExpiry?.unlimited || false),
     };
 
     const animate = () => {
@@ -84,7 +93,7 @@ export function UsageChart({ usage }: UsageChartProps) {
       label: t('profile.usage.llmTokens'), 
       data: animatedValues.llmTokens || Array(7).fill(0),
       color: '#3b82f6',
-      current: usage.llmTokens.percent,
+      current: usage.llmTokens?.percent || 0,
       unlimited: false,
     },
     { 
@@ -92,7 +101,7 @@ export function UsageChart({ usage }: UsageChartProps) {
       label: t('profile.usage.recipeCalls'), 
       data: animatedValues.recipeCalls || Array(7).fill(0),
       color: '#10b981',
-      current: usage.recipeCalls.percent,
+      current: usage.recipeCalls?.percent || 0,
       unlimited: false,
     },
     { 
@@ -100,7 +109,7 @@ export function UsageChart({ usage }: UsageChartProps) {
       label: t('profile.usage.chatMessages'), 
       data: animatedValues.chatMessages || Array(7).fill(0),
       color: '#8b5cf6',
-      current: usage.chatMessages.percent,
+      current: usage.chatMessages?.percent || 0,
       unlimited: false,
     },
   ];

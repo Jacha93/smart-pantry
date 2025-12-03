@@ -148,8 +148,30 @@ export default function ProfilePage() {
     try {
       const response = await profileAPI.getUsage();
       console.log('Usage API Response:', response.data);
-      if (response.data) {
-        setUsage(response.data);
+      
+      // Prüfe ob es eine Fehler-Response ist
+      if (response.data && typeof response.data === 'object' && 'detail' in response.data) {
+        console.error('Usage API returned error:', response.data.detail);
+        return; // Keine Usage-Daten bei Fehler
+      }
+      
+      // Prüfe ob response.data ein gültiges Objekt ist mit erwarteter Struktur
+      if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0) {
+        // Prüfe ob es die erwartete Struktur hat (z.B. llmTokens vorhanden)
+        if ('llmTokens' in response.data || 'recipeCalls' in response.data) {
+          setUsage(response.data);
+        } else {
+          console.warn('Usage API returned object but without expected structure:', response.data);
+        }
+      } else if (response.data && typeof response.data === 'object' && Object.keys(response.data).length === 0) {
+        // Leeres Objekt {} - könnte 304 Not Modified sein
+        const is304 = response.headers && response.headers['x-original-status'] === '304';
+        if (is304) {
+          console.warn('Usage API returned 304 Not Modified, skipping (data already cached)');
+          // Bei 304 haben wir bereits die Daten, nichts tun
+        } else {
+          console.warn('Usage API returned empty object, skipping');
+        }
       }
     } catch (error: any) {
       console.error('Error fetching usage:', error);
@@ -361,7 +383,7 @@ export default function ProfilePage() {
         {/* Usage Tab - Dashboard Style */}
         <TabsContent value="usage" className="space-y-6 mt-6">
           {/* Usage Stats Cards */}
-          {usage && (
+          {usage && usage.llmTokens ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-6">
@@ -369,7 +391,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('profile.usage.llmTokens')}</p>
                       <p className="text-2xl font-bold">
-                        {usage.llmTokens.used.toLocaleString()} / {usage.llmTokens.total.toLocaleString()}
+                        {(usage.llmTokens?.used || 0).toLocaleString()} / {(usage.llmTokens?.total || 0).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-3xl text-blue-500">💬</div>
@@ -378,10 +400,10 @@ export default function ProfilePage() {
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-blue-500 transition-all duration-500"
-                        style={{ width: `${usage.llmTokens.percent}%` }}
+                        style={{ width: `${usage.llmTokens?.percent || 0}%` }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{usage.llmTokens.percent}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">{usage.llmTokens?.percent || 0}%</p>
                   </div>
                 </CardContent>
               </Card>
@@ -392,7 +414,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('profile.usage.recipeCalls')}</p>
                       <p className="text-2xl font-bold">
-                        {usage.recipeCalls.used.toLocaleString()} / {usage.recipeCalls.total.toLocaleString()}
+                        {(usage.recipeCalls?.used || 0).toLocaleString()} / {(usage.recipeCalls?.total || 0).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-3xl text-green-500">🍳</div>
@@ -401,10 +423,10 @@ export default function ProfilePage() {
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-green-500 transition-all duration-500"
-                        style={{ width: `${usage.recipeCalls.percent}%` }}
+                        style={{ width: `${usage.recipeCalls?.percent || 0}%` }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{usage.recipeCalls.percent}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">{usage.recipeCalls?.percent || 0}%</p>
                   </div>
                 </CardContent>
               </Card>
@@ -415,7 +437,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('profile.usage.chatMessages')}</p>
                       <p className="text-2xl font-bold">
-                        {usage.chatMessages.used.toLocaleString()} / {usage.chatMessages.total.toLocaleString()}
+                        {(usage.chatMessages?.used || 0).toLocaleString()} / {(usage.chatMessages?.total || 0).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-3xl text-purple-500">💭</div>
@@ -424,10 +446,10 @@ export default function ProfilePage() {
                     <div className="h-2 bg-secondary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-purple-500 transition-all duration-500"
-                        style={{ width: `${usage.chatMessages.percent}%` }}
+                        style={{ width: `${usage.chatMessages?.percent || 0}%` }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{usage.chatMessages.percent}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">{usage.chatMessages?.percent || 0}%</p>
                   </div>
                 </CardContent>
               </Card>
@@ -438,24 +460,24 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('profile.usage.groceriesTotal')}</p>
                       <p className="text-2xl font-bold">
-                        {usage.groceriesTotal.used.toLocaleString()} / {usage.groceriesTotal.unlimited ? '∞' : usage.groceriesTotal.total.toLocaleString()}
+                        {(usage.groceriesTotal?.used || 0).toLocaleString()} / {usage.groceriesTotal?.unlimited ? '∞' : (usage.groceriesTotal?.total || 0).toLocaleString()}
                       </p>
                     </div>
                     <div className="text-3xl text-cyan-500">🛒</div>
                   </div>
                   <div className="mt-4">
-                    {!usage.groceriesTotal.unlimited && (
+                    {!usage.groceriesTotal?.unlimited && (
                       <>
                         <div className="h-2 bg-secondary rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-cyan-500 transition-all duration-500"
-                            style={{ width: `${usage.groceriesTotal.percent}%` }}
+                            style={{ width: `${usage.groceriesTotal?.percent || 0}%` }}
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">{usage.groceriesTotal.percent}%</p>
+                        <p className="text-xs text-muted-foreground mt-1">{usage.groceriesTotal?.percent || 0}%</p>
                       </>
                     )}
-                    {usage.groceriesTotal.unlimited && (
+                    {usage.groceriesTotal?.unlimited && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Infinity className="h-3 w-3" />
                         {t('profile.unlimited')}
@@ -465,17 +487,26 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </div>
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2 text-muted-foreground">{t('profile.usage.loading') || 'Loading usage data...'}</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Line Charts */}
-          {usage && (
+          {usage && usage.llmTokens && (
             <div>
               <UsageChart usage={usage} />
             </div>
           )}
 
           {/* Detailed Overview */}
-          {usage && (
+          {usage && usage.llmTokens && (
             <Card>
               <CardHeader>
                 <CardTitle>{t('profile.usageOverview')}</CardTitle>

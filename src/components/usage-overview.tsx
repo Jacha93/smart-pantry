@@ -15,6 +15,15 @@ interface UsageOverviewProps {
 export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
   const { t, locale } = useI18n();
 
+  // Prüfe ob usage gültig ist und die erwartete Struktur hat
+  if (!usage || typeof usage !== 'object' || !usage.llmTokens) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm text-muted-foreground">{t('profile.usage.loading') || 'Loading usage data...'}</p>
+      </div>
+    );
+  }
+
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -31,58 +40,58 @@ export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
     {
       key: 'llmTokens',
       label: t('profile.usage.llmTokens'),
-      used: usage.llmTokens.used,
-      total: usage.llmTokens.total,
-      percent: usage.llmTokens.percent,
+      used: usage.llmTokens?.used || 0,
+      total: usage.llmTokens?.total || 0,
+      percent: usage.llmTokens?.percent || 0,
       unlimited: false,
     },
     {
       key: 'recipeCalls',
       label: t('profile.usage.recipeCalls'),
-      used: usage.recipeCalls.used,
-      total: usage.recipeCalls.total,
-      percent: usage.recipeCalls.percent,
+      used: usage.recipeCalls?.used || 0,
+      total: usage.recipeCalls?.total || 0,
+      percent: usage.recipeCalls?.percent || 0,
       unlimited: false,
     },
     {
       key: 'cacheSuggestions',
       label: t('profile.usage.cacheSuggestions'),
-      used: usage.cacheSuggestions.used,
-      total: usage.cacheSuggestions.total,
-      percent: usage.cacheSuggestions.percent,
-      unlimited: usage.cacheSuggestions.unlimited,
+      used: usage.cacheSuggestions?.used || 0,
+      total: usage.cacheSuggestions?.total || 0,
+      percent: usage.cacheSuggestions?.percent || 0,
+      unlimited: usage.cacheSuggestions?.unlimited || false,
     },
     {
       key: 'chatMessages',
       label: t('profile.usage.chatMessages'),
-      used: usage.chatMessages.used,
-      total: usage.chatMessages.total,
-      percent: usage.chatMessages.percent,
+      used: usage.chatMessages?.used || 0,
+      total: usage.chatMessages?.total || 0,
+      percent: usage.chatMessages?.percent || 0,
       unlimited: false,
     },
     {
       key: 'cacheSearch',
       label: t('profile.usage.cacheSearch'),
-      used: usage.cacheSearch.used,
-      total: usage.cacheSearch.total,
-      percent: usage.cacheSearch.percent,
+      used: usage.cacheSearch?.used || 0,
+      total: usage.cacheSearch?.total || 0,
+      percent: usage.cacheSearch?.percent || 0,
       unlimited: false,
     },
     {
       key: 'groceriesTotal',
       label: t('profile.usage.groceriesTotal'),
-      used: usage.groceriesTotal.used,
-      total: usage.groceriesTotal.total,
-      percent: usage.groceriesTotal.percent,
-      unlimited: usage.groceriesTotal.unlimited,
+      used: usage.groceriesTotal?.used || 0,
+      total: usage.groceriesTotal?.total || 0,
+      percent: usage.groceriesTotal?.percent || 0,
+      unlimited: usage.groceriesTotal?.unlimited || false,
     },
     {
       key: 'groceriesWithExpiry',
       label: t('profile.usage.groceriesWithExpiry'),
-      used: usage.groceriesWithExpiry.used,
-      total: usage.groceriesWithExpiry.total,
-      percent: usage.groceriesWithExpiry.percent,
-      unlimited: usage.groceriesWithExpiry.unlimited,
+      used: usage.groceriesWithExpiry?.used || 0,
+      total: usage.groceriesWithExpiry?.total || 0,
+      percent: usage.groceriesWithExpiry?.percent || 0,
+      unlimited: usage.groceriesWithExpiry?.unlimited || false,
     },
   ];
 
@@ -114,14 +123,18 @@ export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
         </div>
       ))}
       
-      <div className="pt-4 border-t">
-        <p className="text-sm text-muted-foreground">
-          {t('profile.resetInfo')}: {formatResetDate(usage.resetAt, locale)}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {t('profile.monthlyResetInfo')}: {formatResetDate(usage.resetAt, locale)}
-        </p>
-      </div>
+      {usage.resetAt && (
+        <div className="pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            {t('profile.resetInfo')}: {formatResetDate(usage.resetAt, locale)}
+          </p>
+          {usage.monthlyLimitResetAt && (
+            <p className="text-sm text-muted-foreground">
+              {t('profile.monthlyResetInfo')}: {formatResetDate(usage.monthlyLimitResetAt, locale)}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
