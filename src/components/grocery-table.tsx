@@ -37,16 +37,35 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
   const fetchGroceries = async () => {
     try {
       const response = await groceriesAPI.getAll();
+      // Debug: Logge die komplette Response
+      console.log('Groceries API Response:', {
+        status: response.status,
+        data: response.data,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+      });
+      
       // Stelle sicher, dass response.data ein Array ist
       if (Array.isArray(response.data)) {
         setGroceries(response.data);
       } else {
-        console.error('Invalid response data:', response.data);
+        console.error('Invalid response data:', {
+          data: response.data,
+          type: typeof response.data,
+          constructor: response.data?.constructor?.name,
+          response: response,
+        });
         setGroceries([]);
         toast.error(t('groceries.failedToFetch'));
       }
     } catch (error) {
-      console.error('Error fetching groceries:', error);
+      console.error('Error fetching groceries:', {
+        error,
+        message: (error as any)?.message,
+        response: (error as any)?.response,
+        data: (error as any)?.response?.data,
+      });
       setGroceries([]); // Stelle sicher, dass groceries immer ein Array ist
       toast.error(t('groceries.failedToFetch'));
     } finally {
