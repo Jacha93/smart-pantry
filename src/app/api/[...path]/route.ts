@@ -137,7 +137,9 @@ const forwardRequest = async (
     });
 
     const responseHeaders = filterHeaders(new Headers(response.headers as any));
-    return new NextResponse(response.body, {
+    // Konvertiere Buffer zu Uint8Array für NextResponse
+    const body = new Uint8Array(response.body);
+    return new NextResponse(body, {
       status: response.statusCode,
       statusText: response.statusMessage,
       headers: responseHeaders,
