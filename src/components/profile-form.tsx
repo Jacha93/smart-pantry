@@ -11,15 +11,16 @@ import { useI18n } from '@/hooks/use-i18n';
 import { Loader2 } from 'lucide-react';
 
 const profileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  fullName: z.string().min(1, 'Full name is required'),
+  username: z.string().optional(),
   email: z.string().email('Invalid email address'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface ProfileFormProps {
-  initialData: { name: string; email: string };
-  onSubmit: (data: { name?: string; email?: string }) => Promise<void>;
+  initialData: { fullName: string; username?: string; email: string };
+  onSubmit: (data: { fullName?: string; username?: string; email?: string }) => Promise<void>;
 }
 
 export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
@@ -38,9 +39,12 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
   const onFormSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      const updateData: { name?: string; email?: string } = {};
-      if (data.name !== initialData.name) {
-        updateData.name = data.name;
+      const updateData: { fullName?: string; username?: string; email?: string } = {};
+      if (data.fullName !== initialData.fullName) {
+        updateData.fullName = data.fullName;
+      }
+      if (data.username !== (initialData.username || '')) {
+        updateData.username = data.username || null;
       }
       if (data.email !== initialData.email) {
         updateData.email = data.email;
@@ -57,14 +61,30 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="name">{t('profile.name')}</Label>
+        <Label htmlFor="fullName">{t('profile.fullName')}</Label>
         <Input
-          id="name"
-          {...register('name')}
-          placeholder={t('profile.namePlaceholder')}
+          id="fullName"
+          name="fullName"
+          autoComplete="off"
+          {...register('fullName')}
+          placeholder={t('profile.fullNamePlaceholder')}
         />
-        {errors.name && (
-          <p className="text-sm text-destructive">{errors.name.message}</p>
+        {errors.fullName && (
+          <p className="text-sm text-destructive">{errors.fullName.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="username">{t('profile.username')}</Label>
+        <Input
+          id="username"
+          name="username"
+          autoComplete="username"
+          {...register('username')}
+          placeholder={t('profile.usernamePlaceholder')}
+        />
+        {errors.username && (
+          <p className="text-sm text-destructive">{errors.username.message}</p>
         )}
       </div>
 
@@ -73,6 +93,8 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
         <Input
           id="email"
           type="email"
+          name="email"
+          autoComplete="email"
           {...register('email')}
           placeholder={t('profile.emailPlaceholder')}
         />

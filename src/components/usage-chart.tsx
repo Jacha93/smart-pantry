@@ -17,12 +17,18 @@ export function UsageChart({ usage }: UsageChartProps) {
   // Generate historical data points (last 7 days simulation)
   const generateDataPoints = (currentPercent: number, unlimited: boolean = false) => {
     if (unlimited) return Array(7).fill(100);
+    
+    // Wenn currentPercent 0 ist, zeige eine gerade Linie bei 0
+    if (currentPercent === 0) {
+      return Array(7).fill(0);
+    }
+    
     const points: number[] = [];
     const baseValue = currentPercent;
     for (let i = 0; i < 7; i++) {
-      // Simulate some variation
-      const variation = (Math.random() - 0.5) * 20;
-      const value = Math.max(0, Math.min(100, baseValue - (6 - i) * 5 + variation));
+      // Simulate some variation, aber nicht unter 0
+      const variation = (Math.random() - 0.5) * 10; // Reduzierte Variation
+      const value = Math.max(0, Math.min(100, baseValue - (6 - i) * 3 + variation));
       points.push(value);
     }
     return points;

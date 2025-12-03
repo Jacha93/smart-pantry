@@ -8,15 +8,22 @@ import { PasswordChangeForm } from '@/components/password-change-form';
 import { UsageOverview } from '@/components/usage-overview';
 import { UsageChart } from '@/components/usage-chart';
 import { PlanComparison } from '@/components/plan-comparison';
-import { profileAPI } from '@/lib/api';
+import { profileAPI, adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
-import { User, Lock, BarChart3, Crown, Infinity } from 'lucide-react';
+import { User, Lock, BarChart3, Crown, Infinity, AlertTriangle, Download, Trash2, Users, Switch } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { formatDate } from '@/lib/date-utils';
+import { AdminSwitch } from '@/components/admin-switch';
+import { AdminSwitch } from '@/components/admin-switch';
 
 interface UserProfile {
   id: number;
   email: string;
-  name: string;
+  name: string; // Legacy
+  fullName?: string;
+  username?: string;
   role: string;
   createdAt: string;
   quotas: {
@@ -42,7 +49,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [usage, setUsage] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +136,45 @@ export default function ProfilePage() {
     }
   };
 
+  const handleExportData = async () => {
+    try {
+      toast.loading(t('profile.exporting'));
+      const response = await profileAPI.exportData();
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `smart-pantry-data-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.dismiss();
+      toast.success(t('profile.exportSuccess'));
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error(t('profile.exportFailed'));
+      console.error('Export error:', error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      toast.loading(t('profile.deleting'));
+      await profileAPI.deleteAccount();
+      toast.dismiss();
+      toast.success(t('profile.accountDeleted'));
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    } catch (error: any) {
+      toast.dismiss();
+      toast.error(error.response?.data?.detail || t('profile.deleteFailed'));
+      console.error('Delete account error:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -198,10 +244,14 @@ export default function ProfilePage() {
                 <CardDescription>{t('profile.personalInfoDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <ProfileForm
-                  initialData={{ name: profile.name, email: profile.email }}
-                  onSubmit={handleProfileUpdate}
-                />
+                    <ProfileForm
+                      initialData={{ 
+                        fullName: profile.fullName || profile.name, 
+                        username: profile.username || '',
+                        email: profile.email 
+                      }}
+                      onSubmit={handleProfileUpdate}
+                    />
               </CardContent>
             </Card>
 
@@ -214,7 +264,7 @@ export default function ProfilePage() {
                 <div className="flex justify-between items-center py-2 border-b border-white/10">
                   <span className="text-muted-foreground">{t('profile.memberSince')}</span>
                   <span className="font-medium">
-                    {new Date(profile.createdAt).toLocaleDateString()}
+                    {formatDate(profile.createdAt, locale)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-white/10">
@@ -227,9 +277,37 @@ export default function ProfilePage() {
                   <span className="text-muted-foreground">{t('profile.email')}</span>
                   <span className="font-medium">{profile.email}</span>
                 </div>
+                {profile.fullName && (
+                  <div className="flex justify-between items-center py-2 border-t border-white/10">
+                    <span className="text-muted-foreground">{t('profile.fullName')}</span>
+                    <span className="font-medium">{profile.fullName}</span>
+                  </div>
+                )}
+                {profile.username && (
+                  <div className="flex justify-between items-center py-2 border-t border-white/10">
+                    <span className="text-muted-foreground">{t('profile.username')}</span>
+                    <span className="font-medium">{profile.username}</span>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
+
+          {/* Admin Switch (only for admins) */}
+          {profile.role === 'ADMIN' && (
+            <Card className="border-yellow-500/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-500">
+                  <Users className="h-5 w-5" />
+                  Admin Panel
+                </CardTitle>
+                <CardDescription>Switch between user accounts for testing</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminSwitch />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Usage Tab - Dashboard Style */}
@@ -384,6 +462,66 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               <PasswordChangeForm onSubmit={handlePasswordChange} />
+            </CardContent>
+          </Card>
+
+          {/* Data Export */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Download className="h-5 w-5" />
+                {t('profile.exportData')}
+              </CardTitle>
+              <CardDescription>{t('profile.exportDataDesc')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={handleExportData} 
+                variant="outline"
+                className="w-full"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                {t('profile.exportData')}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-red-500/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-500">
+                <AlertTriangle className="h-5 w-5" />
+                {t('profile.dangerZone')}
+              </CardTitle>
+              <CardDescription className="text-red-500/80">
+                {t('profile.deleteAccountDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="destructive" className="w-full">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t('profile.deleteAccount')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="text-red-500">{t('profile.deleteAccount')}</DialogTitle>
+                    <DialogDescription>
+                      {t('profile.confirmDelete')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {}}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button variant="destructive" onClick={handleDeleteAccount}>
+                      {t('profile.deleteAccount')}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
         </TabsContent>

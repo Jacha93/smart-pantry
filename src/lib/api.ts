@@ -282,10 +282,18 @@ export const groceriesAPI = {
 // User Profile API
 export const profileAPI = {
   get: () => api.get('/me'),
-  update: (data: { name?: string; email?: string }) => api.put('/me', data),
+  update: (data: { fullName?: string; username?: string; email?: string }) => api.put('/me', data),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put('/me/password', { currentPassword, newPassword }),
   getUsage: () => api.get('/me/usage'),
+  exportData: () => api.get('/me/export-data', { responseType: 'blob' }),
+  deleteAccount: () => api.delete('/me'),
+};
+
+// Admin API
+export const adminAPI = {
+  switchUser: (userId: number) => api.post('/admin/switch', { userId }),
+  getUsers: () => api.get('/admin/users'),
 };
 
 // Shopping Lists API

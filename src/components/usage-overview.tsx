@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/hooks/use-i18n';
 import { Infinity } from 'lucide-react';
+import { formatResetDate } from '@/lib/date-utils';
 
 interface UsageOverviewProps {
   usage: any;
@@ -12,7 +13,7 @@ interface UsageOverviewProps {
 }
 
 export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -115,10 +116,10 @@ export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
       
       <div className="pt-4 border-t">
         <p className="text-sm text-muted-foreground">
-          {t('profile.resetInfo')}: {new Date(usage.resetAt).toLocaleDateString()}
+          {t('profile.resetInfo')}: {formatResetDate(usage.resetAt, locale)}
         </p>
         <p className="text-sm text-muted-foreground">
-          {t('profile.monthlyResetInfo')}: {new Date(usage.monthlyResetAt).toLocaleDateString()}
+          {t('profile.monthlyResetInfo')}: {formatResetDate(usage.resetAt, locale)}
         </p>
       </div>
     </div>
