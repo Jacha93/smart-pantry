@@ -59,25 +59,27 @@ const forwardRequest = async (
   const method = request.method.toUpperCase();
   const headers = filterHeaders(request.headers);
 
-  let body: BodyInit | null | undefined = undefined;
+  let body: Buffer | string | null | undefined = undefined;
   if (!isBodylessMethod(method)) {
     const contentType = headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
-      body = formData;
+      // Für multipart/form-data: Body direkt als Buffer weiterleiten
+      // (FormData-Parsing würde die Boundary zerstören)
+      const buffer = await request.arrayBuffer();
+      body = Buffer.from(buffer);
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await request.formData();
       const params = new URLSearchParams();
       for (const [key, value] of formData.entries()) {
         params.append(key, typeof value === 'string' ? value : value.name);
       }
-      body = params;
+      body = params.toString();
     } else if (contentType.includes('application/json')) {
       const json = await request.json();
       body = JSON.stringify(json);
     } else {
       const buffer = await request.arrayBuffer();
-      body = buffer;
+      body = Buffer.from(buffer);
     }
   }
 
@@ -123,27 +125,15 @@ const forwardRequest = async (
 
       if (body) {
         if (typeof body === 'string') {
-          req.write(body);
-          req.end();
+          req.write(body, 'utf8');
         } else if (body instanceof Buffer) {
           req.write(body);
-          req.end();
-        } else if (body instanceof FormData) {
-          // FormData wird als Buffer gesendet
-          body.arrayBuffer()
-            .then((buf) => {
-              req.write(Buffer.from(buf));
-              req.end();
-            })
-            .catch(reject);
-          return; // Promise wird in FormData-Handler resolved
         } else {
-          req.write(body);
-          req.end();
+          // Fallback für andere Typen
+          req.write(String(body));
         }
-      } else {
-        req.end();
       }
+      req.end();
     });
 
     const responseHeaders = filterHeaders(new Headers(response.headers as any));
