@@ -143,6 +143,12 @@ const forwardRequest = async (
 
     const responseHeaders = filterHeaders(new Headers(response.headers as any));
     
+    // Stelle sicher, dass Content-Type gesetzt ist (wichtig für JSON-Responses)
+    const contentType = responseHeaders.get('content-type') || 'application/json';
+    if (!responseHeaders.has('content-type')) {
+      responseHeaders.set('content-type', contentType);
+    }
+    
     // NextResponse akzeptiert keinen 304 Status Code direkt
     // HTTP 304 (Not Modified) sollte keinen Body haben
     // Konvertiere 304 zu 200 mit leerem Body, behalte aber ETag-Header für Client-Caching

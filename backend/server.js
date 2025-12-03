@@ -837,12 +837,13 @@ app.put('/me/profile', authMiddleware, async (req, res) => {
 
 // Groceries routes (protected)
 app.get('/groceries', authMiddleware, async (req, res) => {
-  const list = await prisma.grocery.findMany({
-    where: { userId: req.user.id },
-    orderBy: { addedAt: 'desc' },
-  });
-  res.json(
-    list.map((g) => ({
+  try {
+    const list = await prisma.grocery.findMany({
+      where: { userId: req.user.id },
+      orderBy: { addedAt: 'desc' },
+    });
+    // Stelle sicher, dass immer ein Array zurückgegeben wird (auch wenn leer)
+    const groceries = list.map((g) => ({
       id: g.id,
       user_id: g.userId,
       name: g.name,
@@ -853,8 +854,13 @@ app.get('/groceries', authMiddleware, async (req, res) => {
       added_date: g.addedAt,
       low_stock_threshold: g.lowStockThreshold,
       notes: g.notes,
-    }))
-  );
+    }));
+    res.setHeader('Content-Type', 'application/json');
+    res.json(groceries);
+  } catch (error) {
+    console.error('Groceries endpoint error:', error);
+    res.status(500).json({ detail: 'Fehler beim Laden der Lebensmittel' });
+  }
 });
 
 app.post('/groceries', authMiddleware, async (req, res) => {

@@ -21,29 +21,16 @@ const runtimeConfigScript = `
 
   // Crypto Polyfill - Muss sehr früh geladen werden
   // WICHTIG: Nur JavaScript verwenden, keine TypeScript-Syntax!
-  try {
-    // Stelle sicher, dass window.crypto existiert
-    if (!window.crypto) {
-      window.crypto = {};
-    }
-
-    var cryptoObj = window.crypto;
-    
-    // Prüfe ob randomUUID bereits verfügbar ist
-    if (typeof cryptoObj.randomUUID === 'function') {
-      // Teste ob es funktioniert
-      try {
-        cryptoObj.randomUUID();
-        console.log('✓ crypto.randomUUID already available');
-      } catch (e) {
-        // Falls es nicht funktioniert, ersetze es
-        console.warn('crypto.randomUUID exists but does not work, replacing...');
-        cryptoObj = window.crypto;
+  (function() {
+    try {
+      // Stelle sicher, dass window.crypto existiert
+      if (!window.crypto) {
+        window.crypto = {};
       }
-    }
-    
-    // Setze Polyfill nur wenn randomUUID nicht verfügbar ist
-    if (typeof cryptoObj.randomUUID !== 'function') {
+
+      var cryptoObj = window.crypto;
+      
+      // Fallback-Funktion für randomUUID
       var fallbackRandomUUID = function () {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
           var r = Math.random() * 16 | 0;
@@ -51,52 +38,66 @@ const runtimeConfigScript = `
           return v.toString(16);
         });
       };
-
-      // Versuche verschiedene Methoden um randomUUID zu setzen
-      var polyfillSet = false;
       
-      // Methode 1: Object.defineProperty
-      try {
-        Object.defineProperty(cryptoObj, 'randomUUID', {
-          value: fallbackRandomUUID,
-          configurable: true,
-          writable: true,
-          enumerable: false,
-        });
-        polyfillSet = true;
-      } catch (e) {
-        // Methode 2: Direkte Zuweisung
+      // Prüfe ob randomUUID bereits verfügbar ist und funktioniert
+      var needsPolyfill = true;
+      if (typeof cryptoObj.randomUUID === 'function') {
         try {
-          cryptoObj.randomUUID = fallbackRandomUUID;
+          var testUUID = cryptoObj.randomUUID();
+          if (testUUID && typeof testUUID === 'string' && testUUID.length === 36) {
+            needsPolyfill = false;
+            console.log('✓ crypto.randomUUID already available');
+          }
+        } catch (e) {
+          // Falls es nicht funktioniert, brauchen wir den Polyfill
+          needsPolyfill = true;
+        }
+      }
+      
+      // Setze Polyfill wenn nötig
+      if (needsPolyfill) {
+        // Versuche verschiedene Methoden um randomUUID zu setzen
+        var polyfillSet = false;
+        
+        // Methode 1: Object.defineProperty (am robustesten)
+        try {
+          Object.defineProperty(cryptoObj, 'randomUUID', {
+            value: fallbackRandomUUID,
+            configurable: true,
+            writable: true,
+            enumerable: false,
+          });
           polyfillSet = true;
-        } catch (e2) {
-          // Methode 3: Erstelle neues crypto Objekt
+        } catch (e) {
+          // Methode 2: Direkte Zuweisung
           try {
-            var newCrypto = Object.create(cryptoObj);
-            newCrypto.randomUUID = fallbackRandomUUID;
-            window.crypto = newCrypto;
+            cryptoObj.randomUUID = fallbackRandomUUID;
             polyfillSet = true;
-          } catch (e3) {
-            console.error('All methods to set crypto.randomUUID failed');
+          } catch (e2) {
+            console.error('Failed to set crypto.randomUUID:', e2);
           }
         }
-      }
 
-      // Verify the polyfill works
-      if (polyfillSet && typeof window.crypto.randomUUID === 'function') {
-        try {
-          window.crypto.randomUUID();
-          console.log('✓ crypto.randomUUID polyfill loaded successfully');
-        } catch (e) {
-          console.error('✗ crypto.randomUUID polyfill loaded but does not work:', e);
+        // Verify the polyfill works
+        if (polyfillSet) {
+          try {
+            var testUUID = cryptoObj.randomUUID();
+            if (testUUID && typeof testUUID === 'string' && testUUID.length === 36) {
+              console.log('✓ crypto.randomUUID polyfill loaded successfully');
+            } else {
+              console.error('✗ crypto.randomUUID polyfill loaded but returned invalid UUID');
+            }
+          } catch (e) {
+            console.error('✗ crypto.randomUUID polyfill loaded but does not work:', e);
+          }
+        } else {
+          console.error('✗ Failed to load crypto.randomUUID polyfill');
         }
-      } else {
-        console.error('✗ Failed to load crypto.randomUUID polyfill');
       }
+    } catch (error) {
+      console.error('✗ Failed to initialize crypto polyfill:', error);
     }
-  } catch (error) {
-    console.error('✗ Failed to initialize crypto polyfill:', error);
-  }
+  })();
 })();
 `;
 
