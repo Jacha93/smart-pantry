@@ -44,7 +44,7 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
         updateData.fullName = data.fullName;
       }
       if (data.username !== (initialData.username || '')) {
-        updateData.username = data.username || null;
+        updateData.username = data.username || undefined;
       }
       if (data.email !== initialData.email) {
         updateData.email = data.email;
