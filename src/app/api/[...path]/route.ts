@@ -60,34 +60,34 @@ const forwardRequest = async (
   const method = request.method.toUpperCase();
   const headers = filterHeaders(request.headers);
 
-  let body: Buffer | string | null | undefined = undefined;
+  // Request Body vorbereiten
+  let requestBody: Buffer | string | null = null;
   if (!isBodylessMethod(method)) {
     const contentType = headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
       // Für multipart/form-data: Body direkt als Buffer weiterleiten
       // (FormData-Parsing würde die Boundary zerstören)
       const buffer = await request.arrayBuffer();
-      body = Buffer.from(buffer);
+      requestBody = Buffer.from(buffer);
     } else if (contentType.includes('application/x-www-form-urlencoded')) {
       const formData = await request.formData();
       const params = new URLSearchParams();
       for (const [key, value] of formData.entries()) {
         params.append(key, typeof value === 'string' ? value : value.name);
       }
-      body = params.toString();
+      requestBody = params.toString();
     } else if (contentType.includes('application/json')) {
       const json = await request.json();
-      body = JSON.stringify(json);
+      requestBody = JSON.stringify(json);
     } else {
       const buffer = await request.arrayBuffer();
-      body = Buffer.from(buffer);
+      requestBody = Buffer.from(buffer);
     }
   }
 
   try {
     // Verwende Node.js http/https statt fetch für bessere Docker DNS-Unterstützung
-    const url = new URL(targetUrl);
-    const isHttps = url.protocol === 'https:';
+    const isHttps = targetUrl.protocol === 'https:';
     const httpModule = isHttps ? https : http;
     
     const response = await new Promise<{
@@ -96,10 +96,11 @@ const forwardRequest = async (
       headers: Record<string, string | string[]>;
       body: Buffer;
     }>((resolve, reject) => {
+      const port = targetUrl.port ? parseInt(targetUrl.port, 10) : (isHttps ? 443 : 80);
       const requestOptions = {
-        hostname: url.hostname,
-        port: url.port || (isHttps ? 443 : 80),
-        path: url.pathname + url.search,
+        hostname: targetUrl.hostname,
+        port: port,
+        path: targetUrl.pathname + targetUrl.search,
         method,
         headers: Object.fromEntries(headers.entries()),
         timeout: 30000, // 30 Sekunden Timeout
@@ -124,23 +125,26 @@ const forwardRequest = async (
         reject(new Error('Request timeout'));
       });
 
-      if (body) {
-        if (typeof body === 'string') {
-          req.write(body, 'utf8');
-        } else if (body instanceof Buffer) {
-          req.write(body);
-        } else {
-          // Fallback für andere Typen
-          req.write(String(body));
+      // Schreibe Request-Body synchron
+      try {
+        if (requestBody) {
+          if (typeof requestBody === 'string') {
+            req.write(requestBody, 'utf8');
+          } else if (requestBody instanceof Buffer) {
+            req.write(requestBody);
+          }
         }
+        req.end();
+      } catch (writeError) {
+        req.destroy();
+        reject(writeError);
       }
-      req.end();
     });
 
     const responseHeaders = filterHeaders(new Headers(response.headers as any));
     // Konvertiere Buffer zu Uint8Array für NextResponse
-    const body = new Uint8Array(response.body);
-    return new NextResponse(body, {
+    const responseBody = new Uint8Array(response.body);
+    return new NextResponse(responseBody, {
       status: response.statusCode,
       statusText: response.statusMessage,
       headers: responseHeaders,
