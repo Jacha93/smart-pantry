@@ -72,11 +72,18 @@ export default function ProfilePage() {
       if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0) {
         setProfile(response.data);
       } else if (response.data && typeof response.data === 'object' && Object.keys(response.data).length === 0) {
-        // Leeres Objekt {} bedeutet wahrscheinlich 304 Not Modified - versuche es nochmal
-        console.log('Profile API returned empty object (304?), retrying...');
-        setTimeout(() => {
-          fetchProfile();
-        }, 100);
+        // Leeres Objekt {} bedeutet wahrscheinlich 304 Not Modified oder Backend-Fehler
+        // Prüfe ob es ein ETag-Header gibt (304 Not Modified Indikator)
+        const hasETag = response.headers && (response.headers['etag'] || response.headers['ETag']);
+        if (hasETag) {
+          // 304 Not Modified - verwende gecachte Daten oder zeige Fehler
+          console.warn('Profile API returned 304 Not Modified (empty object)');
+          toast.error(t('profile.failedToLoad'));
+        } else {
+          // Kein ETag - wahrscheinlich Backend-Fehler
+          console.error('Profile API returned empty object without ETag:', response);
+          toast.error(t('profile.failedToLoad'));
+        }
       } else {
         console.error('Profile API returned empty data:', response);
         toast.error(t('profile.failedToLoad'));
