@@ -242,10 +242,20 @@ api.interceptors.response.use(
       }
     }
 
+    // Handle 401 for auth endpoints (login/register) - don't redirect, just reject
     if (status === 401) {
-      removeStoredToken(ACCESS_TOKEN_KEY);
-      removeStoredToken(REFRESH_TOKEN_KEY);
-      redirectToLogin();
+      // Für Login/Register: Nicht redirecten, nur Token löschen und Fehler zurückgeben
+      if (url.includes('/auth/login') || url.includes('/auth/register')) {
+        // Bei Login/Register-Fehlern: Token löschen (falls vorhanden) aber nicht redirecten
+        // Der Login-Handler zeigt bereits eine Fehlermeldung
+        removeStoredToken(ACCESS_TOKEN_KEY);
+        removeStoredToken(REFRESH_TOKEN_KEY);
+      } else {
+        // Für alle anderen Endpunkte: Token löschen und redirecten
+        removeStoredToken(ACCESS_TOKEN_KEY);
+        removeStoredToken(REFRESH_TOKEN_KEY);
+        redirectToLogin();
+      }
     }
 
     // Log all errors for debugging (especially registration/login failures)
@@ -257,6 +267,7 @@ api.interceptors.response.use(
         response: error.response?.data,
         code: error.code,
         request: error.request ? 'Request exists' : 'No request',
+        hasToken: !!getStoredToken(ACCESS_TOKEN_KEY),
       });
     }
 

@@ -144,15 +144,37 @@ export const auth = {
       return loginWithMockAuth(email, password);
     }
 
-    const response = await authAPI.login(email, password);
-    const { access_token, refresh_token, token_type } = response.data;
+    // Lösche alte Token vor dem Login (falls vorhanden)
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
 
-    localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
-    if (refresh_token) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+    try {
+      const response = await authAPI.login(email, password);
+      
+      // Prüfe ob die Response gültig ist
+      if (!response || !response.data || !response.data.access_token) {
+        throw new Error('Invalid login response: missing access_token');
+      }
+      
+      const { access_token, refresh_token, token_type } = response.data;
+
+      // Speichere Token nur wenn sie vorhanden sind
+      if (access_token) {
+        localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
+      }
+      if (refresh_token) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+      }
+      
+      dispatchAuthChange();
+      return { access_token, refresh_token, token_type };
+    } catch (error: any) {
+      // Stelle sicher, dass Token gelöscht sind bei Fehler
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      dispatchAuthChange();
+      throw error;
     }
-    dispatchAuthChange();
-    return { access_token, refresh_token, token_type };
   },
 
   register: async (email: string, password: string, name: string): Promise<User> => {
