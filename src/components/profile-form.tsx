@@ -65,7 +65,6 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
         <Label htmlFor="fullName">{t('profile.fullName')}</Label>
         <Input
           id="fullName"
-          name="fullName"
           autoComplete="off"
           {...register('fullName')}
           placeholder={t('profile.fullNamePlaceholder')}
@@ -79,7 +78,6 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
         <Label htmlFor="username">{t('profile.username')}</Label>
         <Input
           id="username"
-          name="username"
           autoComplete="username"
           {...register('username')}
           placeholder={t('profile.usernamePlaceholder')}
@@ -94,7 +92,6 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
         <Input
           id="email"
           type="email"
-          name="email"
           autoComplete="email"
           {...register('email')}
           placeholder={t('profile.emailPlaceholder')}
