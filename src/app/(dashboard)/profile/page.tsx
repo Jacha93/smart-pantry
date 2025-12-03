@@ -11,11 +11,10 @@ import { PlanComparison } from '@/components/plan-comparison';
 import { profileAPI, adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
-import { User, Lock, BarChart3, Crown, Infinity, AlertTriangle, Download, Trash2, Users, Switch } from 'lucide-react';
+import { User, Lock, BarChart3, Crown, Infinity, AlertTriangle, Download, Trash2, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/date-utils';
-import { AdminSwitch } from '@/components/admin-switch';
 import { AdminSwitch } from '@/components/admin-switch';
 
 interface UserProfile {

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { adminAPI } from '@/lib/api';
 import { toast } from 'sonner';
-import { Switch as SwitchIcon } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 
@@ -61,7 +61,7 @@ export function AdminSwitch() {
         disabled={isLoading || !userId}
         className="w-full"
       >
-        <SwitchIcon className="mr-2 h-4 w-4" />
+        <ArrowLeftRight className="mr-2 h-4 w-4" />
         {isLoading ? 'Switching...' : 'Switch to User'}
       </Button>
     </div>
