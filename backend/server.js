@@ -2705,13 +2705,18 @@ try {
   (async () => {
     try {
       await ensureAdminUser();
-      console.log('\n🔐 === ADMIN ACCOUNT ===');
-      console.log(`   Email: ${ADMIN_USER_EMAIL}`);
-      console.log(`   Username: ${ADMIN_USER_USERNAME}`);
-      console.log(`   Password: ${ADMIN_USER_PASSWORD}`);
-      console.log(`   Full Name: ${ADMIN_USER_FULLNAME}`);
-      console.log('   Role: ADMIN (unlimited quotas)');
-      console.log('========================\n');
+      // Nur in Development/Non-Production die Zugangsdaten ausgeben
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('\n🔐 === ADMIN ACCOUNT ===');
+        console.log(`   Email: ${ADMIN_USER_EMAIL}`);
+        console.log(`   Username: ${ADMIN_USER_USERNAME}`);
+        console.log(`   Password: ${ADMIN_USER_PASSWORD}`);
+        console.log(`   Full Name: ${ADMIN_USER_FULLNAME}`);
+        console.log('   Role: ADMIN (unlimited quotas)');
+        console.log('========================\n');
+      } else {
+        console.log('✅ Admin account ensured');
+      }
     } catch (error) {
       console.error('❌ Error ensuring admin user:', error);
       // Don't exit, continue with server start
