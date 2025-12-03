@@ -68,8 +68,15 @@ export default function ProfilePage() {
       setIsLoading(true);
       const response = await profileAPI.get();
       console.log('Profile API Response:', response.data);
-      if (response.data) {
+      // Prüfe ob response.data ein gültiges Objekt ist (nicht leer)
+      if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0) {
         setProfile(response.data);
+      } else if (response.data && typeof response.data === 'object' && Object.keys(response.data).length === 0) {
+        // Leeres Objekt {} bedeutet wahrscheinlich 304 Not Modified - versuche es nochmal
+        console.log('Profile API returned empty object (304?), retrying...');
+        setTimeout(() => {
+          fetchProfile();
+        }, 100);
       } else {
         console.error('Profile API returned empty data:', response);
         toast.error(t('profile.failedToLoad'));

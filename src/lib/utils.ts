@@ -12,9 +12,19 @@ export function cn(...inputs: ClassValue[]) {
 export function generateUUID(): string {
   try {
     // Check if crypto.randomUUID is available and callable
-    if (typeof crypto !== 'undefined' && 
-        typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID();
+    // Prüfe sowohl window.crypto als auch global crypto
+    const cryptoObj = typeof window !== 'undefined' ? window.crypto : (typeof crypto !== 'undefined' ? crypto : null);
+    if (cryptoObj && typeof cryptoObj.randomUUID === 'function') {
+      try {
+        const uuid = cryptoObj.randomUUID();
+        // Validiere dass es ein gültiges UUID-Format ist
+        if (uuid && typeof uuid === 'string' && uuid.length === 36 && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid)) {
+          return uuid;
+        }
+      } catch (e) {
+        // Falls crypto.randomUUID einen Fehler wirft, verwende Fallback
+        console.warn('crypto.randomUUID() threw error, using fallback:', e);
+      }
     }
   } catch (error) {
     // If crypto.randomUUID throws an error, fall back to manual implementation

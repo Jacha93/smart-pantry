@@ -160,8 +160,19 @@ const forwardRequest = async (
       // Die ETag-Header bleiben erhalten, damit der Client weiß, dass nichts geändert wurde
       statusCode = 200;
       const isJsonEndpoint = contentType.includes('application/json');
-      const body = isJsonEndpoint ? JSON.stringify({}) : null;
-      return new NextResponse(body, {
+      if (isJsonEndpoint) {
+        // Prüfe ob es ein Array-Endpunkt ist (basierend auf URL)
+        const isArrayEndpoint = targetUrl.pathname.includes('/groceries') || 
+                                targetUrl.pathname.includes('/shopping-lists') ||
+                                targetUrl.pathname.includes('/recipes');
+        const body = isArrayEndpoint ? JSON.stringify([]) : JSON.stringify({});
+        return new NextResponse(body, {
+          status: statusCode,
+          statusText: response.statusMessage,
+          headers: responseHeaders,
+        });
+      }
+      return new NextResponse(null, {
         status: statusCode,
         statusText: response.statusMessage,
         headers: responseHeaders,
