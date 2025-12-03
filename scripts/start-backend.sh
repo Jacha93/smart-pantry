@@ -15,6 +15,10 @@ if [ -d "/app/backend/prisma/migrations" ]; then
   cd /app/backend
   npx prisma migrate deploy --schema=./prisma/schema.prisma
   echo "✅ Migrations completed."
+  
+  echo "🔧 Generating Prisma Client..."
+  npx prisma generate --schema=./prisma/schema.prisma
+  echo "✅ Prisma Client generated."
 else
   echo "⚠️ Migrations directory not found at /app/backend/prisma/migrations"
   ls -la /app/backend/prisma/
