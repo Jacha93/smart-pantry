@@ -46,6 +46,15 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
         dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
       });
       
+      // Prüfe ob es eine Fehler-Response ist (z.B. {detail: 'Invalid token'})
+      if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && 'detail' in response.data) {
+        console.error('Groceries API returned error:', response.data.detail);
+        // Token-Refresh sollte bereits getriggert worden sein, aber falls nicht, zeige Fehler
+        setGroceries([]);
+        // Zeige keinen Toast, da Token-Refresh bereits läuft
+        return;
+      }
+      
       // Stelle sicher, dass response.data ein Array ist
       if (Array.isArray(response.data)) {
         setGroceries(response.data);

@@ -68,9 +68,17 @@ export default function ProfilePage() {
       setIsLoading(true);
       const response = await profileAPI.get();
       console.log('Profile API Response:', response.data);
-      // Prüfe ob response.data ein gültiges Objekt ist (nicht leer)
-      if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0) {
-        setProfile(response.data);
+      
+      // Prüfe ob es eine Fehler-Response ist (z.B. {detail: 'Invalid token'})
+      if (response.data && typeof response.data === 'object' && 'detail' in response.data) {
+        console.error('Profile API returned error:', response.data.detail);
+        toast.error(response.data.detail || t('profile.failedToLoad'));
+        return;
+      }
+      
+      // Prüfe ob response.data ein gültiges Objekt ist (nicht leer) und hat die erwartete Struktur
+      if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0 && 'quotas' in response.data) {
+        setProfile(response.data as UserProfile);
       } else if (response.data && typeof response.data === 'object' && Object.keys(response.data).length === 0) {
         // Leeres Objekt {} bedeutet wahrscheinlich 304 Not Modified
         // Prüfe ob es ein X-Original-Status Header gibt (vom Proxy gesetzt)
@@ -89,8 +97,12 @@ export default function ProfilePage() {
                   'Pragma': 'no-cache',
                 },
               });
-              if (retryResponse.data && typeof retryResponse.data === 'object' && Object.keys(retryResponse.data).length > 0) {
-                setProfile(retryResponse.data);
+              // Prüfe ob es eine Fehler-Response ist
+              if (retryResponse.data && typeof retryResponse.data === 'object' && 'detail' in retryResponse.data) {
+                console.error('Retry returned error:', retryResponse.data.detail);
+                toast.error(retryResponse.data.detail || t('profile.failedToLoad'));
+              } else if (retryResponse.data && typeof retryResponse.data === 'object' && Object.keys(retryResponse.data).length > 0 && 'quotas' in retryResponse.data) {
+                setProfile(retryResponse.data as UserProfile);
               } else {
                 console.error('Retry still returned empty data:', retryResponse);
                 toast.error(t('profile.failedToLoad'));
@@ -231,6 +243,7 @@ export default function ProfilePage() {
 
   // Determine current plan based on quotas
   const getCurrentPlan = () => {
+    if (!profile || !profile.quotas) return 'free';
     const { quotas } = profile;
     if (quotas.hasPrioritySupport) return 'pro';
     if (quotas.maxCacheRecipeSuggestions === 30 && quotas.maxChatMessages === 16) return 'basic';
