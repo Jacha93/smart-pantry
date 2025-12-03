@@ -82,10 +82,17 @@ export default function ProfilePage() {
           // Lösche Cache-Header und versuche es nochmal
           setTimeout(async () => {
             try {
-              const retryResponse = await profileAPI.get();
+              // Erstelle einen neuen Request OHNE Cache-Header
+              const retryResponse = await api.get('/me', {
+                headers: {
+                  'Cache-Control': 'no-cache',
+                  'Pragma': 'no-cache',
+                },
+              });
               if (retryResponse.data && typeof retryResponse.data === 'object' && Object.keys(retryResponse.data).length > 0) {
                 setProfile(retryResponse.data);
               } else {
+                console.error('Retry still returned empty data:', retryResponse);
                 toast.error(t('profile.failedToLoad'));
               }
             } catch (retryError) {

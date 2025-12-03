@@ -64,6 +64,9 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Deaktiviere automatisches Caching für GET-Requests
+  // Axios sendet sonst automatisch If-None-Match Header
+  validateStatus: (status) => status < 500, // Akzeptiere alle Status außer 5xx
 });
 
 const authlessApi = axios.create({
