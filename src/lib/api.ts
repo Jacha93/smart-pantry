@@ -282,7 +282,7 @@ export const groceriesAPI = {
 // User Profile API
 export const profileAPI = {
   get: () => api.get('/me'),
-  update: (data: { fullName?: string; username?: string; email?: string }) => api.put('/me', data),
+  update: (data: { fullName?: string; username?: string | null; email?: string }) => api.put('/me', data),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.put('/me/password', { currentPassword, newPassword }),
   getUsage: () => api.get('/me/usage'),

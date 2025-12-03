@@ -20,7 +20,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 interface ProfileFormProps {
   initialData: { fullName: string; username?: string; email: string };
-  onSubmit: (data: { fullName?: string; username?: string; email?: string }) => Promise<void>;
+  onSubmit: (data: { fullName?: string; username?: string | null; email?: string }) => Promise<void>;
 }
 
 export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
@@ -39,12 +39,13 @@ export function ProfileForm({ initialData, onSubmit }: ProfileFormProps) {
   const onFormSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     try {
-      const updateData: { fullName?: string; username?: string; email?: string } = {};
+      const updateData: { fullName?: string; username?: string | null; email?: string } = {};
       if (data.fullName !== initialData.fullName) {
         updateData.fullName = data.fullName;
       }
       if (data.username !== (initialData.username || '')) {
-        updateData.username = data.username || undefined;
+        // Backend erwartet null für Löschung, nicht undefined
+        updateData.username = data.username && data.username.trim() ? data.username.trim() : null;
       }
       if (data.email !== initialData.email) {
         updateData.email = data.email;
