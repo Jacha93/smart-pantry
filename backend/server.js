@@ -454,7 +454,7 @@ app.post('/auth/register', async (req, res) => {
       bodyKeys: Object.keys(req.body || {}),
     });
     
-    const { email, password, name, profile } = req.body || {};
+    const { email, password, name } = req.body || {};
     if (!email || !password || !name) {
       console.error('Registration failed: Missing required fields', { email: !!email, password: !!password, name: !!name });
       return res.status(400).json({ detail: 'Missing required fields: email, password, and name are required' });
@@ -470,13 +470,12 @@ app.post('/auth/register', async (req, res) => {
     
     console.log('Creating new user:', normalizedEmail);
     const passwordHash = await bcrypt.hash(password, 10);
-    const encryptedProfile = profile ? encryptField(JSON.stringify(profile)) : null;
+    /*const encryptedProfile =? encryptField(JSON.stringify(profile)) : null;*/
     const user = await prisma.user.create({
       data: {
         email: normalizedEmail,
         name: String(name).trim(),
         passwordHash,
-        encryptedProfile,
         quotaResetAt: new Date(),
       },
     });
