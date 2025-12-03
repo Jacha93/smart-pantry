@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { ProfileForm } from '@/components/profile-form';
 import { PasswordChangeForm } from '@/components/password-change-form';
 import { UsageOverview } from '@/components/usage-overview';
