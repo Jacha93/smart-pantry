@@ -85,8 +85,6 @@ export function UsageChart({ usage }: UsageChartProps) {
     animate();
   }, [usage]);
 
-  if (!usage) return null;
-
   const chartData = [
     { 
       key: 'llmTokens', 
