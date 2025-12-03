@@ -11,7 +11,7 @@ import { PlanComparison } from '@/components/plan-comparison';
 import { profileAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
-import { User, Lock, BarChart3, Crown } from 'lucide-react';
+import { User, Lock, BarChart3, Crown, Infinity } from 'lucide-react';
 
 interface UserProfile {
   id: number;
@@ -126,6 +126,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{t('profile.title')}</h1>
@@ -133,8 +134,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             {t('profile.tabs.profile')}
@@ -153,77 +155,181 @@ export default function ProfilePage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('profile.personalInfo')}</CardTitle>
-              <CardDescription>{t('profile.personalInfoDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProfileForm
-                initialData={{ name: profile.name, email: profile.email }}
-                onSubmit={handleProfileUpdate}
-              />
-            </CardContent>
-          </Card>
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-6 mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.personalInfo')}</CardTitle>
+                <CardDescription>{t('profile.personalInfoDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfileForm
+                  initialData={{ name: profile.name, email: profile.email }}
+                  onSubmit={handleProfileUpdate}
+                />
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('profile.accountInfo')}</CardTitle>
-              <CardDescription>{t('profile.accountInfoDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('profile.memberSince')}</span>
-                <span className="font-medium">
-                  {new Date(profile.createdAt).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">{t('profile.currentPlan')}</span>
-                <span className="font-medium capitalize">{currentPlan}</span>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.accountInfo')}</CardTitle>
+                <CardDescription>{t('profile.accountInfoDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center py-2 border-b border-white/10">
+                  <span className="text-muted-foreground">{t('profile.memberSince')}</span>
+                  <span className="font-medium">
+                    {new Date(profile.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-white/10">
+                  <span className="text-muted-foreground">{t('profile.currentPlan')}</span>
+                  <span className="font-medium capitalize px-3 py-1 rounded-full bg-primary/20 text-primary">
+                    {currentPlan}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-muted-foreground">{t('profile.email')}</span>
+                  <span className="font-medium">{profile.email}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="usage" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('profile.usageOverview')}</CardTitle>
-              <CardDescription>{t('profile.usageOverviewDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {usage ? (
+        {/* Usage Tab - Dashboard Style */}
+        <TabsContent value="usage" className="space-y-6 mt-6">
+          {/* Usage Stats Cards */}
+          {usage && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('profile.usage.llmTokens')}</p>
+                      <p className="text-2xl font-bold">
+                        {usage.llmTokens.used.toLocaleString()} / {usage.llmTokens.total.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-3xl text-blue-500">💬</div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-500"
+                        style={{ width: `${usage.llmTokens.percent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{usage.llmTokens.percent}%</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('profile.usage.recipeCalls')}</p>
+                      <p className="text-2xl font-bold">
+                        {usage.recipeCalls.used.toLocaleString()} / {usage.recipeCalls.total.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-3xl text-green-500">🍳</div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-green-500 transition-all duration-500"
+                        style={{ width: `${usage.recipeCalls.percent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{usage.recipeCalls.percent}%</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('profile.usage.chatMessages')}</p>
+                      <p className="text-2xl font-bold">
+                        {usage.chatMessages.used.toLocaleString()} / {usage.chatMessages.total.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-3xl text-purple-500">💭</div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-purple-500 transition-all duration-500"
+                        style={{ width: `${usage.chatMessages.percent}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{usage.chatMessages.percent}%</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('profile.usage.groceriesTotal')}</p>
+                      <p className="text-2xl font-bold">
+                        {usage.groceriesTotal.used.toLocaleString()} / {usage.groceriesTotal.unlimited ? '∞' : usage.groceriesTotal.total.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-3xl text-cyan-500">🛒</div>
+                  </div>
+                  <div className="mt-4">
+                    {!usage.groceriesTotal.unlimited && (
+                      <>
+                        <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-cyan-500 transition-all duration-500"
+                            style={{ width: `${usage.groceriesTotal.percent}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{usage.groceriesTotal.percent}%</p>
+                      </>
+                    )}
+                    {usage.groceriesTotal.unlimited && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Infinity className="h-3 w-3" />
+                        {t('profile.unlimited')}
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Line Charts */}
+          {usage && (
+            <div>
+              <UsageChart usage={usage} />
+            </div>
+          )}
+
+          {/* Detailed Overview */}
+          {usage && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('profile.usageOverview')}</CardTitle>
+                <CardDescription>{t('profile.usageOverviewDesc')}</CardDescription>
+              </CardHeader>
+              <CardContent>
                 <UsageOverview usage={usage} quotas={profile.quotas} />
-              ) : (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('profile.usageChart')}</CardTitle>
-              <CardDescription>{t('profile.usageChartDesc')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {usage ? (
-                <UsageChart usage={usage} />
-              ) : (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                  <p className="mt-2 text-muted-foreground">{t('common.loading')}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="plan" className="space-y-4">
+        {/* Plan Tab */}
+        <TabsContent value="plan" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
               <CardTitle>{t('profile.planManagement')}</CardTitle>
@@ -235,7 +341,8 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
+        {/* Security Tab */}
+        <TabsContent value="security" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
               <CardTitle>{t('profile.changePassword')}</CardTitle>

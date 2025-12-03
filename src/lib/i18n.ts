@@ -285,6 +285,7 @@ export const translations: Translations = {
   'profile.usage.cacheSearch': { en: 'Recipe Search via Chat', de: 'Rezeptsuche via Chat' },
   'profile.usage.groceriesTotal': { en: 'Total Groceries', de: 'Lebensmittel gesamt' },
   'profile.usage.groceriesWithExpiry': { en: 'Groceries with Expiry', de: 'Lebensmittel mit MHD' },
+  'profile.usage.unlimitedDesc': { en: 'Unlimited usage', de: 'Unbegrenzte Nutzung' },
   'profile.unlimited': { en: 'Unlimited', de: 'Unbegrenzt' },
   'profile.resetInfo': { en: 'Quota resets on', de: 'Quota wird zurückgesetzt am' },
   'profile.monthlyResetInfo': { en: 'Monthly limits reset on', de: 'Monatliche Limits werden zurückgesetzt am' },
