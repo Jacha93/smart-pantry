@@ -37,6 +37,13 @@ const DEMO_USER_EMAIL = process.env.DEMO_USER_EMAIL || 'demo@smartpantry.app';
 const DEMO_USER_NAME = process.env.DEMO_USER_NAME || 'Demo User';
 const DEMO_USER_PASSWORD = process.env.DEMO_USER_PASSWORD || 'demo123';
 
+// Admin Account Credentials
+const ADMIN_USER_EMAIL = process.env.ADMIN_USER_EMAIL || 'admin@smartpantry.app';
+const ADMIN_USER_NAME = process.env.ADMIN_USER_NAME || 'Admin User';
+const ADMIN_USER_PASSWORD = process.env.ADMIN_USER_PASSWORD || 'admin123';
+const ADMIN_USER_FULLNAME = process.env.ADMIN_USER_FULLNAME || 'Administrator';
+const ADMIN_USER_USERNAME = process.env.ADMIN_USER_USERNAME || 'admin';
+
 // API Keys (aus Umgebungsvariablen)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const SPOONACULAR_API_KEY = process.env.SPOONACULAR_API_KEY || '';
@@ -178,6 +185,88 @@ async function ensureDemoUser() {
     });
   }
   demoUserCache = existing;
+  return existing;
+}
+
+// Ensure Admin User exists (with ADMIN role and unlimited quotas)
+async function ensureAdminUser() {
+  const email = normalizeEmail(ADMIN_USER_EMAIL);
+  let existing = await prisma.user.findUnique({ where: { email } });
+  
+  if (!existing) {
+    // Create new admin user
+    const passwordHash = await bcrypt.hash(ADMIN_USER_PASSWORD, 10);
+    existing = await prisma.user.create({
+      data: {
+        email,
+        name: ADMIN_USER_NAME,
+        fullName: ADMIN_USER_FULLNAME,
+        username: ADMIN_USER_USERNAME,
+        passwordHash,
+        role: 'ADMIN',
+        // Unlimited quotas for admin
+        quotaLlmTokens: -1, // -1 = unlimited
+        quotaRecipeCalls: -1,
+        maxCacheRecipeSuggestions: -1,
+        maxChatMessages: -1,
+        maxCacheRecipeSearchViaChat: -1,
+        maxGroceriesWithExpiry: -1,
+        maxGroceriesTotal: -1,
+        notificationsEnabled: true,
+        hasPrioritySupport: true,
+      },
+    });
+    console.log('✅ Admin user created:', email);
+  } else {
+    // Update existing user to ensure admin role and unlimited quotas
+    const needsUpdate = 
+      existing.role !== 'ADMIN' ||
+      existing.quotaLlmTokens !== -1 ||
+      existing.quotaRecipeCalls !== -1 ||
+      existing.maxCacheRecipeSuggestions !== -1 ||
+      existing.maxChatMessages !== -1 ||
+      existing.maxCacheRecipeSearchViaChat !== -1 ||
+      existing.maxGroceriesWithExpiry !== -1 ||
+      existing.maxGroceriesTotal !== -1 ||
+      existing.fullName !== ADMIN_USER_FULLNAME ||
+      existing.username !== ADMIN_USER_USERNAME;
+    
+    if (needsUpdate) {
+      // Update password if it's the default (for security)
+      let passwordHash = existing.passwordHash;
+      if (ADMIN_USER_PASSWORD === 'admin123') {
+        // Only update if still using default password
+        const isDefaultPassword = await bcrypt.compare(ADMIN_USER_PASSWORD, existing.passwordHash);
+        if (isDefaultPassword) {
+          passwordHash = await bcrypt.hash(ADMIN_USER_PASSWORD, 10);
+        }
+      }
+      
+      existing = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          role: 'ADMIN',
+          fullName: ADMIN_USER_FULLNAME,
+          username: ADMIN_USER_USERNAME,
+          passwordHash,
+          // Unlimited quotas
+          quotaLlmTokens: -1,
+          quotaRecipeCalls: -1,
+          maxCacheRecipeSuggestions: -1,
+          maxChatMessages: -1,
+          maxCacheRecipeSearchViaChat: -1,
+          maxGroceriesWithExpiry: -1,
+          maxGroceriesTotal: -1,
+          notificationsEnabled: true,
+          hasPrioritySupport: true,
+        },
+      });
+      console.log('✅ Admin user updated:', email);
+    } else {
+      console.log('✅ Admin user already exists:', email);
+    }
+  }
+  
   return existing;
 }
 
@@ -2611,6 +2700,24 @@ let server;
 try {
   // In Docker muss der Server auf 0.0.0.0 hören für Port-Mapping
   const HOST = process.env.HOSTNAME || '0.0.0.0';
+  
+  // Ensure Admin User exists before starting server
+  (async () => {
+    try {
+      await ensureAdminUser();
+      console.log('\n🔐 === ADMIN ACCOUNT ===');
+      console.log(`   Email: ${ADMIN_USER_EMAIL}`);
+      console.log(`   Username: ${ADMIN_USER_USERNAME}`);
+      console.log(`   Password: ${ADMIN_USER_PASSWORD}`);
+      console.log(`   Full Name: ${ADMIN_USER_FULLNAME}`);
+      console.log('   Role: ADMIN (unlimited quotas)');
+      console.log('========================\n');
+    } catch (error) {
+      console.error('❌ Error ensuring admin user:', error);
+      // Don't exit, continue with server start
+    }
+  })();
+  
   server = app.listen(PORT, HOST, () => {
     console.log(`✅ API listening on http://${HOST}:${PORT}`);
   });
