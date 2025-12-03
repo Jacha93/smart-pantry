@@ -146,18 +146,24 @@ export const setAdBlockerDetected = (detected: boolean) => {
 // Handle empty responses and normalize data
 api.interceptors.response.use(
   (response) => {
+    const url = response.config?.url || '';
+    const isArrayEndpoint = url.includes('/groceries') || 
+                            url.includes('/shopping-lists') ||
+                            url.includes('/recipes');
+    
     // Wenn response.data leer ist (leerer String), aber Content-Type JSON ist,
     // normalisiere zu leeren Array/Objekt basierend auf URL
     if (response.data === '' && response.headers['content-type']?.includes('application/json')) {
-      const url = response.config?.url || '';
-      // Array-Endpunkte
-      if (url.includes('/groceries') || url.includes('/shopping-lists') || url.includes('/recipes')) {
-        response.data = [];
-      } else {
-        // Objekt-Endpunkte
-        response.data = {};
-      }
+      response.data = isArrayEndpoint ? [] : {};
     }
+    
+    // Wenn response.data ein leeres Objekt {} ist, aber es ein Array-Endpunkt ist,
+    // konvertiere zu leeren Array (z.B. bei 304 Not Modified)
+    if (response.data && typeof response.data === 'object' && !Array.isArray(response.data) && 
+        Object.keys(response.data).length === 0 && isArrayEndpoint) {
+      response.data = [];
+    }
+    
     return response;
   },
   async (error) => {
