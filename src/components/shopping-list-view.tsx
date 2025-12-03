@@ -27,8 +27,17 @@ export function ShoppingListView() {
   const fetchShoppingLists = async () => {
     try {
       const response = await shoppingListsAPI.getAll();
-      setShoppingLists(response.data);
-    } catch {
+      // Stelle sicher, dass response.data ein Array ist
+      if (Array.isArray(response.data)) {
+        setShoppingLists(response.data);
+      } else {
+        console.error('Invalid response data:', response.data);
+        setShoppingLists([]);
+        toast.error('Failed to fetch shopping lists');
+      }
+    } catch (error) {
+      console.error('Error fetching shopping lists:', error);
+      setShoppingLists([]); // Stelle sicher, dass shoppingLists immer ein Array ist
       toast.error('Failed to fetch shopping lists');
     } finally {
       setIsLoading(false);
