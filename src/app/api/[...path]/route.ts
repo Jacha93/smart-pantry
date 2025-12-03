@@ -142,10 +142,25 @@ const forwardRequest = async (
     });
 
     const responseHeaders = filterHeaders(new Headers(response.headers as any));
-    // Konvertiere Buffer zu Uint8Array für NextResponse
-    const responseBody = new Uint8Array(response.body);
+    
+    // NextResponse akzeptiert keinen 304 Status Code direkt
+    // HTTP 304 (Not Modified) sollte keinen Body haben
+    // Konvertiere 304 zu 200 mit leerem Body, behalte aber ETag-Header für Client-Caching
+    let statusCode = response.statusCode;
+    let responseBody: Uint8Array | null = null;
+    
+    if (statusCode === 304) {
+      // 304 sollte keinen Body haben, konvertiere zu 200
+      // Die ETag-Header bleiben erhalten, damit der Client weiß, dass nichts geändert wurde
+      statusCode = 200;
+      responseBody = null;
+    } else {
+      // Konvertiere Buffer zu Uint8Array für NextResponse
+      responseBody = new Uint8Array(response.body);
+    }
+    
     return new NextResponse(responseBody, {
-      status: response.statusCode,
+      status: statusCode,
       statusText: response.statusMessage,
       headers: responseHeaders,
     });
