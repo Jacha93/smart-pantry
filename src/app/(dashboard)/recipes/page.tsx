@@ -41,6 +41,7 @@ export default function RecipesPage() {
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const { t } = useI18n();
+  const { plan } = useUserPlan();
 
   useEffect(() => {
     loadRecipes();
