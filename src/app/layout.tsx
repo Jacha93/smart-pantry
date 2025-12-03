@@ -20,10 +20,11 @@ const runtimeConfigScript = `
   });
 
   // Crypto Polyfill - Muss sehr früh geladen werden
+  // WICHTIG: Nur JavaScript verwenden, keine TypeScript-Syntax!
   try {
     // Stelle sicher, dass window.crypto existiert
     if (!window.crypto) {
-      window.crypto = {} as Crypto;
+      window.crypto = {};
     }
 
     var cryptoObj = window.crypto;
@@ -37,10 +38,7 @@ const runtimeConfigScript = `
       } catch (e) {
         // Falls es nicht funktioniert, ersetze es
         console.warn('crypto.randomUUID exists but does not work, replacing...');
-        var cryptoObj = window.crypto;
-        if (typeof cryptoObj.randomUUID !== 'function') {
-          // Fallback wird unten gesetzt
-        }
+        cryptoObj = window.crypto;
       }
     }
     
@@ -69,14 +67,14 @@ const runtimeConfigScript = `
       } catch (e) {
         // Methode 2: Direkte Zuweisung
         try {
-          (cryptoObj as any).randomUUID = fallbackRandomUUID;
+          cryptoObj.randomUUID = fallbackRandomUUID;
           polyfillSet = true;
         } catch (e2) {
           // Methode 3: Erstelle neues crypto Objekt
           try {
             var newCrypto = Object.create(cryptoObj);
             newCrypto.randomUUID = fallbackRandomUUID;
-            window.crypto = newCrypto as Crypto;
+            window.crypto = newCrypto;
             polyfillSet = true;
           } catch (e3) {
             console.error('All methods to set crypto.randomUUID failed');
