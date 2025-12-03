@@ -13,11 +13,21 @@ echo "🚀 Running Prisma migrations..."
 # Check if migrations directory exists
 if [ -d "/app/backend/prisma/migrations" ]; then
   cd /app/backend
-  npx prisma migrate deploy --schema=./prisma/schema.prisma
+  # Prisma migrate deploy - stille Ausgabe außer bei Fehlern
+  npx prisma migrate deploy --schema=./prisma/schema.prisma > /dev/null 2>&1 || {
+    echo "❌ Migration failed, showing output:"
+    npx prisma migrate deploy --schema=./prisma/schema.prisma
+    exit 1
+  }
   echo "✅ Migrations completed."
   
   echo "🔧 Generating Prisma Client..."
-  npx prisma generate --schema=./prisma/schema.prisma
+  # Prisma generate - stille Ausgabe außer bei Fehlern
+  npx prisma generate --schema=./prisma/schema.prisma > /dev/null 2>&1 || {
+    echo "❌ Prisma Client generation failed, showing output:"
+    npx prisma generate --schema=./prisma/schema.prisma
+    exit 1
+  }
   echo "✅ Prisma Client generated."
 else
   echo "⚠️ Migrations directory not found at /app/backend/prisma/migrations"

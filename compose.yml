@@ -56,13 +56,14 @@ services:
     #   - "3001:3001"
     networks:
       - smart-pantry-network
-    healthcheck:
-      # Healthcheck verwendet Container-Port (hardcoded)
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # Healthcheck deaktiviert - reduziert Log-Spam
+    # Bei Bedarf kann Healthcheck wieder aktiviert werden mit längeren Intervallen
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+    #   interval: 5m
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 30s
 
   # ==========================================
   # Frontend Service
@@ -97,13 +98,14 @@ services:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - smart-pantry-network
-    healthcheck:
-      # Healthcheck verwendet Container-Port (hardcoded)
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    # Healthcheck deaktiviert - reduziert Log-Spam
+    # Bei Bedarf kann Healthcheck wieder aktiviert werden mit längeren Intervallen
+    # healthcheck:
+    #   test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+    #   interval: 5m
+    #   timeout: 10s
+    #   retries: 3
+    #   start_period: 30s
 
 volumes:
   postgres-data:

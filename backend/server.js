@@ -112,7 +112,12 @@ if (AUTH_DISABLED) {
 }
 
 // Logging-Middleware für alle Requests (vor CORS)
+// Healthcheck-Requests werden nicht geloggt um Log-Spam zu reduzieren
 app.use((req, res, next) => {
+  // Überspringe Logging für Healthcheck-Requests
+  if (req.path === '/health' && req.method === 'HEAD') {
+    return next();
+  }
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
     origin: req.headers.origin,
     'user-agent': req.headers['user-agent']?.substring(0, 50),
