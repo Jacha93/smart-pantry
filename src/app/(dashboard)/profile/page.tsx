@@ -49,17 +49,42 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('profile');
 
   useEffect(() => {
-    fetchProfile();
-    fetchUsage();
+    // Lade Profil zuerst, dann Usage (sequenziell für besseres Error-Handling)
+    fetchProfile().then(() => {
+      // Usage kann parallel geladen werden, nachdem Profil geladen wurde
+      fetchUsage();
+    });
   }, []);
 
   const fetchProfile = async () => {
     try {
+      setIsLoading(true);
       const response = await profileAPI.get();
-      setProfile(response.data);
-    } catch (error) {
+      console.log('Profile API Response:', response.data);
+      if (response.data) {
+        setProfile(response.data);
+      } else {
+        console.error('Profile API returned empty data:', response);
+        toast.error(t('profile.failedToLoad'));
+      }
+    } catch (error: any) {
       console.error('Error fetching profile:', error);
-      toast.error(t('profile.failedToLoad'));
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      
+      // Wenn 401 oder 403, könnte es ein Token-Problem sein - versuche es nochmal nach kurzer Verzögerung
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('Token might be expired, retrying after refresh...');
+        setTimeout(() => {
+          fetchProfile();
+        }, 1000);
+        return;
+      }
+      
+      toast.error(error.response?.data?.detail || t('profile.failedToLoad'));
     } finally {
       setIsLoading(false);
     }
@@ -68,9 +93,18 @@ export default function ProfilePage() {
   const fetchUsage = async () => {
     try {
       const response = await profileAPI.getUsage();
-      setUsage(response.data);
-    } catch (error) {
+      console.log('Usage API Response:', response.data);
+      if (response.data) {
+        setUsage(response.data);
+      }
+    } catch (error: any) {
       console.error('Error fetching usage:', error);
+      console.error('Usage error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      // Usage-Fehler sind nicht kritisch, wir zeigen einfach keine Usage-Daten
     }
   };
 

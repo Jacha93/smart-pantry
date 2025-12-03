@@ -609,7 +609,10 @@ app.get('/user/limits', authMiddleware, async (req, res) => {
 app.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    if (!user) return res.status(404).json({ detail: 'User not found' });
+    if (!user) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({ detail: 'User not found' });
+    }
     const profileString = user.encryptedProfile ? decryptField(user.encryptedProfile) : null;
     const profile = profileString ? JSON.parse(profileString) : null;
     
@@ -618,7 +621,7 @@ app.get('/me', authMiddleware, async (req, res) => {
       where: { userId: req.user.id, expiryDate: { not: null } } 
     });
     
-    res.json({
+    const profileData = {
       id: user.id,
       email: user.email,
       name: user.name,
@@ -645,9 +648,13 @@ app.get('/me', authMiddleware, async (req, res) => {
         currentGroceriesTotal: totalGroceries,
         currentGroceriesWithExpiry: groceriesWithExpiry,
       },
-    });
+    };
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json(profileData);
   } catch (error) {
     console.error('Me endpoint error:', error);
+    res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ detail: 'Fehler beim Laden des Profils' });
   }
 });
@@ -742,7 +749,10 @@ app.put('/me/password', authMiddleware, async (req, res) => {
 app.get('/me/usage', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    if (!user) return res.status(404).json({ detail: 'User not found' });
+    if (!user) {
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(404).json({ detail: 'User not found' });
+    }
     
     // Calculate usage percentages
     const llmTokensPercent = user.quotaLlmTokens > 0 
@@ -761,15 +771,18 @@ app.get('/me/usage', authMiddleware, async (req, res) => {
       ? Math.min(100, Math.round(((user.cacheRecipeSearchViaChatUsed ?? 0) / (user.maxCacheRecipeSearchViaChat ?? 4)) * 100))
       : 0;
     
+    const groceriesTotalCount = await prisma.grocery.count({ where: { userId: req.user.id } });
+    const groceriesWithExpiryCount = await prisma.grocery.count({ where: { userId: req.user.id, expiryDate: { not: null } } });
+    
     const groceriesTotalPercent = (user.maxGroceriesTotal ?? 20) > 0 && (user.maxGroceriesTotal ?? 20) !== -1
-      ? Math.min(100, Math.round((await prisma.grocery.count({ where: { userId: req.user.id } }) / (user.maxGroceriesTotal ?? 20)) * 100))
+      ? Math.min(100, Math.round((groceriesTotalCount / (user.maxGroceriesTotal ?? 20)) * 100))
       : (user.maxGroceriesTotal ?? 20) === -1 ? -1 : 0;
     
     const groceriesWithExpiryPercent = (user.maxGroceriesWithExpiry ?? 10) > 0 && (user.maxGroceriesWithExpiry ?? 10) !== -1
-      ? Math.min(100, Math.round((await prisma.grocery.count({ where: { userId: req.user.id, expiryDate: { not: null } } }) / (user.maxGroceriesWithExpiry ?? 10)) * 100))
+      ? Math.min(100, Math.round((groceriesWithExpiryCount / (user.maxGroceriesWithExpiry ?? 10)) * 100))
       : (user.maxGroceriesWithExpiry ?? 10) === -1 ? -1 : 0;
     
-    res.json({
+    const usageData = {
       llmTokens: {
         used: user.llmTokensUsed,
         total: user.quotaLlmTokens,
@@ -797,22 +810,25 @@ app.get('/me/usage', authMiddleware, async (req, res) => {
         percent: cacheSearchPercent,
       },
       groceriesTotal: {
-        used: await prisma.grocery.count({ where: { userId: req.user.id } }),
+        used: groceriesTotalCount,
         total: user.maxGroceriesTotal ?? 20,
         percent: groceriesTotalPercent,
         unlimited: (user.maxGroceriesTotal ?? 20) === -1,
       },
       groceriesWithExpiry: {
-        used: await prisma.grocery.count({ where: { userId: req.user.id, expiryDate: { not: null } } }),
+        used: groceriesWithExpiryCount,
         total: user.maxGroceriesWithExpiry ?? 10,
         percent: groceriesWithExpiryPercent,
         unlimited: (user.maxGroceriesWithExpiry ?? 10) === -1,
       },
-      resetAt: user.quotaResetAt,
-      monthlyResetAt: user.monthlyLimitResetAt ?? user.createdAt,
-    });
+      resetAt: user.monthlyLimitResetAt ?? user.createdAt,
+    };
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json(usageData);
   } catch (error) {
     console.error('Usage endpoint error:', error);
+    res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ detail: 'Fehler beim Laden der Verbrauchsdaten' });
   }
 });
