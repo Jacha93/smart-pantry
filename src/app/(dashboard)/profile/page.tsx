@@ -9,7 +9,7 @@ import { PasswordChangeForm } from '@/components/password-change-form';
 import { UsageOverview } from '@/components/usage-overview';
 import { UsageChart } from '@/components/usage-chart';
 import { PlanComparison } from '@/components/plan-comparison';
-import { profileAPI, adminAPI } from '@/lib/api';
+import { profileAPI, adminAPI, api } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { User, Lock, BarChart3, Crown, Infinity, AlertTriangle, Download, Trash2, Users } from 'lucide-react';
