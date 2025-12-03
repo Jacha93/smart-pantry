@@ -70,7 +70,6 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 5. **Frontend-Umgebungsvariablen (`.env.local`)**
    ```env
    NEXT_INTERNAL_API_URL=http://localhost:CHANGE_TO_YOUR_BACKEND_PORT
-   NEXT_PUBLIC_BACKEND_PORT=CHANGE_TO_YOUR_BACKEND_PORT
    NEXT_PUBLIC_AUTH_DISABLED=false
    # Optional: Aktiviert lokalen Mock-Login ohne Backend/Datenbank
    NEXT_PUBLIC_USE_MOCK_AUTH=true
@@ -178,12 +177,13 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
    **Was macht das?** Diese Migration erstellt alle Datenbank-Tabellen (User, Grocery, Recipes, etc.) in deiner PostgreSQL-Datenbank. Beim ersten Start ist die Datenbank leer - die Migration richtet die komplette Struktur ein.
 
 Die App läuft dann auf:
-- **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (Host-Port, frei belegbar über `.env`)
-- **Backend**: http://localhost:${BACKEND_PORT:-3001} (Host-Port, frei belegbar über `.env`)
+- **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (Host-Port, konfigurierbar über `.env`)
+- **Backend**: Nur intern im Docker-Netzwerk erreichbar (kein externer Zugriff)
 - **PostgreSQL**: Nur im Docker-Netzwerk erreichbar (kein externer Zugriff)
 
-> Intern lauschen die Container immer auf **3000 (Frontend)** bzw. **3001 (Backend)**.  
-> Die Variablen `FRONTEND_PORT` und `BACKEND_PORT` steuern ausschließlich das Port-Mapping auf dem Host (`HOST_PORT:CONTAINER_PORT`).
+> **Container-Ports sind hardcoded**: Frontend 3000, Backend 3001  
+> **Nur `FRONTEND_PORT` ist konfigurierbar** für den Host-Port des Frontends  
+> **Backend kommuniziert ausschließlich intern** mit Frontend über Docker-Netzwerk (`smart-pantry-backend:3001`)
 
 #### Umgebungsvariablen konfigurieren
 
@@ -199,10 +199,12 @@ Die `.env.example` Datei enthält alle benötigten Variablen mit Beschreibungen:
 - `PERSONAL_DATA_KEY` generieren mit: `openssl rand -hex 32`
 - `JWT_SECRET` sollte mindestens 32 zufällige Zeichen sein
 - Alle Passwörter sollten stark und eindeutig sein
-- **Container-Ports sind fest**: Frontend 3000, Backend 3001. Passe nur die Host-Ports (`FRONTEND_PORT`, `BACKEND_PORT`) in `.env` an.
+- **Container-Ports sind hardcoded**: Frontend 3000, Backend 3001
+- **Nur `FRONTEND_PORT` ist konfigurierbar** für den Host-Port des Frontends
+- **Backend ist nur intern erreichbar** - Kommunikation erfolgt ausschließlich über Frontend-Proxy
+- **`NEXT_INTERNAL_API_URL`** ist in Docker hardcoded auf `http://smart-pantry-backend:3001` (nicht konfigurierbar)
 - **`NEXT_PUBLIC_USE_MOCK_AUTH`** auf `true` setzen, wenn du lokal ohne Datenbank/Docker arbeiten möchtest. Auf dem Server auf `false` lassen.
-- **`NEXT_INTERNAL_API_URL`** zeigt im Docker-Netzwerk standardmäßig auf `http://smart-pantry-backend:3001`
-- **`NEXT_PUBLIC_API_URL`** nur setzen, wenn das Backend unter einer extern erreichbaren Domain liegt. Standardmäßig ermittelt das Frontend die URL anhand des Browser-Hosts.
+- **`NEXT_PUBLIC_API_URL`** nur setzen, wenn das Backend unter einer extern erreichbaren Domain liegt. Standardmäßig nutzt das Frontend den `/api` Proxy.
 
 ### Lokale Entwicklung
 

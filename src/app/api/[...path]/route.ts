@@ -16,12 +16,13 @@ const HOP_BY_HOP_HEADERS = new Set([
 ]);
 
 // Backend URL für Server-Side Requests (Next.js API Routes)
-// Verwende 127.0.0.1 statt localhost um IPv4 zu erzwingen (wichtig wenn Backend auf 0.0.0.0 hört)
+// In Docker: NEXT_INTERNAL_API_URL ist hardcoded auf http://smart-pantry-backend:3001
+// Lokal: Fallback auf localhost:3001
 const BACKEND_BASE_URL =
   process.env.NEXT_INTERNAL_API_URL ||
   process.env.API_INTERNAL_URL ||
   process.env.BACKEND_URL ||
-  `http://127.0.0.1:${process.env.BACKEND_PORT || 3001}`;
+  'http://127.0.0.1:3001';
 
 const buildTargetUrl = (path: string[], search: string) => {
   const sanitizedBase = BACKEND_BASE_URL.replace(/\/+$/, '');

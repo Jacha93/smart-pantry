@@ -45,20 +45,20 @@ services:
       # .env hat normalerweise 'localhost', was im Container nicht funktioniert
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@smart-pantry-postgres:5432/${POSTGRES_DB:-smart_pantry}?schema=public
       
-      # Setze internen Hostname für Listen
+      # Backend hört im Container immer auf Port 3001 (hardcoded)
+      BACKEND_PORT: 3001
       HOSTNAME: 0.0.0.0
-      
-      # Backend hört im Container immer auf Port 3001
-      # BACKEND_PORT: 3001
     
-    # Dynamisches Port-Mapping: Host Port : Container Port
-    # Container Port ist fix (3001). FRONTEND_PORT/ BACKEND_PORT in .env steuern NUR den Host-Port.
-    ports:
-      - "${BACKEND_PORT:-3001}:3001"
+    # Backend ist nur intern erreichbar (kein Port-Mapping nach außen)
+    # Kommunikation erfolgt ausschließlich über Frontend-Proxy
+    # Optional: Port-Mapping nur wenn externer Zugriff benötigt wird
+    # ports:
+    #   - "3001:3001"
     networks:
       - smart-pantry-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${BACKEND_PORT:-3001}/health"]
+      # Healthcheck verwendet Container-Port (hardcoded)
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -77,29 +77,29 @@ services:
     env_file:
       - .env
     environment:
-      # Next.js hört auf die Variable PORT
-      # Container-Port ist fix 3000; das Mapping passiert unten
+      # Next.js Container-Port (hardcoded)
       PORT: 3000
       HOSTNAME: 0.0.0.0
       
-      # Öffentliche API-URL optional überschreiben (Standard: Host & Port des Browsers)
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
-      # Fallback für Client-Side, falls URL nicht automatisch erkannt wird
-      NEXT_PUBLIC_BACKEND_PORT: ${BACKEND_PORT:-3001}
-      # Interne API-URL für SSR/Server-Kommunikation im Docker-Netzwerk (immer der Service-Port)
-      # Wir setzen das hart, damit lokale .env Variablen (z.B. localhost) das Docker-Networking nicht kaputt machen
+      # Backend-Kommunikation: Hardcoded Docker Service-Name und Port
+      # Frontend kommuniziert ausschließlich intern mit Backend über Docker-Netzwerk
       NEXT_INTERNAL_API_URL: http://smart-pantry-backend:3001
+      
+      # Optional: Öffentliche API-URL nur wenn Backend extern erreichbar sein soll
+      # NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+      
       # Mock-Auth in Produktion deaktivieren
       NEXT_PUBLIC_USE_MOCK_AUTH: ${NEXT_PUBLIC_USE_MOCK_AUTH:-false}
     
-    # Dynamisches Port-Mapping: Host Port : Container Port
-    # Container Port ist fix 3000.
+    # Port-Mapping: Nur FRONTEND_PORT ist konfigurierbar (Host-Port)
+    # Container-Port ist immer 3000 (hardcoded)
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     networks:
       - smart-pantry-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:${FRONTEND_PORT:-3000}"]
+      # Healthcheck verwendet Container-Port (hardcoded)
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3

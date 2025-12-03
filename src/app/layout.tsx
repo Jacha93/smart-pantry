@@ -16,7 +16,6 @@ const runtimeConfigScript = `
 
   // Runtime Environment Variables
   window.__ENV = Object.assign({}, window.__ENV || {}, {
-    NEXT_PUBLIC_BACKEND_PORT: ${JSON.stringify(process.env.NEXT_PUBLIC_BACKEND_PORT ?? '')},
     NEXT_PUBLIC_API_URL: ${JSON.stringify(process.env.NEXT_PUBLIC_API_URL ?? '')},
   });
 

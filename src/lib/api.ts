@@ -10,20 +10,20 @@ declare module 'axios' {
 declare global {
   interface Window {
     __ENV?: {
-      NEXT_PUBLIC_BACKEND_PORT?: string;
       NEXT_PUBLIC_API_URL?: string;
     };
   }
 }
 
 // Backend URL für Server-Side Requests (SSR)
-// Verwende 127.0.0.1 statt localhost um IPv4 zu erzwingen (wichtig wenn Backend auf 0.0.0.0 hört)
+// In Docker: NEXT_INTERNAL_API_URL ist hardcoded auf http://smart-pantry-backend:3001
+// Lokal: Fallback auf localhost:3001
 const SERVER_BASE_URL =
   process.env.NEXT_INTERNAL_API_URL ||
   process.env.API_INTERNAL_URL ||
   process.env.BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  `http://127.0.0.1:${process.env.BACKEND_PORT || 3001}`;
+  'http://127.0.0.1:3001';
 
 // API Base URL - wird dynamisch zur Laufzeit berechnet
 // WICHTIG: NEXT_PUBLIC_* Variablen werden zur Build-Zeit kompiliert, daher müssen wir
