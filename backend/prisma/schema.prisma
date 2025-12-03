@@ -18,7 +18,9 @@ enum UserRole {
 model User {
   id               Int            @id @default(autoincrement())
   email            String         @unique
-  name             String
+  name             String         // Legacy: wird zu fullName migriert
+  fullName         String?        // Vor- und Nachname
+  username         String?        @unique // Eindeutiger Benutzername
   passwordHash     String
   role             UserRole       @default(USER)
   encryptedProfile String?

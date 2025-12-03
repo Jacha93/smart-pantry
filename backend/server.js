@@ -16,6 +16,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const { encryptField, decryptField } = require('./utils/encryption');
+const PDFDocument = require('pdfkit');
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -277,6 +278,12 @@ async function consumeQuota(userId, type, amount) {
     err.status = 404;
     throw err;
   }
+  
+  // Admins haben unbegrenzte Anfragen
+  if (user.role === 'ADMIN') {
+    return;
+  }
+  
   user = await resetQuotaIfNeeded(user);
   const isLlm = type === 'LLM';
   const limit = isLlm ? user.quotaLlmTokens : user.quotaRecipeCalls;
@@ -331,6 +338,11 @@ async function checkTierLimit(userId, limitType) {
     throw err;
   }
 
+  // Admins haben unbegrenzte Anfragen
+  if (user.role === 'ADMIN') {
+    return { allowed: true, limit: -1, used: 0 };
+  }
+
   let limit, used, count;
   
   switch (limitType) {
@@ -380,6 +392,12 @@ async function consumeMonthlyLimit(userId, limitType) {
     err.status = 404;
     throw err;
   }
+  
+  // Admins haben unbegrenzte Anfragen
+  if (user.role === 'ADMIN') {
+    return true;
+  }
+  
   user = await resetQuotaIfNeeded(user);
   
   let field;
@@ -445,6 +463,38 @@ async function authMiddleware(req, res, next) {
     next();
   } catch (error) {
     console.error('Auth Middleware Error:', error.message);
+    return res.status(401).json({ detail: 'Invalid token' });
+  }
+}
+
+// Admin Middleware - prüft ob User ADMIN ist
+async function adminMiddleware(req, res, next) {
+  try {
+    if (AUTH_DISABLED) {
+      const demoUser = await ensureDemoUser();
+      if (demoUser.role !== 'ADMIN') {
+        return res.status(403).json({ detail: 'Admin access required' });
+      }
+      req.user = { id: demoUser.id, email: demoUser.email, role: demoUser.role };
+      return next();
+    }
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({ detail: 'Not authenticated' });
+    }
+    const payload = jwt.verify(token, JWT_SECRET);
+    const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user) {
+      return res.status(401).json({ detail: 'Invalid token' });
+    }
+    if (user.role !== 'ADMIN') {
+      return res.status(403).json({ detail: 'Admin access required' });
+    }
+    req.user = { id: user.id, email: user.email, role: user.role };
+    next();
+  } catch (error) {
+    console.error('Admin Middleware Error:', error.message);
     return res.status(401).json({ detail: 'Invalid token' });
   }
 }
@@ -624,7 +674,9 @@ app.get('/me', authMiddleware, async (req, res) => {
     const profileData = {
       id: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name, // Legacy
+      fullName: user.fullName || user.name,
+      username: user.username,
       role: user.role,
       profile,
       createdAt: user.createdAt,
@@ -659,17 +711,34 @@ app.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// Update user profile (name, email)
+// Update user profile (fullName, username, email)
 app.put('/me', authMiddleware, async (req, res) => {
   try {
-    const { name, email } = req.body || {};
+    const { fullName, username, email } = req.body || {};
     const updateData = {};
     
-    if (name !== undefined) {
-      if (!name || typeof name !== 'string' || name.trim().length === 0) {
-        return res.status(400).json({ detail: 'Name is required and must not be empty' });
+    if (fullName !== undefined) {
+      if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
+        return res.status(400).json({ detail: 'Full name is required and must not be empty' });
       }
-      updateData.name = String(name).trim();
+      updateData.fullName = String(fullName).trim();
+      // Legacy: auch name setzen für Rückwärtskompatibilität
+      updateData.name = String(fullName).trim();
+    }
+    
+    if (username !== undefined) {
+      if (username && typeof username === 'string' && username.trim().length > 0) {
+        const trimmedUsername = username.trim();
+        // Prüfe ob Username bereits vergeben ist
+        const existingUser = await prisma.user.findUnique({ where: { username: trimmedUsername } });
+        if (existingUser && existingUser.id !== req.user.id) {
+          return res.status(409).json({ detail: 'Username already in use' });
+        }
+        updateData.username = trimmedUsername;
+      } else if (username === null || username === '') {
+        // Erlaube Löschung des Usernames
+        updateData.username = null;
+      }
     }
     
     if (email !== undefined) {
@@ -694,13 +763,17 @@ app.put('/me', authMiddleware, async (req, res) => {
       data: updateData,
     });
     
+    res.setHeader('Content-Type', 'application/json');
     res.json({
       id: updatedUser.id,
       email: updatedUser.email,
       name: updatedUser.name,
+      fullName: updatedUser.fullName,
+      username: updatedUser.username,
     });
   } catch (error) {
     console.error('Update profile error:', error);
+    res.setHeader('Content-Type', 'application/json');
     res.status(500).json({ detail: 'Fehler beim Aktualisieren des Profils' });
   }
 });
@@ -848,6 +921,256 @@ app.put('/me/profile', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ detail: 'Profil konnte nicht gespeichert werden' });
+  }
+});
+
+// DSGVO: Export all user data as PDF
+app.get('/me/export-data', authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ 
+      where: { id: req.user.id },
+      include: {
+        groceries: true,
+        shoppingLists: {
+          include: { items: true }
+        },
+        savedRecipes: true,
+        cookedRecipes: true,
+        refreshTokens: {
+          where: { revokedAt: null },
+          select: { createdAt: true, expiresAt: true, userAgent: true, ipAddress: true }
+        }
+      }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+
+    const profileString = user.encryptedProfile ? decryptField(user.encryptedProfile) : null;
+    const profile = profileString ? JSON.parse(profileString) : null;
+
+    // Create PDF
+    const doc = new PDFDocument({ margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="smart-pantry-data-${user.id}-${Date.now()}.pdf"`);
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(20).text('Smart Pantry - Ihre gespeicherten Daten', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Exportiert am: ${new Date().toLocaleString('de-DE')}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // User Information
+    doc.fontSize(16).text('1. Kontoinformationen', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    doc.text(`ID: ${user.id}`);
+    doc.text(`E-Mail: ${user.email}`);
+    doc.text(`Voller Name: ${user.fullName || user.name || 'Nicht angegeben'}`);
+    doc.text(`Benutzername: ${user.username || 'Nicht angegeben'}`);
+    doc.text(`Rolle: ${user.role}`);
+    doc.text(`Registriert am: ${new Date(user.createdAt).toLocaleString('de-DE')}`);
+    doc.text(`Zuletzt aktualisiert: ${new Date(user.updatedAt).toLocaleString('de-DE')}`);
+    if (profile) {
+      doc.text(`Profil-Daten: ${JSON.stringify(profile, null, 2)}`);
+    }
+    doc.moveDown();
+
+    // Quotas
+    doc.fontSize(16).text('2. Kontingente und Limits', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    doc.text(`LLM Tokens: ${user.llmTokensUsed} / ${user.quotaLlmTokens}`);
+    doc.text(`Rezept-API Aufrufe: ${user.recipeCallsUsed} / ${user.quotaRecipeCalls}`);
+    doc.text(`Cache-Rezeptvorschläge: ${user.cacheRecipeSuggestionsUsed} / ${user.maxCacheRecipeSuggestions ?? 12}`);
+    doc.text(`Chat-Nachrichten: ${user.chatMessagesUsed} / ${user.maxChatMessages ?? 4}`);
+    doc.text(`Rezeptsuche via Chat: ${user.cacheRecipeSearchViaChatUsed} / ${user.maxCacheRecipeSearchViaChat ?? 4}`);
+    doc.text(`Lebensmittel gesamt: ${user.groceries.length} / ${user.maxGroceriesTotal ?? 20}`);
+    doc.text(`Lebensmittel mit MHD: ${user.groceries.filter(g => g.expiryDate).length} / ${user.maxGroceriesWithExpiry ?? 10}`);
+    doc.moveDown();
+
+    // Groceries
+    doc.fontSize(16).text(`3. Lebensmittel (${user.groceries.length} Einträge)`, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    user.groceries.forEach((grocery, index) => {
+      if (index > 0 && index % 10 === 0) {
+        doc.addPage();
+      }
+      doc.text(`${index + 1}. ${grocery.name} - ${grocery.quantity} ${grocery.unit} (${grocery.category})`);
+      if (grocery.expiryDate) {
+        doc.text(`   MHD: ${new Date(grocery.expiryDate).toLocaleDateString('de-DE')}`);
+      }
+      if (grocery.notes) {
+        doc.text(`   Notizen: ${grocery.notes}`);
+      }
+      doc.text(`   Hinzugefügt: ${new Date(grocery.addedAt).toLocaleDateString('de-DE')}`);
+      doc.moveDown(0.3);
+    });
+    doc.moveDown();
+
+    // Shopping Lists
+    doc.fontSize(16).text(`4. Einkaufslisten (${user.shoppingLists.length} Einträge)`, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    user.shoppingLists.forEach((list, index) => {
+      if (index > 0 && index % 5 === 0) {
+        doc.addPage();
+      }
+      doc.text(`${index + 1}. ${list.name || 'Unbenannte Liste'} (${list.completed ? 'Abgeschlossen' : 'Offen'})`);
+      doc.text(`   Erstellt: ${new Date(list.createdAt).toLocaleDateString('de-DE')}`);
+      doc.text(`   Artikel: ${list.items.length}`);
+      list.items.forEach((item) => {
+        doc.text(`   - ${item.groceryName} (${item.quantity}x) ${item.checked ? '✓' : ''}`);
+      });
+      doc.moveDown(0.5);
+    });
+    doc.moveDown();
+
+    // Saved Recipes
+    doc.fontSize(16).text(`5. Gespeicherte Rezepte (${user.savedRecipes.length} Einträge)`, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    user.savedRecipes.forEach((recipe, index) => {
+      if (index > 0 && index % 5 === 0) {
+        doc.addPage();
+      }
+      doc.text(`${index + 1}. ${recipe.title}`);
+      doc.text(`   Gespeichert: ${new Date(recipe.savedAt).toLocaleDateString('de-DE')}`);
+      if (recipe.sourceUrl) {
+        doc.text(`   URL: ${recipe.sourceUrl}`);
+      }
+      doc.moveDown(0.3);
+    });
+    doc.moveDown();
+
+    // Cooked Recipes
+    doc.fontSize(16).text(`6. Gekochte Rezepte (${user.cookedRecipes.length} Einträge)`, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    user.cookedRecipes.forEach((recipe, index) => {
+      if (index > 0 && index % 5 === 0) {
+        doc.addPage();
+      }
+      doc.text(`${index + 1}. ${recipe.recipeTitle}`);
+      doc.text(`   Gekocht: ${new Date(recipe.cookedAt).toLocaleDateString('de-DE')}`);
+      if (recipe.rating) {
+        doc.text(`   Bewertung: ${recipe.rating}/5`);
+      }
+      doc.moveDown(0.3);
+    });
+    doc.moveDown();
+
+    // Active Sessions
+    doc.fontSize(16).text(`7. Aktive Sitzungen (${user.refreshTokens.length} Einträge)`, { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(11);
+    user.refreshTokens.forEach((token, index) => {
+      doc.text(`${index + 1}. Erstellt: ${new Date(token.createdAt).toLocaleString('de-DE')}`);
+      doc.text(`   Läuft ab: ${new Date(token.expiresAt).toLocaleString('de-DE')}`);
+      if (token.userAgent) {
+        doc.text(`   User-Agent: ${token.userAgent.substring(0, 50)}`);
+      }
+      if (token.ipAddress) {
+        doc.text(`   IP-Adresse: ${token.ipAddress}`);
+      }
+      doc.moveDown(0.3);
+    });
+
+    doc.end();
+  } catch (error) {
+    console.error('Data export error:', error);
+    res.status(500).json({ detail: 'Fehler beim Exportieren der Daten' });
+  }
+});
+
+// Delete user account (Danger Zone)
+app.delete('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+
+    // Delete user (CASCADE will delete all related data)
+    await prisma.user.delete({ where: { id: req.user.id } });
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json({ success: true, message: 'Account erfolgreich gelöscht' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ detail: 'Fehler beim Löschen des Accounts' });
+  }
+});
+
+// Admin: Switch to admin account (for testing)
+app.post('/admin/switch', adminMiddleware, async (req, res) => {
+  try {
+    // Admin kann zu jedem User wechseln (für Testing)
+    const { userId } = req.body || {};
+    if (!userId) {
+      return res.status(400).json({ detail: 'userId required' });
+    }
+    
+    const targetUser = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
+    if (!targetUser) {
+      return res.status(404).json({ detail: 'User not found' });
+    }
+    
+    // Issue tokens for target user
+    const tokens = await issueAuthTokens(targetUser, req);
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      token_type: 'bearer',
+      expires_in: REFRESH_TOKEN_TTL_MS / 1000,
+      user: {
+        id: targetUser.id,
+        email: targetUser.email,
+        name: targetUser.name,
+        fullName: targetUser.fullName,
+        username: targetUser.username,
+        role: targetUser.role,
+      }
+    });
+  } catch (error) {
+    console.error('Admin switch error:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ detail: 'Fehler beim Wechseln des Accounts' });
+  }
+});
+
+// Admin: Get all users (for admin panel)
+app.get('/admin/users', adminMiddleware, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        fullName: true,
+        username: true,
+        role: true,
+        createdAt: true,
+        quotaLlmTokens: true,
+        llmTokensUsed: true,
+        quotaRecipeCalls: true,
+        recipeCallsUsed: true,
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.json(users);
+  } catch (error) {
+    console.error('Admin get users error:', error);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(500).json({ detail: 'Fehler beim Laden der Benutzer' });
   }
 });
 
