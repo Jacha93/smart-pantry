@@ -76,19 +76,27 @@ const forwardRequest = async (
     }
   }
 
-  const response = await fetch(targetUrl, {
-    method,
-    headers,
-    body,
-    redirect: 'manual',
-  });
+  try {
+    const response = await fetch(targetUrl, {
+      method,
+      headers,
+      body,
+      redirect: 'manual',
+    });
 
-  const responseHeaders = filterHeaders(response.headers);
-  return new NextResponse(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: responseHeaders,
-  });
+    const responseHeaders = filterHeaders(response.headers);
+    return new NextResponse(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error('Proxy Error:', error);
+    return NextResponse.json(
+      { detail: 'Proxy Error: Failed to connect to backend', error: String(error) },
+      { status: 502 }
+    );
+  }
 };
 
 export const dynamic = 'force-dynamic';
