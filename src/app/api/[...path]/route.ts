@@ -155,9 +155,10 @@ const forwardRequest = async (
     let statusCode = response.statusCode;
     
     if (statusCode === 304) {
-      // 304 sollte keinen Body haben, konvertiere zu 200
-      // Für JSON-Endpunkte: Sende leeres JSON-Objekt/Array statt null
-      // Die ETag-Header bleiben erhalten, damit der Client weiß, dass nichts geändert wurde
+      // 304 Not Modified: Backend sendet keinen Body, aber Client braucht die Daten
+      // Problem: Bei 304 hat der Client die Daten bereits gecacht, aber wir haben sie nicht
+      // Lösung: Konvertiere zu 200 und sende leeres Objekt/Array
+      // Der Client sollte die gecachten Daten verwenden
       statusCode = 200;
       const isJsonEndpoint = contentType.includes('application/json');
       if (isJsonEndpoint) {
@@ -166,6 +167,8 @@ const forwardRequest = async (
                                 targetUrl.pathname.includes('/shopping-lists') ||
                                 targetUrl.pathname.includes('/recipes');
         const body = isArrayEndpoint ? JSON.stringify([]) : JSON.stringify({});
+        // Füge einen speziellen Header hinzu, damit der Client weiß, dass es 304 war
+        responseHeaders.set('X-Original-Status', '304');
         return new NextResponse(body, {
           status: statusCode,
           statusText: response.statusMessage,

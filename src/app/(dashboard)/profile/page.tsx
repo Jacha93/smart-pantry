@@ -72,16 +72,30 @@ export default function ProfilePage() {
       if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0) {
         setProfile(response.data);
       } else if (response.data && typeof response.data === 'object' && Object.keys(response.data).length === 0) {
-        // Leeres Objekt {} bedeutet wahrscheinlich 304 Not Modified oder Backend-Fehler
-        // Prüfe ob es ein ETag-Header gibt (304 Not Modified Indikator)
-        const hasETag = response.headers && (response.headers['etag'] || response.headers['ETag']);
-        if (hasETag) {
-          // 304 Not Modified - verwende gecachte Daten oder zeige Fehler
-          console.warn('Profile API returned 304 Not Modified (empty object)');
-          toast.error(t('profile.failedToLoad'));
+        // Leeres Objekt {} bedeutet wahrscheinlich 304 Not Modified
+        // Prüfe ob es ein X-Original-Status Header gibt (vom Proxy gesetzt)
+        const is304 = response.headers && response.headers['x-original-status'] === '304';
+        if (is304) {
+          // 304 Not Modified - Backend hat keine Daten gesendet
+          // Versuche es nochmal OHNE Cache-Header (If-None-Match)
+          console.warn('Profile API returned 304 Not Modified, retrying without cache...');
+          // Lösche Cache-Header und versuche es nochmal
+          setTimeout(async () => {
+            try {
+              const retryResponse = await profileAPI.get();
+              if (retryResponse.data && typeof retryResponse.data === 'object' && Object.keys(retryResponse.data).length > 0) {
+                setProfile(retryResponse.data);
+              } else {
+                toast.error(t('profile.failedToLoad'));
+              }
+            } catch (retryError) {
+              console.error('Retry failed:', retryError);
+              toast.error(t('profile.failedToLoad'));
+            }
+          }, 500);
         } else {
-          // Kein ETag - wahrscheinlich Backend-Fehler
-          console.error('Profile API returned empty object without ETag:', response);
+          // Kein 304 - wahrscheinlich Backend-Fehler
+          console.error('Profile API returned empty object:', response);
           toast.error(t('profile.failedToLoad'));
         }
       } else {
