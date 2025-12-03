@@ -54,7 +54,7 @@ export function UsageChart({ usage }: UsageChartProps) {
         const eased = 1 - Math.pow(1 - progress, 3);
         
         const animated: Record<string, number[]> = {};
-        Object.keys(chartData).forEach((key) => {
+        (Object.keys(chartData) as Array<keyof typeof chartData>).forEach((key) => {
           animated[key] = chartData[key].map((val) => Math.round(val * eased));
         });
         
