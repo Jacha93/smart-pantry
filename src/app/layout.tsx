@@ -128,6 +128,48 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Crypto Polyfill - Muss als erstes geladen werden, bevor jeglicher Code ausgeführt wird */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+(function() {
+  if (typeof window === 'undefined') return;
+  
+  // Stelle sicher, dass window.crypto existiert
+  if (!window.crypto) {
+    window.crypto = {};
+  }
+  
+  // Fallback-Funktion für randomUUID
+  var fallbackRandomUUID = function () {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      var v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+  
+  // Setze Polyfill IMMER (auch wenn native Funktion existiert, als Fallback)
+  try {
+    if (!window.crypto.randomUUID || typeof window.crypto.randomUUID !== 'function') {
+      Object.defineProperty(window.crypto, 'randomUUID', {
+        value: fallbackRandomUUID,
+        configurable: true,
+        writable: true,
+        enumerable: false,
+      });
+    }
+  } catch (e) {
+    try {
+      window.crypto.randomUUID = fallbackRandomUUID;
+    } catch (e2) {
+      console.error('Failed to set crypto.randomUUID polyfill:', e2);
+    }
+  }
+})();
+            `,
+          }}
+        />
         <Script id="runtime-env" strategy="beforeInteractive">
           {runtimeConfigScript}
         </Script>
