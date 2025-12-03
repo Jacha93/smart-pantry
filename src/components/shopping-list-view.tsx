@@ -11,6 +11,8 @@ import { ShoppingList, ShoppingListItem } from '@/types';
 import { shoppingListsAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { useUserPlan } from '@/hooks/use-user-plan';
+import { AdBlock } from '@/components/ad-block';
 import { AddShoppingListItemDialog } from '@/components/add-shopping-list-item-dialog';
 import { RenameShoppingListDialog } from '@/components/rename-shopping-list-dialog';
 
@@ -19,6 +21,7 @@ export function ShoppingListView() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const { t } = useI18n();
+  const { plan } = useUserPlan();
 
   useEffect(() => {
     fetchShoppingLists();
@@ -231,6 +234,14 @@ export function ShoppingListView() {
           ))}
         </div>
       )}
+
+      {/* Ad Block für Free Tier User */}
+      <AdBlock 
+        format="rectangle" 
+        currentPlan={plan}
+        className="mt-6"
+        devMode={process.env.NODE_ENV === 'development'}
+      />
     </div>
   );
 }

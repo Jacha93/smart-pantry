@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useI18n } from '@/hooks/use-i18n';
-import { AdPlaceholder } from './ad-placeholder';
+import { AdBlock } from './ad-block';
+import { useUserPlan } from '@/hooks/use-user-plan';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
@@ -28,6 +29,7 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
   const [isFreeTier, setIsFreeTier] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [userLimits, setUserLimits] = useState<any>(null);
+  const { plan } = useUserPlan();
 
   useEffect(() => {
     // Prüfe ob User Free Tier ist
@@ -123,7 +125,12 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
 
       {/* Werbung für Free Tier (nach erstem Rezept) */}
       {isFreeTier && !showAll && recipes.length > 0 && (
-        <AdPlaceholder variant="inline" />
+        <AdBlock 
+          format="rectangle" 
+          currentPlan={plan}
+          className="my-4"
+          devMode={process.env.NODE_ENV === 'development'}
+        />
       )}
 
       {/* "Weitere anzeigen" Button */}
@@ -143,7 +150,12 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
 
       {/* Weitere Werbung für Free Tier (wenn alle angezeigt) */}
       {isFreeTier && showAll && recipes.length > 2 && (
-        <AdPlaceholder variant="inline" />
+        <AdBlock 
+          format="horizontal" 
+          currentPlan={plan}
+          className="my-4"
+          devMode={process.env.NODE_ENV === 'development'}
+        />
       )}
     </div>
   );

@@ -8,6 +8,8 @@ import { ChefHat, Check, Trash2, Loader2, Clock, Users } from 'lucide-react';
 import { photoRecognitionAPI } from '@/lib/api';
 import { RecipeDetailsModal } from '@/components/recipe-details-modal';
 import { AddRecipeDialog } from '@/components/add-recipe-dialog';
+import { AdBlock } from '@/components/ad-block';
+import { useUserPlan } from '@/hooks/use-user-plan';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
@@ -243,6 +245,14 @@ export default function RecipesPage() {
           setSelectedRecipeId(null);
           loadRecipes(); // Reload to update cooked status
         }}
+      />
+
+      {/* Ad Block für Free Tier User */}
+      <AdBlock 
+        format="horizontal" 
+        currentPlan={plan}
+        className="mt-6"
+        devMode={process.env.NODE_ENV === 'development'}
       />
     </div>
   );

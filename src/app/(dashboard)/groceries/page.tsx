@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddGroceryDialog } from '@/components/add-grocery-dialog';
 import { GroceryTable } from '@/components/grocery-table';
+import { AdBlock } from '@/components/ad-block';
 import { useI18n } from '@/hooks/use-i18n';
+import { useUserPlan } from '@/hooks/use-user-plan';
 
 export default function GroceriesPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const { t } = useI18n();
+  const { plan } = useUserPlan();
 
   const handleGroceryAdded = () => {
     setRefreshKey(prev => prev + 1);
@@ -39,6 +42,14 @@ export default function GroceriesPage() {
           <GroceryTable key={refreshKey} onGroceryUpdated={handleGroceryUpdated} />
         </CardContent>
       </Card>
+
+      {/* Ad Block für Free Tier User */}
+      <AdBlock 
+        format="rectangle" 
+        currentPlan={plan}
+        className="mt-6"
+        devMode={process.env.NODE_ENV === 'development'}
+      />
     </div>
   );
 }
