@@ -42,6 +42,7 @@ dist/
 **/.env
 **/.env.local
 **/.env.*.local
+.venv
 
 # ============================================
 # Generated files
@@ -58,6 +59,7 @@ yarn-error.log*
 *.log
 logs/
 .next/**/*.log
+__pycache__
 
 # ============================================
 # Vercel

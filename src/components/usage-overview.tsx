@@ -12,11 +12,13 @@ interface UsageOverviewProps {
   quotas: any;
 }
 
+import { motion } from 'framer-motion';
+
 export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
   const { t, locale } = useI18n();
 
-  // Prüfe ob usage gültig ist und die erwartete Struktur hat
-  if (!usage || typeof usage !== 'object' || !usage.llmTokens) {
+  // Prüfe ob usage gültig ist - Backend returns flat structure with llmTokensUsed, quotaLlmTokens, etc.
+  if (!usage || typeof usage !== 'object' || Object.keys(usage).length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-sm text-muted-foreground">{t('profile.usage.loading') || 'Loading usage data...'}</p>
@@ -33,107 +35,162 @@ export function UsageOverview({ usage, quotas }: UsageOverviewProps) {
   const getProgressColor = (percent: number) => {
     if (percent >= 90) return 'destructive';
     if (percent >= 70) return 'default';
-    return 'default';
+    return 'brand-accent'; // Use new brand color for good status
+  };
+
+  // Calculate percentages from flat structure
+  const calculatePercent = (used: number, total: number) => {
+    if (total <= 0 || total === -1) return 0; // -1 means unlimited
+    return Math.min(100, Math.round((used / total) * 100));
   };
 
   const usageItems = [
     {
       key: 'llmTokens',
-      label: t('profile.usage.llmTokens'),
-      used: usage.llmTokens?.used || 0,
-      total: usage.llmTokens?.total || 0,
-      percent: usage.llmTokens?.percent || 0,
-      unlimited: false,
+      label: t('profile.usage.llmTokens') || 'LLM Tokens',
+      used: usage.llmTokensUsed || 0,
+      total: usage.quotaLlmTokens || 0,
+      percent: calculatePercent(usage.llmTokensUsed || 0, usage.quotaLlmTokens || 0),
+      unlimited: usage.quotaLlmTokens === -1,
     },
     {
       key: 'recipeCalls',
-      label: t('profile.usage.recipeCalls'),
-      used: usage.recipeCalls?.used || 0,
-      total: usage.recipeCalls?.total || 0,
-      percent: usage.recipeCalls?.percent || 0,
-      unlimited: false,
+      label: t('profile.usage.recipeCalls') || 'Rezept-Aufrufe',
+      used: usage.recipeCallsUsed || 0,
+      total: usage.quotaRecipeCalls || 0,
+      percent: calculatePercent(usage.recipeCallsUsed || 0, usage.quotaRecipeCalls || 0),
+      unlimited: usage.quotaRecipeCalls === -1,
     },
     {
       key: 'cacheSuggestions',
-      label: t('profile.usage.cacheSuggestions'),
-      used: usage.cacheSuggestions?.used || 0,
-      total: usage.cacheSuggestions?.total || 0,
-      percent: usage.cacheSuggestions?.percent || 0,
-      unlimited: usage.cacheSuggestions?.unlimited || false,
+      label: t('profile.usage.cacheSuggestions') || 'Rezeptvorschläge Cache',
+      used: usage.cacheRecipeSuggestionsUsed || 0,
+      total: usage.maxCacheRecipeSuggestions || 0,
+      percent: calculatePercent(usage.cacheRecipeSuggestionsUsed || 0, usage.maxCacheRecipeSuggestions || 0),
+      unlimited: false,
     },
     {
       key: 'chatMessages',
-      label: t('profile.usage.chatMessages'),
-      used: usage.chatMessages?.used || 0,
-      total: usage.chatMessages?.total || 0,
-      percent: usage.chatMessages?.percent || 0,
+      label: t('profile.usage.chatMessages') || 'Chat-Nachrichten',
+      used: usage.chatMessagesUsed || 0,
+      total: usage.maxChatMessages || 0,
+      percent: calculatePercent(usage.chatMessagesUsed || 0, usage.maxChatMessages || 0),
       unlimited: false,
     },
     {
       key: 'cacheSearch',
-      label: t('profile.usage.cacheSearch'),
-      used: usage.cacheSearch?.used || 0,
-      total: usage.cacheSearch?.total || 0,
-      percent: usage.cacheSearch?.percent || 0,
+      label: t('profile.usage.cacheSearch') || 'Cache-Suche',
+      used: usage.cacheRecipeSearchViaChatUsed || 0,
+      total: usage.maxCacheRecipeSearchViaChat || 0,
+      percent: calculatePercent(usage.cacheRecipeSearchViaChatUsed || 0, usage.maxCacheRecipeSearchViaChat || 0),
       unlimited: false,
     },
     {
       key: 'groceriesTotal',
-      label: t('profile.usage.groceriesTotal'),
-      used: usage.groceriesTotal?.used || 0,
-      total: usage.groceriesTotal?.total || 0,
-      percent: usage.groceriesTotal?.percent || 0,
-      unlimited: usage.groceriesTotal?.unlimited || false,
+      label: t('profile.usage.groceriesTotal') || 'Lebensmittel Gesamt',
+      used: usage.currentGroceriesTotal || 0,
+      total: usage.maxGroceriesTotal || 0,
+      percent: calculatePercent(usage.currentGroceriesTotal || 0, usage.maxGroceriesTotal || 0),
+      unlimited: false,
     },
     {
       key: 'groceriesWithExpiry',
-      label: t('profile.usage.groceriesWithExpiry'),
-      used: usage.groceriesWithExpiry?.used || 0,
-      total: usage.groceriesWithExpiry?.total || 0,
-      percent: usage.groceriesWithExpiry?.percent || 0,
-      unlimited: usage.groceriesWithExpiry?.unlimited || false,
+      label: t('profile.usage.groceriesWithExpiry') || 'Lebensmittel mit Ablaufdatum',
+      used: usage.currentGroceriesWithExpiry || 0,
+      total: usage.maxGroceriesWithExpiry || 0,
+      percent: calculatePercent(usage.currentGroceriesWithExpiry || 0, usage.maxGroceriesWithExpiry || 0),
+      unlimited: false,
     },
   ];
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemAnim = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="space-y-4">
-      {usageItems.map((item) => (
-        <div key={item.key} className="space-y-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">{item.label}</span>
-            <div className="flex items-center gap-2">
-              {item.unlimited ? (
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Infinity className="h-3 w-3" />
-                  {t('profile.unlimited')}
-                </Badge>
-              ) : (
-                <span className="text-sm text-muted-foreground">
-                  {formatNumber(item.used)} / {item.total === -1 ? '∞' : formatNumber(item.total)}
-                </span>
+    <div className="space-y-6">
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
+        {usageItems.map((item) => (
+          <motion.div 
+            key={item.key} 
+            variants={itemAnim}
+            className="p-4 rounded-xl border bg-card/50 hover:bg-card/80 transition-colors"
+          >
+            <div className="space-y-3">
+              <div className="flex justify-between items-start">
+                <span className="text-sm font-medium text-foreground/90">{item.label}</span>
+                <div className="flex items-center gap-2">
+                  {item.unlimited ? (
+                    <Badge variant="outline" className="flex items-center gap-1 border-[#17f6fe]/50 text-[#17f6fe] bg-[#17f6fe]/5">
+                      <Infinity className="h-3 w-3" />
+                      {t('profile.unlimited')}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                      {formatNumber(item.used)} / {item.total === -1 ? '∞' : formatNumber(item.total)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {!item.unlimited && (
+                <div className="space-y-1">
+                  <Progress 
+                    value={item.percent} 
+                    className="h-2 bg-muted/50"
+                    indicatorClassName={
+                      item.percent >= 90 ? 'bg-destructive' : 
+                      item.percent >= 70 ? 'bg-orange-500' : 
+                      '#17f6fe'
+                    }
+                  />
+                  <div className="flex justify-end">
+                    <span className={`text-xs ${
+                      item.percent >= 90 ? 'text-destructive' : 
+                      item.percent >= 70 ? 'text-orange-500' : 
+                      'text-muted-foreground'
+                    }`}>
+                      {item.percent}%
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
-          </div>
-          {!item.unlimited && (
-            <Progress 
-              value={item.percent} 
-              className="h-2"
-            />
-          )}
-        </div>
-      ))}
+          </motion.div>
+        ))}
+      </motion.div>
       
       {usage.resetAt && (
-        <div className="pt-4 border-t">
-          <p className="text-sm text-muted-foreground">
-            {t('profile.resetInfo')}: {formatResetDate(usage.resetAt, locale)}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="pt-4 border-t flex flex-col sm:flex-row gap-4 justify-between text-xs text-muted-foreground"
+        >
+          <p>
+            {t('profile.resetInfo')}: <span className="text-foreground">{formatResetDate(usage.resetAt, locale)}</span>
           </p>
           {usage.monthlyLimitResetAt && (
-            <p className="text-sm text-muted-foreground">
-              {t('profile.monthlyResetInfo')}: {formatResetDate(usage.monthlyLimitResetAt, locale)}
+            <p>
+              {t('profile.monthlyResetInfo')}: <span className="text-foreground">{formatResetDate(usage.monthlyLimitResetAt, locale)}</span>
             </p>
           )}
-        </div>
+        </motion.div>
       )}
     </div>
   );

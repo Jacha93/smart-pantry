@@ -15,19 +15,20 @@ interface RecipeDetails {
   image: string;
   instructions: string;
   ingredients: Array<{
-    id: number;
+    id?: number;
     name: string;
     amount: number;
     unit: string;
   }>;
-  nutrition: {
+  nutrition?: {
     nutrients: Array<{
       name: string;
       amount: number;
       unit: string;
     }>;
   };
-  ready_in_minutes: number;
+  ready_in_minutes?: number;
+  readyInMinutes?: number;  // camelCase für Kompatibilität
   servings: number;
 }
 
@@ -259,14 +260,18 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
                   )}
                   </div>
                 <div className="flex flex-wrap gap-4">
-                  <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
-                    <Clock className="h-4 w-4 text-primary" />
-                    <span>{recipe.ready_in_minutes} {t('recipe.minutes')}</span>
-                  </Badge>
-                  <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span>{recipe.servings} {t('recipe.servings')}</span>
-                  </Badge>
+                  {(recipe.ready_in_minutes || recipe.readyInMinutes) && (
+                    <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span>{recipe.ready_in_minutes || recipe.readyInMinutes || 0} {t('recipe.minutes')}</span>
+                    </Badge>
+                  )}
+                  {recipe.servings && (
+                    <Badge variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary/10 text-foreground border border-primary/20">
+                      <Users className="h-4 w-4 text-primary" />
+                      <span>{recipe.servings} {t('recipe.servings')}</span>
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>

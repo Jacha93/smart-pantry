@@ -80,12 +80,8 @@ export function ChatBubble() {
           id: 'welcome-1',
           role: 'bot',
           content: isAuthenticated
-            ? (locale === 'de' 
-                ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
-                : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?')
-            : (locale === 'de'
-                ? '👋 Hallo! Ich bin der Smart Pantry Assistent. Ich beantworte gerne allgemeine Fragen zur App!'
-                : '👋 Hello! I\'m the Smart Pantry assistant. I\'m happy to answer general questions about the app!'),
+            ? t('chat.initialMessage')
+            : t('chat.initialMessageGuest'),
           timestamp: new Date(),
         };
         setMessages([welcomeMessage1]);
@@ -96,12 +92,8 @@ export function ChatBubble() {
             id: 'welcome-2',
             role: 'bot',
             content: isAuthenticated
-              ? (locale === 'de'
-                  ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
-                  : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app')
-              : (locale === 'de'
-                  ? 'Als Gast kannst du:\n\n• Allgemeine Fragen zur App stellen\n\n• Issue melden\n\n• Mehr über Smart Pantry erfahren\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen!'
-                  : 'As a guest you can:\n\n• Ask general questions about the app\n\n• Report an issue\n\n• Learn more about Smart Pantry\n\n💡 **Tip:** Sign in to use all features!'),
+              ? t('chat.helpMessage')
+              : t('chat.helpMessageGuest'),
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, welcomeMessage2]);
@@ -111,9 +103,7 @@ export function ChatBubble() {
             const welcomeMessage3: Message = {
               id: 'welcome-3',
               role: 'bot',
-              content: locale === 'de'
-                ? 'Klicke einfach auf eine der Optionen oder stelle mir eine Frage!'
-                : 'Just click on one of the options or ask me a question!',
+              content: t('chat.actionMessage'),
               timestamp: new Date(),
             };
             setMessages(prev => [...prev, welcomeMessage3]);
@@ -132,7 +122,7 @@ export function ChatBubble() {
         timeoutRefs.current = [];
       };
     }
-  }, [isOpen, locale, hasUserMessages, isAuthenticated]); // Auth-Status als Dependency
+  }, [isOpen, locale, hasUserMessages, isAuthenticated, t]); // Auth-Status als Dependency
 
   // Schließen ohne Reset (Chat-Verlauf bleibt)
   const handleClose = () => {
@@ -168,12 +158,8 @@ export function ChatBubble() {
           id: 'welcome-1',
           role: 'bot',
           content: isAuthenticated
-            ? (locale === 'de' 
-                ? '👋 Hallo! Ich bin dein Smart Pantry Assistent. Wie kann ich dir helfen?'
-                : '👋 Hello! I\'m your Smart Pantry assistant. How can I help you?')
-            : (locale === 'de'
-                ? '👋 Hallo! Ich bin der Smart Pantry Assistent. Ich beantworte gerne allgemeine Fragen zur App!'
-                : '👋 Hello! I\'m the Smart Pantry assistant. I\'m happy to answer general questions about the app!'),
+            ? t('chat.initialMessage')
+            : t('chat.initialMessageGuest'),
           timestamp: new Date(),
         };
         setMessages([welcomeMessage1]);
@@ -184,12 +170,8 @@ export function ChatBubble() {
             id: 'welcome-2',
             role: 'bot',
             content: isAuthenticated
-              ? (locale === 'de'
-                  ? 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App'
-                  : 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app')
-              : (locale === 'de'
-                  ? 'Als Gast kannst du:\n\n• Allgemeine Fragen zur App stellen\n\n• Issue melden\n\n• Mehr über Smart Pantry erfahren\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen!'
-                  : 'As a guest you can:\n\n• Ask general questions about the app\n\n• Report an issue\n\n• Learn more about Smart Pantry\n\n💡 **Tip:** Sign in to use all features!'),
+              ? t('chat.helpMessage')
+              : t('chat.helpMessageGuest'),
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, welcomeMessage2]);
@@ -199,9 +181,7 @@ export function ChatBubble() {
           const welcomeMessage3: Message = {
             id: 'welcome-3',
             role: 'bot',
-            content: locale === 'de'
-              ? 'Klicke einfach auf eine der Optionen oder stelle mir eine Frage!'
-              : 'Just click on one of the options or ask me a question!',
+            content: t('chat.actionMessage'),
             timestamp: new Date(),
           };
           setMessages(prev => [...prev, welcomeMessage3]);
@@ -229,32 +209,18 @@ export function ChatBubble() {
 
   // Quick Actions unterschiedlich je nach Auth-Status
   const quickActions: QuickAction[] = isAuthenticated
-    ? (locale === 'de' 
-        ? [
-            { label: 'Allgemeine Frage', action: 'general_question' },
-            { label: 'Issue melden', action: 'report_issue' },
-            { label: 'Lebensmittel fragen', action: 'groceries_question' },
-            { label: 'Rezept-Fragen', action: 'recipes_question' },
-          ]
-        : [
-            { label: 'General Question', action: 'general_question' },
-            { label: 'Report Issue', action: 'report_issue' },
-            { label: 'Groceries Question', action: 'groceries_question' },
-            { label: 'Recipe Questions', action: 'recipes_question' },
-          ])
-    : (locale === 'de'
-        ? [
-            { label: 'Allgemeine Frage', action: 'general_question' },
-            { label: 'Issue melden', action: 'report_issue' },
-            { label: 'Über Smart Pantry', action: 'about_app' },
-            { label: 'Jetzt anmelden', action: 'sign_in' },
-          ]
-        : [
-            { label: 'General Question', action: 'general_question' },
-            { label: 'Report Issue', action: 'report_issue' },
-            { label: 'About Smart Pantry', action: 'about_app' },
-            { label: 'Sign In', action: 'sign_in' },
-          ]);
+    ? [
+        { label: t('chat.action.generalQuestion'), action: 'general_question' },
+        { label: t('chat.action.reportIssue'), action: 'report_issue' },
+        { label: t('chat.action.groceriesQuestion'), action: 'groceries_question' },
+        { label: t('chat.action.recipesQuestion'), action: 'recipes_question' },
+      ]
+    : [
+        { label: t('chat.action.generalQuestion'), action: 'general_question' },
+        { label: t('chat.action.reportIssue'), action: 'report_issue' },
+        { label: t('chat.action.aboutApp'), action: 'about_app' },
+        { label: t('chat.action.signIn'), action: 'sign_in' },
+      ];
 
   const handleQuickAction = (action: string) => {
     if (action === 'report_issue') {
@@ -263,9 +229,7 @@ export function ChatBubble() {
       const instructionMessage: Message = {
         id: `instruction-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? '📝 Um ein Issue zu melden, beschreibe bitte kurz:\n\n1. Was ist das Problem?\n2. Wann tritt es auf?\n3. Welche Schritte führen zum Problem?\n\nIch erstelle dann automatisch ein Issue auf GitHub.'
-          : '📝 To report an issue, please describe:\n\n1. What is the problem?\n2. When does it occur?\n3. What steps lead to the problem?\n\nI will then automatically create an issue on GitHub.',
+        content: t('chat.issue.instructions'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, instructionMessage]);
@@ -277,9 +241,7 @@ export function ChatBubble() {
       const signInMessage: Message = {
         id: `signin-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? '🔐 Um alle Funktionen von Smart Pantry zu nutzen, melde dich bitte an:\n\n• **Registrieren:** Erstelle ein kostenloses Konto\n• **Anmelden:** Falls du bereits ein Konto hast\n\nNach der Anmeldung kannst du:\n• Lebensmittel verwalten\n• Rezepte entdecken\n• Fotos analysieren\n• Einkaufslisten erstellen\n\nKlicke auf "Login" in der Navigation oder nutze den Login-Dialog!'
-          : '🔐 To use all Smart Pantry features, please sign in:\n\n• **Sign Up:** Create a free account\n• **Sign In:** If you already have an account\n\nAfter signing in you can:\n• Manage groceries\n• Discover recipes\n• Analyze photos\n• Create shopping lists\n\nClick "Login" in the navigation or use the login dialog!',
+        content: t('chat.signInMessage'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, signInMessage]);
@@ -291,9 +253,7 @@ export function ChatBubble() {
       const aboutMessage: Message = {
         id: `about-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? '📱 **Smart Pantry** ist dein intelligenter Küchenassistent:\n\n✨ **Features:**\n• Lebensmittel-Inventar verwalten\n• KI-gestützte Foto-Analyse\n• Personalisierte Rezeptvorschläge\n• Einkaufslisten erstellen\n• Ablaufdaten tracken\n\n🎯 **Vorteile:**\n• Weniger Lebensmittelverschwendung\n• Zeit sparen beim Einkaufen\n• Immer passende Rezepte parat\n\n💡 Melde dich an, um alle Funktionen zu nutzen!'
-          : '📱 **Smart Pantry** is your intelligent kitchen assistant:\n\n✨ **Features:**\n• Manage grocery inventory\n• AI-powered photo analysis\n• Personalized recipe suggestions\n• Create shopping lists\n• Track expiration dates\n\n🎯 **Benefits:**\n• Less food waste\n• Save time shopping\n• Always have matching recipes\n\n💡 Sign in to use all features!',
+        content: t('chat.aboutMessage'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aboutMessage]);
@@ -304,17 +264,11 @@ export function ChatBubble() {
     let message = '';
     
     if (action === 'general_question') {
-      message = locale === 'de'
-        ? 'Ich habe eine allgemeine Frage'
-        : 'I have a general question';
+      message = t('chat.question.general');
     } else if (action === 'groceries_question' && isAuthenticated) {
-      message = locale === 'de'
-        ? 'Ich habe eine Frage zu Lebensmitteln'
-        : 'I have a question about groceries';
+      message = t('chat.question.groceries');
     } else if (action === 'recipes_question' && isAuthenticated) {
-      message = locale === 'de'
-        ? 'Ich habe eine Frage zu Rezepten'
-        : 'I have a question about recipes';
+      message = t('chat.question.recipes');
     }
 
     if (message) {
@@ -325,9 +279,7 @@ export function ChatBubble() {
       const restrictedMessage: Message = {
         id: `restricted-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? '🔐 Diese Funktion ist nur für eingeloggte Nutzer verfügbar.\n\nMelde dich an, um:\n• Dein Lebensmittel-Inventar zu verwalten\n• Rezepte basierend auf deinen Zutaten zu erhalten\n• Fotos zu analysieren\n\nKlicke auf "Login" in der Navigation!'
-          : '🔐 This feature is only available for signed-in users.\n\nSign in to:\n• Manage your grocery inventory\n• Get recipes based on your ingredients\n• Analyze photos\n\nClick "Login" in the navigation!',
+        content: t('chat.restrictedMessage'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, restrictedMessage]);
@@ -371,9 +323,7 @@ export function ChatBubble() {
         const instructionMessage: Message = {
           id: `instruction-${Date.now()}`,
           role: 'bot',
-          content: locale === 'de'
-            ? '📝 Um ein Issue zu melden, beschreibe bitte kurz:\n\n1. Was ist das Problem?\n2. Wann tritt es auf?\n3. Welche Schritte führen zum Problem?\n\nIch erstelle dann automatisch ein Issue auf GitHub.'
-            : '📝 To report an issue, please describe:\n\n1. What is the problem?\n2. When does it occur?\n3. What steps lead to the problem?\n\nI will then automatically create an issue on GitHub.',
+          content: t('chat.issue.instructions'),
           timestamp: new Date(),
         };
         setMessages(prev => [...prev, instructionMessage]);
@@ -388,9 +338,7 @@ export function ChatBubble() {
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? '❌ Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuche es später erneut.'
-          : '❌ Sorry, an error occurred. Please try again later.',
+        content: t('chat.errorMessage'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -407,9 +355,7 @@ export function ChatBubble() {
       const errorMsg: Message = {
         id: `issue-error-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? '❌ Die Beschreibung ist zu kurz. Bitte beschreibe das Problem ausführlicher (mindestens 10 Zeichen).'
-          : '❌ The description is too short. Please describe the problem in more detail (at least 10 characters).',
+        content: t('chat.issue.tooShort'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -423,13 +369,11 @@ export function ChatBubble() {
         ? ['bug', 'user-reported'] 
         : ['bug', 'guest-reported'];
       
-      const issueTitle = locale === 'de' 
-        ? `[${isAuthenticated ? 'User' : 'Gast'}] ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`
-        : `[${isAuthenticated ? 'User' : 'Guest'}] ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`;
+      const issueTitle = `[${isAuthenticated ? 'User' : 'Guest'}] ${description.substring(0, 50)}${description.length > 50 ? '...' : ''}`;
       
       const issueBody = isAuthenticated
         ? description
-        : `${description}\n\n---\n*Issue gemeldet von Gast-User (nicht eingeloggt)*`;
+        : `${description}\n\n---\n*${t('chat.issue.guestReported')}*`;
       
       const response = await chatAPI.createIssue(
         issueTitle,
@@ -444,9 +388,7 @@ export function ChatBubble() {
       const successMessage: Message = {
         id: `success-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? `✅ Issue erfolgreich erstellt! Du findest es hier: ${issueUrl}\n\nVielen Dank für dein Feedback!`
-          : `✅ Issue created successfully! You can find it here: ${issueUrl}\n\nThank you for your feedback!`,
+        content: t('chat.issue.success') + ` ${issueUrl}\n\n` + t('common.thankYou'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, successMessage]);
@@ -460,9 +402,7 @@ export function ChatBubble() {
       const errorMsg: Message = {
         id: `issue-error-${Date.now()}`,
         role: 'bot',
-        content: locale === 'de'
-          ? `❌ Fehler beim Erstellen des Issues. Bitte melde es manuell auf GitHub:\n\n${fallbackUrl}\n\n**Hinweis:** Der GitHub Token ist möglicherweise nicht konfiguriert oder der Service ist nicht verfügbar.`
-          : `❌ Error creating issue. Please report it manually on GitHub:\n\n${fallbackUrl}\n\n**Note:** The GitHub token may not be configured or the service is unavailable.`,
+        content: t('chat.issue.error') + `\n\n${fallbackUrl}\n\n` + t('chat.issue.errorHint'),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMsg]);
@@ -501,53 +441,37 @@ export function ChatBubble() {
 
     // Projektbezogene Antworten
     if (lowerMessage.includes('issue') || lowerMessage.includes('fehler') || lowerMessage.includes('bug')) {
-      return isGerman
-        ? 'Um ein Issue zu melden:\n\n1. Beschreibe kurz das Problem\n2. Nenne wenn möglich die Schritte zum Reproduzieren\n3. Ich erstelle dann automatisch ein GitHub Issue\n\nOder nutze: "Issue melden" als Quick-Action.'
-        : 'To report an issue:\n\n1. Briefly describe the problem\n2. Mention steps to reproduce if possible\n3. I will then automatically create a GitHub Issue\n\nOr use: "Report Issue" as a quick action.';
+      return t('chat.help.issue');
     }
 
     if (authenticated) {
       // Eingeloggte User: Alle Funktionen
       if (lowerMessage.includes('rezept') || lowerMessage.includes('recipe')) {
-        return isGerman
-          ? 'Rezepte kannst du finden, indem du:\n\n1. Ein Foto deines Kühlschranks machst\n2. Die App analysiert die Lebensmittel\n3. Du bekommst passende Rezeptvorschläge\n\nGespeicherte Rezepte findest du auf der "Rezepte"-Seite.'
-          : 'You can find recipes by:\n\n1. Taking a photo of your fridge\n2. The app analyzes the groceries\n3. You get matching recipe suggestions\n\nSaved recipes can be found on the "Recipes" page.';
+        return t('chat.help.recipes');
       }
 
       if (lowerMessage.includes('lebensmittel') || lowerMessage.includes('grocery') || lowerMessage.includes('inventar')) {
-        return isGerman
-          ? 'Dein Lebensmittel-Inventar kannst du auf der "Lebensmittel"-Seite verwalten:\n\n• Lebensmittel hinzufügen\n• Verfallsdaten tracken\n• Menge und Einheiten verwalten\n\nNutze die Foto-Analyse für schnelles Hinzufügen!'
-          : 'You can manage your grocery inventory on the "Groceries" page:\n\n• Add groceries\n• Track expiration dates\n• Manage quantities and units\n\nUse photo analysis for quick adding!';
+        return t('chat.help.groceries');
       }
     } else {
       // Nicht eingeloggte User: Nur allgemeine Infos + Login-Motivation
       if (lowerMessage.includes('rezept') || lowerMessage.includes('recipe') || 
           lowerMessage.includes('lebensmittel') || lowerMessage.includes('grocery') || 
           lowerMessage.includes('inventar')) {
-        return isGerman
-          ? '🔐 Diese Funktionen sind nur für eingeloggte Nutzer verfügbar.\n\n**Smart Pantry bietet:**\n• Lebensmittel-Inventar verwalten\n• KI-gestützte Foto-Analyse\n• Personalisierte Rezeptvorschläge\n• Einkaufslisten erstellen\n\n💡 **Melde dich an**, um alle Funktionen zu nutzen! Klicke auf "Login" in der Navigation.'
-          : '🔐 These features are only available for signed-in users.\n\n**Smart Pantry offers:**\n• Manage grocery inventory\n• AI-powered photo analysis\n• Personalized recipe suggestions\n• Create shopping lists\n\n💡 **Sign in** to use all features! Click "Login" in the navigation.';
+        return t('chat.restrictedMessage');
       }
     }
 
     if (lowerMessage.includes('hilfe') || lowerMessage.includes('help')) {
-      return authenticated
-        ? (isGerman
-            ? 'Ich helfe dir gerne bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n• Issue-Meldungen\n• Allgemeinen Fragen zur App\n\nStelle einfach eine Frage oder nutze die Quick-Actions!'
-            : 'I can help you with:\n\n• Questions about groceries and recipes\n• Issue reports\n• General questions about the app\n\nJust ask a question or use the quick actions!')
-        : (isGerman
-            ? 'Als Gast kann ich dir helfen bei:\n\n• Allgemeinen Fragen zur App\n• Issue-Meldungen\n• Informationen über Smart Pantry\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen!'
-            : 'As a guest I can help you with:\n\n• General questions about the app\n• Issue reports\n• Information about Smart Pantry\n\n💡 **Tip:** Sign in to use all features!');
+        return authenticated
+          ? t('chat.help.general')
+          : t('chat.help.generalGuest');
     }
 
     // Standard-Antwort
     return authenticated
-      ? (isGerman
-          ? 'Ich kann dir bei Fragen zu Smart Pantry helfen:\n\n• Lebensmittel-Verwaltung\n• Rezept-Vorschläge\n• Issue-Meldungen\n• Allgemeine Fragen\n\nStelle mir eine spezifische Frage oder nutze die Quick-Actions oben!'
-          : 'I can help you with Smart Pantry questions:\n\n• Grocery management\n• Recipe suggestions\n• Issue reports\n• General questions\n\nAsk me a specific question or use the quick actions above!')
-      : (isGerman
-          ? 'Ich beantworte gerne allgemeine Fragen zu Smart Pantry!\n\n💡 **Tipp:** Melde dich an, um alle Funktionen zu nutzen:\n• Lebensmittel verwalten\n• Rezepte entdecken\n• Fotos analysieren\n\nKlicke auf "Login" in der Navigation!'
-          : 'I\'m happy to answer general questions about Smart Pantry!\n\n💡 **Tip:** Sign in to use all features:\n• Manage groceries\n• Discover recipes\n• Analyze photos\n\nClick "Login" in the navigation!');
+      ? t('chat.help.general')
+      : t('chat.help.generalGuest');
   };
 
   return (
@@ -612,7 +536,7 @@ export function ChatBubble() {
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Sparkles className="h-3 w-3 text-primary" />
                     <span className="text-xs text-muted-foreground">
-                      {locale === 'de' ? 'KI-gestützt' : 'AI-powered'}
+                      {t('common.aiPowered')}
                     </span>
                   </div>
                 </div>
@@ -624,7 +548,7 @@ export function ChatBubble() {
                     size="icon"
                     onClick={handleNewChat}
                     className="h-8 w-8"
-                    title={locale === 'de' ? 'Neuer Chat' : 'New Chat'}
+                    title={t('chat.newChat')}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -727,7 +651,7 @@ export function ChatBubble() {
                       handleSend();
                     }
                   }}
-                  placeholder={locale === 'de' ? 'Schreibe eine Nachricht... (Shift+Enter für neue Zeile)' : 'Type a message... (Shift+Enter for new line)'}
+                  placeholder={t('chat.inputPlaceholder')}
                   disabled={isTyping || isSubmittingIssue}
                   rows={3}
                   className="flex-1 min-h-[80px] max-h-[200px] resize-none rounded-lg border border-white/10 bg-[rgba(26,26,26,0.6)] backdrop-blur-sm px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 leading-relaxed"

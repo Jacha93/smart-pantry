@@ -226,7 +226,7 @@ export function AddRecipeDialog({ onRecipeAdded }: AddRecipeDialogProps) {
               <div className="mt-2 rounded-lg overflow-hidden border border-white/10 h-32 w-full">
                 <img 
                   src={imageUrl} 
-                  alt="Preview" 
+                  alt={t('common.preview')} 
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/smart-pantry-favicon.png';

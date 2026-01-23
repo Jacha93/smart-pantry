@@ -16,19 +16,32 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
 
 ## 📋 Technologien
 
-- **Frontend**: Next.js 16, React 19.2, TypeScript 5.1+, Tailwind CSS
-- **Backend**: Node.js, Express, Prisma ORM, PostgreSQL
-- **KI**: Google Gemini 2.5 Flash (Bildanalyse), Spoonacular API (Rezepte)
-- **Container**: Docker Compose (Postgres + Backend/Frontend)
-- **Bundler**: Turbopack (Standard in Next.js 16)
+- **Frontend**: Vite 6.x, React 19.x, React Router 7, TypeScript 5.1+, TailwindCSS 4
+- **Backend**: Python 3.13, FastAPI, SQLModel
+- **Datenbank**: Supabase (PostgreSQL as a Service)
+- **KI**: Google Gemini 3 Flash (Bildanalyse & Chat), Spoonacular API (Rezepte)
+- **Container**: Docker (einzelnes Image mit Frontend + Backend)
+- **Build**: Vite (Frontend), uvicorn (Backend)
+
+### 🔄 Tech-Stack Migration (v1.0.0)
+
+**v1.0.0** markiert den vollständigen Tech-Stack-Wechsel des Projekts:
+
+- **Backend**: Migration von Express.js/Node.js zu FastAPI/Python 3.13
+- **ORM**: Wechsel von Prisma zu SQLModel (SQLAlchemy-basiert)
+- **Frontend**: Migration zu Vite 6.x Build-System (von Webpack/CRA)
+- **React**: Upgrade auf React 19.x mit React Router 7
+
+Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Breaking Changes.
 
 ## 🛠️ Installation
 
 ### Voraussetzungen
 
 - Node.js 20+
+- Python 3.13+
 - npm oder yarn
-- **Docker & Docker Compose** (für lokale PostgreSQL-Instanz)
+- **Supabase Account** (für PostgreSQL-Datenbank)
 - Google Gemini API Key (optional, für Bildanalyse)
 - Spoonacular API Key (optional, für Rezepte)
 
@@ -40,77 +53,71 @@ Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatische
    cd smart-pantry
    ```
 
-2. **Abhängigkeiten installieren**
+2. **Frontend-Abhängigkeiten installieren**
    ```bash
    npm install
-   cd backend && npm install && cd ..
    ```
 
-3. **PostgreSQL starten**
+3. **Backend-Abhängigkeiten installieren**
    ```bash
-   docker compose up -d smart-pantry-postgres
-   ```
-
-4. **Backend-Umgebungsvariablen setzen (`backend/.env`)**
-   ```env
-   BACKEND_PORT=CHANGE_TO_YOUR_BACKEND_PORT
-   DATABASE_URL=postgresql://postgres:CHANGE_ME_PASSWORD@localhost:CHANGE_TO_YOUR_POSTGRES_PORT/smart_pantry?schema=public
-   PERSONAL_DATA_KEY=CHANGE_ME_64_CHAR_HEX_KEY
-   JWT_SECRET=CHANGE_ME_JWT_SECRET
-   REFRESH_TOKEN_TTL_MS=2592000000
-   QUOTA_RESET_INTERVAL_MS=2592000000
-   LLM_TOKEN_COST_CHAT=CHANGE_ME
-   LLM_TOKEN_COST_TRANSLATION=CHANGE_ME
-   LLM_TOKEN_COST_ANALYZE=CHANGE_ME
-   RECIPE_CALL_COST_ANALYZE=CHANGE_ME
-   GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-   SPOONACULAR_API_KEY=YOUR_SPOONACULAR_API_KEY
-   ```
-
-5. **Frontend-Umgebungsvariablen (`.env.local`)**
-   ```env
-   NEXT_INTERNAL_API_URL=http://localhost:CHANGE_TO_YOUR_BACKEND_PORT
-   NEXT_PUBLIC_AUTH_DISABLED=false
-   # Optional: Aktiviert lokalen Mock-Login ohne Backend/Datenbank
-   NEXT_PUBLIC_USE_MOCK_AUTH=true
-   # Optional: Nur setzen, wenn das Backend öffentlich unter einer festen Domain erreichbar ist
-   # NEXT_PUBLIC_API_URL=https://api.smartpantry.example
-   ```
-   > `NEXT_INTERNAL_API_URL` wird nur für serverseitige Requests des Next.js-Backends verwendet.  
-   > Lässt du `NEXT_PUBLIC_API_URL` leer, nutzt das Frontend automatisch die Domain und den Port des Browsers.
-
-6. **Prisma Migrations ausführen**
-   ```bash
-   cd backend
-   npm run prisma:migrate
-   npm run prisma:generate
+   cd backend_python
+   pip install -r requirements.txt
    cd ..
    ```
 
-7. **Backend & Frontend starten**
-   ```bash
-   # Terminal 1
-   cd backend
-   npm run dev
+4. **Supabase Setup**
+   - Erstelle ein Projekt auf [Supabase](https://supabase.com)
+   - Kopiere die Connection String (DATABASE_URL) aus den Project Settings
+   - Die URL sieht aus wie: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`
 
-   # Terminal 2
+5. **Backend-Umgebungsvariablen setzen (`backend_python/.env`)**
+   ```env
+   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
+   JWT_SECRET=CHANGE_ME_JWT_SECRET
+   GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+   SPOONACULAR_API_KEY=YOUR_SPOONACULAR_API_KEY
+   BACKEND_PORT=3001
+   ```
+
+6. **Frontend-Umgebungsvariablen (`.env`)**
+   ```env
+   VITE_API_URL=http://localhost:3001
+   VITE_AUTH_DISABLED=false
+   # Optional: Aktiviert lokalen Mock-Login ohne Backend/Datenbank
+   VITE_USE_MOCK_AUTH=false
+   ```
+
+7. **Backend & Frontend starten**
+
+   **Option 1: Mit Script (empfohlen)**
+   ```bash
+   npm run dev:all
+   ```
+
+   **Option 2: Manuell in separaten Terminals**
+   ```bash
+   # Terminal 1: Backend
+   cd backend_python
+   python -m uvicorn app.main:app --reload --port 3001
+
+   # Terminal 2: Frontend
    npm run dev
    ```
 
-   - Frontend: http://localhost:CHANGE_TO_YOUR_FRONTEND_PORT  
-   - Backend: http://localhost:CHANGE_TO_YOUR_BACKEND_PORT  
+   - Frontend: http://localhost:5173 (Vite Dev Server)
+   - Backend: http://localhost:3001
 
 ### Lokale Tests ohne Backend oder Datenbank
 
-Wenn du das Projekt auf einem Entwicklungsrechner ohne PostgreSQL oder Docker ausführst, kannst du den neuen **Mock-Auth-Modus** aktivieren:
+Wenn du das Projekt auf einem Entwicklungsrechner ohne Supabase ausführst, kannst du den **Mock-Auth-Modus** aktivieren:
 
-- Setze in deiner `.env.local` oder `.env`:
+- Setze in deiner `.env`:
   ```env
-  NEXT_PUBLIC_USE_MOCK_AUTH=true
-  NEXT_PUBLIC_AUTH_DISABLED=false
+  VITE_USE_MOCK_AUTH=true
+  VITE_AUTH_DISABLED=false
   ```
 - Damit werden Registrierung und Login komplett im Browser (LocalStorage) abgewickelt.  
-- Sobald du auf einem Server mit echter Datenbank arbeitest, stelle `NEXT_PUBLIC_USE_MOCK_AUTH=false` (oder entferne die Variable), damit das Frontend wieder mit dem Express-Backend spricht.
+- Sobald du auf einem Server mit echter Datenbank arbeitest, stelle `VITE_USE_MOCK_AUTH=false`, damit das Frontend wieder mit dem FastAPI-Backend spricht.
 
 ## 🔓 Demo-Modus (Login deaktivieren)
 
@@ -118,9 +125,9 @@ Für Präsentationen ist der Login im Entwicklungsmodus automatisch deaktiviert.
 
 - **Standard-Credentials (falls Login trotzdem genutzt wird):**  
   `demo@smartpantry.app` / `demo123`
-- **Demo-Modus erzwingen (z. B. Produktion):**
+- **Demo-Modus erzwingen (z. B. Produktion):**
   - Backend: `AUTH_DISABLED=true`
-  - Frontend: `NEXT_PUBLIC_AUTH_DISABLED=true`
+  - Frontend: `VITE_AUTH_DISABLED=true`
 - **Login wieder aktivieren:** Setze beide Variablen explizit auf `false`.
 
 ## 🐳 Docker & Homelab Deployment
@@ -130,22 +137,24 @@ Für Präsentationen ist der Login im Entwicklungsmodus automatisch deaktiviert.
 Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Docker Image gebaut und zu GitHub Container Registry (ghcr.io) gepusht:
 
 - **Latest**: `ghcr.io/jacha93/smart-pantry:latest` (nur von main)
-- **Versioned**: `ghcr.io/jacha93/smart-pantry:v0.0.5` (Semantic Versioning via Semantic Release)
+- **Versioned**: `ghcr.io/jacha93/smart-pantry:v1.0.0` (Semantic Versioning via Semantic Release)
 - **Dev/Nightly** (von dev branch):
   - `ghcr.io/jacha93/smart-pantry:dev` (immer aktuellster dev Build)
   - `ghcr.io/jacha93/smart-pantry:nightly` (immer aktuellster nightly Build)
-  - `ghcr.io/jacha93/smart-pantry:0.0.5-dev` (Version + Suffix)
-  - `ghcr.io/jacha93/smart-pantry:0.0.5-nightly` (Version + Suffix)
-  - `ghcr.io/jacha93/smart-pantry:0.0.5-nightly-<sha>` (Version + Suffix + Git SHA für eindeutige Identifikation)
+  - `ghcr.io/jacha93/smart-pantry:1.0.0-dev` (Version + Suffix)
+  - `ghcr.io/jacha93/smart-pantry:1.0.0-nightly` (Version + Suffix)
+  - `ghcr.io/jacha93/smart-pantry:1.0.0-nightly-<sha>` (Version + Suffix + Git SHA für eindeutige Identifikation)
 - **Pre-Alpha** (von agent branch):
   - `ghcr.io/jacha93/smart-pantry:pre-alpha` (immer aktuellster agent Build)
-  - `ghcr.io/jacha93/smart-pantry:0.0.5-pre-alpha` (Version + Suffix)
-  - `ghcr.io/jacha93/smart-pantry:0.0.5-pre-alpha-<sha>` (Version + Suffix + Git SHA)
+  - `ghcr.io/jacha93/smart-pantry:1.0.0-pre-alpha` (Version + Suffix)
+  - `ghcr.io/jacha93/smart-pantry:1.0.0-pre-alpha-<sha>` (Version + Suffix + Git SHA)
 
 **Versionierung**: Die Version wird automatisch durch [Semantic Release](https://github.com/semantic-release/semantic-release) basierend auf Commit-Messages berechnet:
-- `feat:` → Minor Version (v0.0.5 → v0.1.0)
-- `fix:` → Patch Version (v0.0.5 → v0.0.6)
-- `BREAKING CHANGE:` → Major Version (v0.0.5 → v1.0.0) - **Hinweis**: v1.0.0 wird erst mit der Mobile App veröffentlicht
+- `feat:` → Minor Version (v1.0.0 → v1.1.0)
+- `fix:` → Patch Version (v1.0.0 → v1.0.1)
+- `BREAKING CHANGE:` → Major Version (v1.0.0 → v2.0.0)
+
+**v1.0.0** markiert den vollständigen Tech-Stack-Wechsel (FastAPI/Python + Vite 6). Siehe [CHANGELOG.md](./CHANGELOG.md) für Details.
 
 #### Schnellstart für Homelab
 
@@ -157,78 +166,78 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
 
 2. **Umgebungsvariablen einrichten**
    ```bash
-   cp .env.example .env
+   cp example.env .env
    # Bearbeite .env und fülle alle Werte aus (siehe unten)
    ```
 
 3. **Docker Compose starten**
    ```bash
-   # Production (Standard - wird automatisch erkannt)
    docker compose up -d
    ```
    
    **Hinweis**: Beim ersten Start kann es 1-2 Minuten dauern, bis das Image von GitHub Container Registry gepullt wurde.
 
-4. **Prisma Migrations ausführen** (einmalig nach erstem Start)
-   ```bash
-   docker compose exec smart-pantry-app npx prisma migrate deploy
-   ```
-   
-   **Was macht das?** Diese Migration erstellt alle Datenbank-Tabellen (User, Grocery, Recipes, etc.) in deiner PostgreSQL-Datenbank. Beim ersten Start ist die Datenbank leer - die Migration richtet die komplette Struktur ein.
-
 Die App läuft dann auf:
 - **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (Host-Port, konfigurierbar über `.env`)
-- **Backend**: Nur intern im Docker-Netzwerk erreichbar (kein externer Zugriff)
-- **PostgreSQL**: Nur im Docker-Netzwerk erreichbar (kein externer Zugriff)
+- **Backend**: Intern im Container auf Port 3001, erreichbar über Nginx Proxy (`/api`)
 
 > **Container-Ports sind hardcoded**: Frontend 3000, Backend 3001  
 > **Nur `FRONTEND_PORT` ist konfigurierbar** für den Host-Port des Frontends  
-> **Backend kommuniziert ausschließlich intern** mit Frontend über Docker-Netzwerk (`smart-pantry-backend:3001`)
+> **Backend kommuniziert intern** mit Frontend über Nginx Proxy (`/api` → `localhost:3001`)
 
 #### Umgebungsvariablen konfigurieren
 
 Die `.env.example` Datei enthält alle benötigten Variablen mit Beschreibungen:
 
-- **Datenbank**: `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
-- **Security**: `JWT_SECRET`, `PERSONAL_DATA_KEY` (64 Hex-Zeichen)
-- **API Keys**: `GEMINI_API_KEY`, `SPOONACULAR_API_KEY`, `GITHUB_TOKEN` (optional)
-- **Quoten**: `LLM_TOKEN_COST_*`, `RECIPE_CALL_COST_*`
-- **Frontend**: `NEXT_PUBLIC_AUTH_DISABLED`, `NEXT_PUBLIC_USE_MOCK_AUTH`, `NEXT_INTERNAL_API_URL` (Server-zu-Server), optional `NEXT_PUBLIC_API_URL`
+**Frontend (VITE_*):**
+- `VITE_API_URL` - Backend API URL (Standard: `http://localhost:3001`)
+- `VITE_AUTH_DISABLED` - Auth deaktivieren (Standard: `false`)
+- `VITE_USE_MOCK_AUTH` - Mock-Auth für lokale Entwicklung (Standard: `false`)
+
+**Backend:**
+- `DATABASE_URL` - Supabase Connection String (erforderlich)
+- `JWT_SECRET` - JWT Secret für Token-Generierung (mindestens 32 Zeichen)
+- `GEMINI_API_KEY` - Google Gemini API Key (optional)
+- `SPOONACULAR_API_KEY` - Spoonacular API Key (optional)
+- `BACKEND_PORT` - Backend Port (Standard: `3001`)
+
+**Docker:**
+- `FRONTEND_PORT` - Host-Port für Frontend (Standard: `3000`)
 
 **Wichtig**: 
-- `PERSONAL_DATA_KEY` generieren mit: `openssl rand -hex 32`
 - `JWT_SECRET` sollte mindestens 32 zufällige Zeichen sein
+- `DATABASE_URL` muss von Supabase kopiert werden
 - Alle Passwörter sollten stark und eindeutig sein
 - **Container-Ports sind hardcoded**: Frontend 3000, Backend 3001
 - **Nur `FRONTEND_PORT` ist konfigurierbar** für den Host-Port des Frontends
-- **Backend ist nur intern erreichbar** - Kommunikation erfolgt ausschließlich über Frontend-Proxy
-- **`NEXT_INTERNAL_API_URL`** ist in Docker hardcoded auf `http://smart-pantry-backend:3001` (nicht konfigurierbar)
-- **`NEXT_PUBLIC_USE_MOCK_AUTH`** auf `true` setzen, wenn du lokal ohne Datenbank/Docker arbeiten möchtest. Auf dem Server auf `false` lassen.
-- **`NEXT_PUBLIC_API_URL`** nur setzen, wenn das Backend unter einer extern erreichbaren Domain liegt. Standardmäßig nutzt das Frontend den `/api` Proxy.
+- **Backend ist nur intern erreichbar** - Kommunikation erfolgt über Nginx Proxy (`/api`)
 
-### Lokale Entwicklung
+### Docker Image Struktur
 
-Für lokale Entwicklung nutze die `compose.dev.yml` (nur PostgreSQL) und starte Backend/Frontend manuell:
+Das Docker Image enthält:
+- **Frontend**: Vite Build (statische Dateien in `/app/frontend/dist`)
+- **Backend**: Python/FastAPI mit uvicorn
+- **Nginx**: Dient Frontend-Dateien und proxied API-Requests zum Backend
 
-```bash
-# PostgreSQL starten
-docker compose -f compose.dev.yml up -d smart-pantry-postgres
-
-# Backend & Frontend lokal starten (siehe Installation oben)
-```
+**Einzelnes Image**: Frontend und Backend laufen im selben Container, was Deployment vereinfacht.
 
 ## 🔒 Sicherheit
 
 - **Keine API Keys im Code**: Alle Secrets werden über Umgebungsvariablen bereitgestellt
-- **AES-256 Verschlüsselung**: Kundenprofile (Adressen etc.) werden mit `PERSONAL_DATA_KEY` sicher verschlüsselt
-- **JWT + Refresh Tokens**: Kurzlebige Access Tokens, Refresh Tokens in PostgreSQL widerrufbar
+- **JWT + Refresh Tokens**: Kurzlebige Access Tokens, Refresh Tokens in Supabase widerrufbar
 - **Quoten & Limits**: KI- und API-Aufrufe werden pro Nutzer protokolliert und limitiert
+- **CORS**: Konfigurierbar für Production (aktuell für Development offen)
 
 ## 📝 Version
 
-Aktuelle Version: **v0.0.5**
+Aktuelle Version: **v1.0.0**
 
-> **Hinweis**: Version v1.0.0 wird erst mit der Implementierung der Mobile App veröffentlicht.
+> **v1.0.0** markiert den vollständigen Tech-Stack-Wechsel des Projekts:
+> - Backend: Express.js/Node.js → FastAPI/Python 3.13
+> - Frontend: Legacy Build-System → Vite 6.x + React 19.x
+> - ORM: Prisma → SQLModel
+> 
+> Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Release Notes und Migrationshinweise.
 
 ## 🌿 Branches
 
@@ -262,144 +271,63 @@ Siehe [LICENSE.md](./LICENSE.md) für Details.
 
 ## 🗄️ Datenbank Management
 
-### Prisma Migrations - Was ist das?
+### Supabase Setup
 
-**Prisma Migrations** sind SQL-Skripte, die deine Datenbank-Struktur erstellen und aktualisieren.
+**Supabase** ist eine PostgreSQL-as-a-Service Lösung. Die Datenbank wird nicht lokal betrieben, sondern in der Cloud gehostet.
 
-#### Wann werden Migrations benötigt?
+#### Erste Schritte
 
-1. **Beim ersten Start** (einmalig):
-   - Die Datenbank ist leer
-   - Migration erstellt alle Tabellen (User, Grocery, Recipes, etc.)
-   - Ohne Migration funktioniert die App nicht (Tabellen fehlen)
+1. **Projekt erstellen**
+   - Gehe zu [Supabase](https://supabase.com) und erstelle ein kostenloses Konto
+   - Erstelle ein neues Projekt
+   - Wähle eine Region (empfohlen: nahe zu deinem Standort)
 
-2. **Bei Schema-Änderungen** (nach Code-Updates):
-   - Wenn neue Tabellen/Spalten hinzugefügt werden
-   - Wenn das `prisma/schema.prisma` geändert wurde
-   - Migration passt die Datenbank-Struktur an
+2. **Connection String kopieren**
+   - Gehe zu Project Settings → Database
+   - Kopiere die Connection String (URI)
+   - Die URL sieht aus wie: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`
+   - Setze diese als `DATABASE_URL` in deiner `.env` Datei
 
-#### Migration ausführen
+3. **Datenbank-Schema**
+   - Das Backend erstellt Tabellen automatisch beim ersten Start (via SQLModel)
+   - Keine manuellen Migrations nötig
 
-**Production (nach jedem Update):**
+#### Backup & Wiederherstellung
+
+**Supabase bietet automatische Backups:**
+- **Free Tier**: Tägliche Backups (7 Tage Aufbewahrung)
+- **Pro Tier**: Kontinuierliche Backups mit Point-in-Time Recovery
+
+**Manuelles Backup:**
 ```bash
-docker compose exec smart-pantry-app npx prisma migrate deploy
+# Backup erstellen (von Supabase Dashboard)
+# Oder via Supabase CLI:
+supabase db dump -f backup.sql
 ```
 
-**Development (erstellt neue Migration):**
+**Backup wiederherstellen:**
 ```bash
-cd backend
-npm run prisma:migrate
+# Via Supabase Dashboard
+# Oder via Supabase CLI:
+supabase db reset --db-url postgresql://...
 ```
 
-**Wichtig**: 
-- `migrate deploy` = Führt vorhandene Migrations aus (Production)
-- `migrate dev` = Erstellt neue Migration + führt aus (Development)
+#### Datenbank-Zugriff
 
-#### ⚠️ Werden meine Daten gelöscht?
+**Supabase Dashboard:**
+- SQL Editor für direkte Datenbankabfragen
+- Table Editor für visuelle Datenverwaltung
+- API Docs für automatisch generierte API-Dokumentation
 
-**NEIN - Deine Daten sind sicher!** 
-
-Prisma Migrations sind **idempotent** und **inkrementell**:
-
-1. **Migration-Tracking**: Prisma speichert in der Tabelle `_prisma_migrations`, welche Migrations bereits ausgeführt wurden
-2. **Nur neue Migrations**: `migrate deploy` führt **nur ausstehende** Migrations aus, nicht bereits ausgeführte
-3. **Daten bleiben erhalten**: Bestehende Daten werden **NICHT gelöscht** oder überschrieben
-4. **Inkrementelle Änderungen**: Neue Migrations fügen nur Änderungen hinzu (z.B. neue Spalte, neue Tabelle)
-
-**Beispiel:**
-```bash
-# Beim ersten Start
-docker compose exec smart-pantry-app npx prisma migrate deploy
-# → Führt Migration 0001_init aus (erstellt alle Tabellen)
-
-# Später, nach Code-Update mit neuer Migration
-docker compose exec smart-pantry-app npx prisma migrate deploy
-# → Führt NUR die neue Migration aus (z.B. 0002_add_notifications)
-# → Bestehende Daten bleiben unverändert!
-```
-
-**Ausnahme - Potenzielle Risiken:**
-- ❌ `DROP TABLE` - würde Tabelle löschen (wird aber normalerweise nicht automatisch generiert)
-- ❌ `ALTER COLUMN` mit Datenverlust (z.B. Spalte entfernen) - Prisma warnt davor
-- ✅ `ADD COLUMN` - sicher, bestehende Daten bleiben erhalten
-- ✅ `CREATE TABLE` - sicher, erstellt nur neue Tabellen
-- ✅ `ALTER TABLE ADD CONSTRAINT` - sicher, fügt nur Constraints hinzu
-
-**Best Practice**: Vor wichtigen Updates immer ein Backup erstellen (siehe Backup-Sektion unten)!
-
-### Datenbank Backup
-
-#### Automatisches Backup (empfohlen)
-
-Erstelle ein Backup-Skript `backup-db.sh`:
-
-```bash
-#!/bin/bash
-# Backup-Skript für Smart Pantry Datenbank
-
-BACKUP_DIR="./backups"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="$BACKUP_DIR/smart_pantry_backup_$TIMESTAMP.sql"
-
-# Erstelle Backup-Verzeichnis
-mkdir -p $BACKUP_DIR
-
-# Backup erstellen
-docker compose exec -T smart-pantry-postgres pg_dump -U postgres smart_pantry > $BACKUP_FILE
-
-# Komprimieren (optional)
-gzip $BACKUP_FILE
-
-echo "✅ Backup erstellt: ${BACKUP_FILE}.gz"
-```
-
-**Cron-Job für tägliche Backups:**
-```bash
-# Füge zu crontab hinzu: crontab -e
-0 2 * * * /path/to/smart-pantry/backup-db.sh
-```
-
-#### Manuelles Backup
-
-```bash
-# Backup erstellen
-docker compose exec smart-pantry-postgres pg_dump -U postgres smart_pantry > backup.sql
-
-# Backup wiederherstellen
-docker compose exec -T smart-pantry-postgres psql -U postgres smart_pantry < backup.sql
-```
-
-#### Backup wiederherstellen
-
-```bash
-# 1. Stoppe die App
-docker compose down
-
-# 2. Stelle Backup wieder her
-docker compose exec -T smart-pantry-postgres psql -U postgres smart_pantry < backup.sql
-
-# 3. Starte die App neu
-docker compose up -d
-```
-
-### Datenbank-Volumes
-
-Die Datenbank-Daten werden in einem Docker Volume gespeichert:
-- **Volume-Name**: `postgres-data`
-- **Speicherort**: Docker verwaltet automatisch (normalerweise `/var/lib/docker/volumes/`)
-
-**Volume sichern:**
-```bash
-# Volume exportieren
-docker run --rm -v smart-pantry_postgres-data:/data -v $(pwd):/backup alpine tar czf /backup/postgres-data-backup.tar.gz /data
-
-# Volume wiederherstellen
-docker run --rm -v smart-pantry_postgres-data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres-data-backup.tar.gz -C /
-```
+**Externe Tools:**
+- Du kannst jeden PostgreSQL-Client verwenden (z.B. pgAdmin, DBeaver)
+- Verbinde dich mit der Connection String aus Supabase
 
 ## 🐛 Bekannte Probleme / Roadmap
 
-- [x] Migration zu PostgreSQL + Prisma
+- [x] Migration zu Vite + React Router
+- [x] Migration zu Python/FastAPI Backend
+- [x] Supabase Integration
 - [x] DSGVO-konforme Verschlüsselung sensibler Daten
 - [x] Refresh Tokens & KI-Kontingente
 - [ ] Mobile UI & Offline-Modus
@@ -407,4 +335,7 @@ docker run --rm -v smart-pantry_postgres-data:/data -v $(pwd):/backup alpine tar
 
 ## 📚 Weitere Dokumentation
 
+- [CHANGELOG.md](./CHANGELOG.md) - Vollständige Release Notes und Änderungsprotokoll
 - [API Keys Setup](./API_KEYS_SETUP.md)
+- [Admin Account Setup](./ADMIN_ACCOUNT.md)
+- [Environment Setup](./ENV_SETUP.md)

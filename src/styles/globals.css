@@ -1,0 +1,310 @@
+@import "tailwindcss";
+
+:root {
+  /* Dark Theme 2025 - Modern Color Palette */
+  --background: #09090b;
+  --foreground: #ffffff;
+
+  /* Surfaces - Liquid Glass */
+  --card: rgba(24, 24, 27, 0.6);
+  --card-foreground: #ffffff;
+  --popover: rgba(24, 24, 27, 0.85);
+  --popover-foreground: #ffffff;
+
+  /* Primary - Vibrant Cyan */
+  --primary: #17f6fe;
+  --primary-foreground: #09090b;
+  --primary-hover: #4ff8ff;
+
+  /* Secondary */
+  --secondary: rgba(54, 54, 54, 0.6);
+  --secondary-foreground: #ffffff;
+
+  /* Muted */
+  --muted: rgba(64, 64, 64, 0.4);
+  --muted-foreground: #a1a1aa;
+
+  /* Accent - Electric Purple */
+  --accent: rgba(161, 13, 253, 0.15);
+  --accent-foreground: #a10dfd;
+
+  /* Smart Pantry Brand Colors - Vibrant Cyan + Electric Purple */
+  --brand-primary: #17f6fe; /* Vibrant Cyan */
+  --brand-primary-foreground: #ffffff;
+  --brand-primary-light: #4ff8ff;
+  --brand-primary-dark: #0cc5cc;
+  --brand-primary-muted: rgba(23, 246, 254, 0.15);
+  
+  --brand-accent: #a10dfd; /* Electric Purple */
+  --brand-accent-foreground: #ffffff;
+  --brand-accent-light: #b83fff;
+  --brand-accent-dark: #7a0ac4;
+  --brand-accent-muted: rgba(161, 13, 253, 0.15);
+
+  /* Legacy - Keep for backward compatibility */
+  --brand-secondary: #a10dfd; /* Alias for accent */
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #17f6fe;
+
+  /* Destructive */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  /* Shadows for depth */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.6);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-foreground: var(--brand-accent-foreground);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-primary-foreground: var(--brand-primary-foreground);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-secondary-foreground: var(--brand-accent-foreground);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  min-height: 100vh;
+  
+  /* Dotted Grid Pattern - Standard 20px */
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-attachment: fixed;
+}
+
+/* Dotted Grid Pattern - 24px für Landing Page */
+.dotted-grid-24 {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
+}
+
+/* Liquid Glass effect utility class */
+.glass {
+  background: var(--popover);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background: rgba(26, 26, 26, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* leibel.me Design Language Utilities */
+.glassmorphic {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(26, 26, 26, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.card-lift {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-lift:hover {
+  transform: translateY(-4px);
+  border-color: rgba(23, 246, 254, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(23, 246, 254, 0.1);
+}
+
+.button-glow-primary {
+  box-shadow: 0 0 20px rgba(23, 246, 254, 0.4), 0 0 40px rgba(23, 246, 254, 0.2);
+}
+
+.button-glow-accent {
+  box-shadow: 0 0 20px rgba(161, 13, 253, 0.4), 0 0 40px rgba(161, 13, 253, 0.2);
+}
+
+/* Viewport Glows - Fixed Position */
+.glow-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 400px;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(23, 246, 254, 0.12),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glow-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 400px;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% 120%,
+    rgba(161, 13, 253, 0.08),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Radial glows for background accents */
+.bg-glow-cyan {
+  background: radial-gradient(circle at 0% 0%, rgba(23, 246, 254, 0.15), transparent 50%);
+}
+
+.bg-glow-purple {
+  background: radial-gradient(circle at 100% 100%, rgba(161, 13, 253, 0.15), transparent 50%);
+}
+
+/* Smooth transitions */
+* {
+  transition-property:
+    background-color, border-color, color, fill, stroke, opacity, box-shadow,
+    transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Chat Bubble Smooth Slide-Up Animation */
+@keyframes chat-slide-up {
+  0% {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* iOS Messages Typing Indicator - Bouncing Dots */
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+.chat-bubble-slide-up {
+  animation: chat-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-fill-mode: forwards;
+}
+
+.chat-bubble-container {
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Fix für Radix UI Select/Popover - Verhindert sichtbare Positionierung */
+[data-radix-select-content],
+[data-radix-popover-content] {
+  /* Verhindere sichtbare Animation während initialer Positionierung */
+  animation: none !important;
+  transform: none !important;
+}
+
+/* Sanfte Fade-In Animation nur nach Positionierung */
+[data-radix-select-content][data-state="open"],
+[data-radix-popover-content][data-state="open"] {
+  animation: fadeIn 150ms ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Modern 2025 Scrollbar - Global Styling */
+/* Webkit (Chrome, Safari, Edge) */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* Spezielle Anpassungen für größere Scrollbars (z.B. Chat-Fenster, Modals, Dropdowns) */
+.chat-bubble-container > div[class*="overflow"]::-webkit-scrollbar,
+.chat-bubble-container textarea::-webkit-scrollbar,
+[role="dialog"]::-webkit-scrollbar,
+[data-radix-select-content]::-webkit-scrollbar,
+[data-radix-select-viewport]::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-bubble-container > div[class*="overflow"]::-webkit-scrollbar-thumb,
+.chat-bubble-container textarea::-webkit-scrollbar-thumb,
+[role="dialog"]::-webkit-scrollbar-thumb,
+[data-radix-select-content]::-webkit-scrollbar-thumb,
+[data-radix-select-viewport]::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.chat-bubble-container > div[class*="overflow"]::-webkit-scrollbar-thumb:hover,
+.chat-bubble-container textarea::-webkit-scrollbar-thumb:hover,
+[role="dialog"]::-webkit-scrollbar-thumb:hover,
+[data-radix-select-content]::-webkit-scrollbar-thumb:hover,
+[data-radix-select-viewport]::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

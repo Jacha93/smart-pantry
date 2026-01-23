@@ -1,81 +1,59 @@
 # Multi-stage Dockerfile für Frontend + Backend
+# Frontend: Vite Build → statische Dateien
+# Backend: Python/FastAPI mit uvicorn
 
 # ============================================
-# Stage 1: Backend Dependencies & Prisma Client
-# ============================================
-FROM node:20-alpine AS backend-deps
-RUN npm install -g npm@latest
-WORKDIR /app/backend
-COPY backend/package*.json ./
-# Install all dependencies (including devDependencies for Prisma)
-RUN npm ci
-# Copy Prisma schema and generate client
-COPY backend/prisma ./prisma
-# Generate Prisma Client
-RUN cd /app/backend && DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate --schema=./prisma/schema.prisma
-# Remove devDependencies but keep @prisma/client and prisma (needed for migrations)
-RUN npm prune --production
-
-# ============================================
-# Stage 2: Frontend Builder
+# Stage 1: Frontend Builder (Vite)
 # ============================================
 FROM node:20-alpine AS frontend-builder
-RUN npm install -g npm@latest
 WORKDIR /app
+
+# Kopiere Package-Dateien
 COPY package*.json ./
-COPY tsconfig.json ./
-COPY next.config.ts ./
-COPY next.config.js ./
-COPY postcss.config.mjs ./
+COPY vite.config.ts tsconfig.json ./
 COPY components.json ./
+
+# Installiere Dependencies
 RUN npm ci
+
+# Kopiere Frontend-Quellen
 COPY src ./src
 COPY public ./public
-COPY eslint.config.mjs ./
-# Build frontend (standalone mode)
+COPY index.html ./
+
+# Build Frontend (Output: /app/dist/)
 RUN npm run build
 
 # ============================================
-# Stage 3: Production Runner
+# Stage 2: Production Runner (Python + Frontend)
 # ============================================
-FROM node:20-alpine AS runner
-RUN npm install -g npm@latest
-
+FROM python:3.13-slim AS runner
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache dumb-init netcat-openbsd wget
+# Installiere System-Dependencies (Nginx für Frontend Serving)
+RUN apt-get update && apt-get install -y \
+    nginx \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Kopiere Backend
+COPY backend_python/requirements.txt ./backend_python/
+RUN pip install --no-cache-dir -r backend_python/requirements.txt
 
-# Copy backend dependencies and source
-COPY --from=backend-deps --chown=nextjs:nodejs /app/backend/node_modules ./backend/node_modules
-COPY --chown=nextjs:nodejs backend/package*.json ./backend/
-COPY --chown=nextjs:nodejs backend/server.js ./backend/
-COPY --chown=nextjs:nodejs backend/prisma ./backend/prisma
-COPY --chown=nextjs:nodejs backend/utils ./backend/utils
+COPY backend_python/ ./backend_python/
 
-# Copy built frontend
-COPY --from=frontend-builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=frontend-builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=frontend-builder --chown=nextjs:nodejs /app/public ./public
+# Kopiere Frontend Build (von Stage 1)
+COPY --from=frontend-builder /app/dist ./frontend/dist
 
-# Copy startup scripts
-COPY --chown=nextjs:nodejs scripts/start-backend.sh /app/start-backend.sh
-COPY --chown=nextjs:nodejs scripts/start-frontend.sh /app/start-frontend.sh
-RUN chmod +x /app/start-backend.sh /app/start-frontend.sh
+# Nginx Config für Frontend Serving
+COPY nginx.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
-# Environment defaults (can be overridden at runtime)
-ENV NODE_ENV=production
-ENV HOSTNAME=0.0.0.0
+# Startup Script (startet Backend + Nginx)
+COPY scripts/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
 
-# Expose ports (just documentation, real ports defined in compose)
+# Expose Ports
 EXPOSE 3000 3001
 
-USER nextjs
-
-ENTRYPOINT ["dumb-init", "--"]
-# Default command (can be overridden in compose)
-CMD ["/app/start-backend.sh"]
+# Starte beide Services
+CMD ["/app/start.sh"]

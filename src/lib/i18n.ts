@@ -1,4 +1,3 @@
-'use client';
 
 export type Locale = 'en' | 'de';
 
@@ -16,6 +15,8 @@ export const translations: Translations = {
   'nav.fridgeAnalyzer': { en: 'Fridge Analyzer', de: 'Kühlschrank-Analyse' },
   'nav.recipes': { en: 'Recipes', de: 'Rezepte' },
   'nav.profile': { en: 'Profile', de: 'Profil' },
+  'nav.settings': { en: 'Settings', de: 'Einstellungen' },
+  'nav.help': { en: 'Help', de: 'Hilfe' },
   'nav.logout': { en: 'Logout', de: 'Abmelden' },
   'nav.appTitle': { en: 'Smart Pantry', de: 'Smart Pantry' },
 
@@ -33,6 +34,13 @@ export const translations: Translations = {
   'auth.haveAccount': { en: 'Already have an account?', de: 'Bereits ein Konto?' },
   'auth.signingIn': { en: 'Signing in...', de: 'Anmelden...' },
   'auth.creatingAccount': { en: 'Creating account...', de: 'Konto wird erstellt...' },
+  'auth.createAccountDesc': { en: 'Create a new account to get started.', de: 'Erstelle ein neues Konto, um loszulegen.' },
+  'auth.passwordsDoNotMatch': { en: "Passwords don't match", de: 'Passwörter stimmen nicht überein' },
+  'auth.registering': { en: 'Registering...', de: 'Registriere...' },
+  'auth.loginHere': { en: 'Login here', de: 'Hier anmelden' },
+  'auth.nameMinLength': { en: 'Name must be at least 2 characters', de: 'Name muss mindestens 2 Zeichen lang sein' },
+  'auth.invalidEmail': { en: 'Invalid email address', de: 'Ungültige E-Mail-Adresse' },
+  'auth.passwordMinLength': { en: 'Password must be at least 6 characters', de: 'Passwort muss mindestens 6 Zeichen lang sein' },
 
   // Groceries
   'groceries.title': { en: 'Groceries', de: 'Lebensmittel' },
@@ -44,6 +52,7 @@ export const translations: Translations = {
   'groceries.unit': { en: 'Unit', de: 'Einheit' },
   'groceries.category': { en: 'Category', de: 'Kategorie' },
   'groceries.expiryDate': { en: 'Expiry Date (Optional)', de: 'Ablaufdatum (Optional)' },
+  'groceries.expiry': { en: 'Expiry', de: 'Ablaufdatum' },
   'groceries.lowStockThreshold': { en: 'Low Stock Threshold', de: 'Mindestbestand' },
   'groceries.selectUnit': { en: 'Select unit', de: 'Einheit auswählen' },
   'groceries.selectCategory': { en: 'Select category', de: 'Kategorie auswählen' },
@@ -59,12 +68,40 @@ export const translations: Translations = {
   'groceries.categoryRequired': { en: 'Category is required', de: 'Kategorie ist erforderlich' },
   'groceries.thresholdPositive': { en: 'Threshold must be positive', de: 'Mindestbestand muss positiv sein' },
   'groceries.addedSuccess': { en: 'Grocery added successfully!', de: 'Lebensmittel erfolgreich hinzugefügt!' },
+  'groceries.updatedSuccess': { en: 'Grocery updated successfully', de: 'Lebensmittel erfolgreich aktualisiert' },
+  'groceries.failedToUpdate': { en: 'Failed to update grocery', de: 'Lebensmittel konnte nicht aktualisiert werden' },
   'groceries.failedToAdd': { en: 'Failed to add grocery', de: 'Lebensmittel konnte nicht hinzugefügt werden' },
   'groceries.failedToFetch': { en: 'Failed to fetch groceries', de: 'Lebensmittel konnten nicht geladen werden' },
   'groceries.deleteConfirm': { en: 'Are you sure you want to delete this grocery?', de: 'Möchtest du dieses Lebensmittel wirklich löschen?' },
+  'groceries.deleteTitle': { en: 'Delete Grocery', de: 'Lebensmittel löschen' },
+  'groceries.deleteConfirmMessage': { en: 'Are you sure you want to delete "{name}"? This action cannot be undone.', de: 'Bist du sicher, dass du "{name}" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.' },
   'groceries.deletedSuccess': { en: 'Grocery deleted successfully', de: 'Lebensmittel erfolgreich gelöscht' },
   'groceries.editComingSoon': { en: 'Edit functionality coming soon', de: 'Bearbeitungsfunktion kommt bald' },
+  'groceries.editTitle': { en: 'Edit Grocery', de: 'Lebensmittel bearbeiten' },
+  'groceries.editDesc': { en: 'Update the details of this grocery item', de: 'Aktualisiere die Details dieses Lebensmittels' },
   'groceries.failedToDelete': { en: 'Failed to delete grocery', de: 'Lebensmittel konnte nicht gelöscht werden' },
+  'groceries.findRecipes': { en: 'Find Recipes', de: 'Rezepte finden' },
+  'groceries.findRecipesDesc': { en: 'Based on your current inventory', de: 'Basierend auf deinem aktuellen Inventar' },
+  'groceries.findRecipesButton': { en: 'Find Recipes', de: 'Rezepte finden' },
+  'groceries.findingRecipes': { en: 'Finding...', de: 'Suche...' },
+  'groceries.recipesFound': { en: 'Found {count} recipes!', de: '{count} Rezepte gefunden!' },
+  'groceries.noRecipesFound': { en: 'No recipes found for your inventory', de: 'Keine Rezepte für dein Inventar gefunden' },
+  'groceries.findRecipesFailed': { en: 'Failed to find recipes', de: 'Rezepte konnten nicht gefunden werden' },
+
+  // Units
+  'unit.pcs': { en: 'Pieces', de: 'Stück' },
+  'unit.kg': { en: 'Kilogram', de: 'Kilogramm' },
+  'unit.g': { en: 'Gram', de: 'Gramm' },
+  'unit.l': { en: 'Liter', de: 'Liter' },
+  'unit.ml': { en: 'Milliliter', de: 'Milliliter' },
+  'unit.oz': { en: 'Ounce', de: 'Unze' },
+  'unit.lb': { en: 'Pound', de: 'Pfund' },
+  'unit.box': { en: 'Box', de: 'Schachtel' },
+  'unit.pack': { en: 'Pack', de: 'Packung' },
+  'unit.bottle': { en: 'Bottle', de: 'Flasche' },
+  'unit.can': { en: 'Can', de: 'Dose' },
+  'unit.bag': { en: 'Bag', de: 'Tüte' },
+
 
   // Fridge Analyzer
   'fridge.title': { en: 'Fridge Analyzer', de: 'Kühlschrank-Analyse' },
@@ -114,10 +151,24 @@ export const translations: Translations = {
   'recipes.cooked': { en: 'Cooked', de: 'Gekocht' },
   'recipes.notCooked': { en: 'Not cooked yet', de: 'Noch nicht gekocht' },
   'recipes.delete': { en: 'Delete', de: 'Löschen' },
+  'recipes.deleteTitle': { en: 'Delete Recipe', de: 'Rezept löschen' },
   'recipes.deleteConfirm': { en: 'Are you sure you want to delete this recipe?', de: 'Möchtest du dieses Rezept wirklich löschen?' },
+  'recipes.deleteConfirmMessage': { en: 'Are you sure you want to delete "{name}"? This action cannot be undone.', de: 'Bist du sicher, dass du "{name}" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.' },
   'recipes.deleted': { en: 'Recipe deleted successfully', de: 'Rezept erfolgreich gelöscht' },
   'recipes.deleteFailed': { en: 'Failed to delete recipe', de: 'Rezept konnte nicht gelöscht werden' },
   'recipes.customRecipe': { en: 'Own Recipe', de: 'Eigenes Rezept' },
+  'recipes.suggestFromInventory': { en: 'Recipes from Inventory', de: 'Rezepte aus Inventar' },
+  'recipes.suggesting': { en: 'Suggesting...', de: 'Suche...' },
+  'recipes.suggestionsFound': { en: 'Found {count} recipe suggestions!', de: '{count} Rezeptvorschläge gefunden!' },
+  'recipes.noSuggestionsFound': { en: 'No recipe suggestions found for your inventory', de: 'Keine Rezeptvorschläge für dein Inventar gefunden' },
+  'recipes.suggestionsFailed': { en: 'Failed to get recipe suggestions', de: 'Rezeptvorschläge konnten nicht geladen werden' },
+  'recipes.loadFailed': { en: 'Failed to load recipes', de: 'Rezepte konnten nicht geladen werden' },
+  'recipes.new': { en: 'NEW', de: 'NEU' },
+  'recipes.suggestionsTitle': { en: 'Recipe Suggestions', de: 'Rezeptvorschläge' },
+  'recipes.suggestionsDescription': { en: 'Based on your current inventory', de: 'Basierend auf deinem aktuellen Inventar' },
+  'recipes.newRecipes': { en: 'New Recipes', de: 'Neue Rezepte' },
+  'recipes.matchingRecipes': { en: 'Matching Recipes', de: 'Passende Rezepte' },
+  'recipes.matchScore': { en: 'Match', de: 'Übereinstimmung' },
 
   // Add Recipe Dialog
   'addRecipe.button': { en: 'Add Recipe', de: 'Rezept hinzufügen' },
@@ -174,6 +225,8 @@ export const translations: Translations = {
 
   // Common
   'common.loading': { en: 'Loading...', de: 'Laden...' },
+  'common.delete': { en: 'Delete', de: 'Löschen' },
+  'common.deleting': { en: 'Deleting...', de: 'Löschen...' },
   'common.register': { en: 'Register', de: 'Registrieren' },
   'common.name': { en: 'Name', de: 'Name' },
   'common.email': { en: 'Email', de: 'E-Mail' },
@@ -182,7 +235,16 @@ export const translations: Translations = {
   'common.search': { en: 'Search groceries...', de: 'Lebensmittel suchen...' },
   'common.filterCategory': { en: 'Filter by category', de: 'Nach Kategorie filtern' },
   'common.allCategories': { en: 'All Categories', de: 'Alle Kategorien' },
+  'common.quantity': { en: 'Quantity', de: 'Menge' },
+  'common.unit': { en: 'Unit', de: 'Einheit' },
+  'common.category': { en: 'Category', de: 'Kategorie' },
+  'common.selectUnit': { en: 'Select unit', de: 'Einheit wählen' },
+  'common.selectCategory': { en: 'Select category', de: 'Kategorie wählen' },
+  'common.fillAllFields': { en: 'Please fill in all fields', de: 'Bitte alle Felder ausfüllen' },
+  'common.saveChanges': { en: 'Save Changes', de: 'Änderungen speichern' },
   'common.language': { en: 'Language', de: 'Sprache' },
+  'common.exampleName': { en: 'John Doe', de: 'Max Mustermann' },
+  'common.exampleEmail': { en: 'john@example.com', de: 'max@beispiel.de' },
   'common.loginSuccess': { en: 'Login successful!', de: 'Anmeldung erfolgreich!' },
   'common.loginFailed': { en: 'Login failed', de: 'Anmeldung fehlgeschlagen' },
   'common.invalidCredentials': { en: 'Invalid credentials', de: 'Ungültige Anmeldedaten' },
@@ -196,8 +258,13 @@ export const translations: Translations = {
   'common.good': { en: 'Good', de: 'Gut' },
   'common.lowStock': { en: 'Low Stock', de: 'Niedriger Bestand' },
   'common.inStock': { en: 'In Stock', de: 'Auf Lager' },
+  'common.stock': { en: 'Stock', de: 'Bestand' },
+  'common.added': { en: 'Added', de: 'Hinzugefügt' },
+  'common.actions': { en: 'Actions', de: 'Aktionen' },
   'common.cancel': { en: 'Cancel', de: 'Abbrechen' },
   'common.saving': { en: 'Saving...', de: 'Speichern...' },
+  'common.thankYou': { en: 'Thank you for your feedback!', de: 'Vielen Dank für dein Feedback!' },
+  'common.aiPowered': { en: 'AI-Powered', de: 'KI-gestützt' },
   
   // Landing Page
   'landing.heroTitle': { en: 'Your Smart Kitchen Assistant', de: 'Dein Smarter Küchenassistent' },
@@ -302,6 +369,7 @@ export const translations: Translations = {
   'profile.usage.groceriesTotal': { en: 'Total Groceries', de: 'Lebensmittel gesamt' },
   'profile.usage.groceriesWithExpiry': { en: 'Groceries with Expiry', de: 'Lebensmittel mit MHD' },
   'profile.usage.unlimitedDesc': { en: 'Unlimited usage', de: 'Unbegrenzte Nutzung' },
+  'profile.usage.loading': { en: 'Loading usage data...', de: 'Lade Verbrauchsdaten...' },
   'profile.unlimited': { en: 'Unlimited', de: 'Unbegrenzt' },
   'profile.resetInfo': { en: 'Quota resets on', de: 'Quota wird zurückgesetzt am' },
   'profile.monthlyResetInfo': { en: 'Monthly limits reset on', de: 'Monatliche Limits werden zurückgesetzt am' },
@@ -331,6 +399,168 @@ export const translations: Translations = {
   'profile.plans.pro.features.chatMessages': { en: '50 Chat Messages/month', de: '50 Chat-Nachrichten/Monat' },
   'profile.plans.pro.features.groceries': { en: 'Unlimited Groceries', de: 'Unbegrenzte Lebensmittel' },
   'profile.plans.pro.features.prioritySupport': { en: 'Priority Support', de: 'Priority Support' },
+
+  // Footer & Legal
+  'footer.privacyPolicy': { en: 'Privacy Policy', de: 'Datenschutzerklärung' },
+  'footer.imprint': { en: 'Imprint', de: 'Impressum' },
+  'footer.rights': { en: '© 2025 Smart Pantry. All rights reserved.', de: '© 2025 Smart Pantry. Alle Rechte vorbehalten.' },
+  'legal.lastUpdated': { en: 'Last updated: January 2025', de: 'Stand: Januar 2025' },
+  'legal.accordingTo': { en: 'Information according to § 5 TMG', de: 'Angaben gemäß § 5 TMG' },
+  
+  // Privacy Policy Sections
+  'privacy.1.title': { en: '1. Data Controller', de: '1. Verantwortlicher' },
+  'privacy.1.content': { en: 'The data controller responsible for data processing in accordance with GDPR is the operator of this application. Contact details can be found in the imprint.', de: 'Verantwortlich für die Datenverarbeitung im Sinne der DSGVO ist der Betreiber dieser Anwendung. Kontaktdaten finden Sie im Impressum.' },
+  
+  'privacy.2.title': { en: '2. Collection and Storage of Personal Data', de: '2. Erhebung und Speicherung personenbezogener Daten' },
+  'privacy.2.intro': { en: 'When using Smart Pantry, we collect and store the following data:', de: 'Bei der Nutzung von Smart Pantry erheben und speichern wir folgende Daten:' },
+  'privacy.2.li1': { en: 'Registration: Email address, name, encrypted password (bcrypt hash)', de: 'Registrierung: E-Mail-Adresse, Name, verschlüsseltes Passwort (bcrypt Hash)' },
+  'privacy.2.li2': { en: 'Usage: Grocery inventory, recipes, shopping lists, photos (for analysis)', de: 'Nutzung: Lebensmittel-Inventar, Rezepte, Einkaufslisten, Fotos (zur Analyse)' },
+  'privacy.2.li3': { en: 'Technical Data: IP address, browser information, device information', de: 'Technische Daten: IP-Adresse, Browser-Informationen, Geräteinformationen' },
+  'privacy.2.li4': { en: 'Usage Data: API quota consumption (LLM tokens, recipe API calls) for quota management', de: 'Nutzungsdaten: API-Quota-Verbrauch (LLM-Tokens, Rezept-API-Calls) für Quota-Management' },
+
+  'privacy.3.title': { en: '3. Purpose of Data Processing', de: '3. Zweck der Datenverarbeitung' },
+  'privacy.3.intro': { en: 'Your data is processed for the following purposes:', de: 'Ihre Daten werden für folgende Zwecke verarbeitet:' },
+  'privacy.3.li1': { en: 'Provision and improvement of the Smart Pantry app', de: 'Bereitstellung und Verbesserung der Smart Pantry App' },
+  'privacy.3.li2': { en: 'Authentication and authorization', de: 'Authentifizierung und Autorisierung' },
+  'privacy.3.li3': { en: 'AI-powered photo analysis of groceries', de: 'KI-gestützte Foto-Analyse von Lebensmitteln' },
+  'privacy.3.li4': { en: 'Recipe suggestions based on your inventory', de: 'Rezeptvorschläge basierend auf Ihrem Inventar' },
+  'privacy.3.li5': { en: 'Quota management for API usage (LLM, recipe APIs)', de: 'Quota-Management für API-Nutzung (LLM, Rezept-APIs)' },
+  'privacy.3.li6': { en: 'Compliance with legal requirements', de: 'Einhaltung gesetzlicher Bestimmungen' },
+
+  'privacy.4.title': { en: '4. Encryption of Sensitive Data', de: '4. Verschlüsselung sensibler Daten' },
+  'privacy.4.content': { en: 'Sensitive personal data (passwords, addresses, bank details) are stored encrypted according to GDPR standards. We use AES-256-GCM encryption for encrypted profile data. Passwords are stored as bcrypt hashes and cannot be decrypted.', de: 'Sensible personenbezogene Daten (Passwörter, Adressen, Bankdaten) werden nach DSGVO-Standards verschlüsselt gespeichert. Wir verwenden AES-256-GCM Verschlüsselung für verschlüsselte Profildaten. Passwörter werden als bcrypt-Hashes gespeichert und können nicht entschlüsselt werden.' },
+
+  'privacy.5.title': { en: '5. Data Sharing with Third Parties', de: '5. Datenweitergabe an Dritte' },
+  'privacy.5.intro': { en: 'We use the following external services:', de: 'Wir nutzen folgende externe Dienste:' },
+  'privacy.5.li1': { en: 'Google Gemini API: For AI-powered photo analysis and chat functions', de: 'Google Gemini API: Für KI-gestützte Foto-Analyse und Chat-Funktionen' },
+  'privacy.5.li2': { en: 'Spoonacular API: For recipe suggestions and recipe data', de: 'Spoonacular API: Für Rezeptvorschläge und Rezeptdaten' },
+  'privacy.5.li3': { en: 'GitHub: For issue tracking (for reported problems)', de: 'GitHub: Für Issue-Tracking (bei gemeldeten Problemen)' },
+  'privacy.5.outro': { en: 'These services process data according to their own privacy policies. We do not share data with third parties unless legally required.', de: 'Diese Dienste verarbeiten Daten gemäß ihren eigenen Datenschutzerklärungen. Wir geben keine Daten an Dritte weiter, außer es ist gesetzlich erforderlich.' },
+
+  'privacy.6.title': { en: '6. Storage Duration', de: '6. Speicherdauer' },
+  'privacy.6.content': { en: 'Your data will be stored for as long as necessary to fulfill the purposes or legal retention obligations exist. When you delete your account, all personal data will be deleted, unless legal retention obligations apply.', de: 'Ihre Daten werden so lange gespeichert, wie es für die Erfüllung der Zwecke erforderlich ist oder gesetzliche Aufbewahrungspflichten bestehen. Bei Löschung Ihres Kontos werden alle personenbezogenen Daten gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.' },
+
+  'privacy.7.title': { en: '7. Your Rights', de: '7. Ihre Rechte' },
+  'privacy.7.intro': { en: 'You have the following rights under GDPR:', de: 'Sie haben folgende Rechte gemäß DSGVO:' },
+  'privacy.7.li1': { en: 'Access to your stored data (Art. 15 GDPR)', de: 'Auskunft über Ihre gespeicherten Daten (Art. 15 DSGVO)' },
+  'privacy.7.li2': { en: 'Correction of incorrect data (Art. 16 GDPR)', de: 'Berichtigung unrichtiger Daten (Art. 16 DSGVO)' },
+  'privacy.7.li3': { en: 'Deletion of your data (Art. 17 GDPR)', de: 'Löschung Ihrer Daten (Art. 17 DSGVO)' },
+  'privacy.7.li4': { en: 'Restriction of processing (Art. 18 GDPR)', de: 'Einschränkung der Verarbeitung (Art. 18 DSGVO)' },
+  'privacy.7.li5': { en: 'Data portability (Art. 20 GDPR)', de: 'Datenübertragbarkeit (Art. 20 DSGVO)' },
+  'privacy.7.li6': { en: 'Objection to processing (Art. 21 GDPR)', de: 'Widerspruch gegen die Verarbeitung (Art. 21 DSGVO)' },
+  'privacy.7.li7': { en: 'Revocation of your consent (Art. 7 para. 3 GDPR)', de: 'Widerruf Ihrer Einwilligung (Art. 7 Abs. 3 DSGVO)' },
+  'privacy.7.li8': { en: 'Complaint to a supervisory authority (Art. 77 GDPR)', de: 'Beschwerde bei einer Aufsichtsbehörde (Art. 77 DSGVO)' },
+
+  'privacy.8.title': { en: '8. Cookies and Tracking', de: '8. Cookies und Tracking' },
+  'privacy.8.content': { en: 'We use technically necessary cookies for the functionality of the app. For Free Tier users, advertising cookies (e.g., Google AdSense) may be used. You can disable cookies in your browser settings.', de: 'Wir verwenden technisch notwendige Cookies für die Funktionalität der App. Für Free-Tier-Nutzer können Werbe-Cookies (z.B. Google AdSense) verwendet werden. Sie können Cookies in Ihren Browser-Einstellungen deaktivieren.' },
+
+  'privacy.9.title': { en: '9. Security', de: '9. Sicherheit' },
+  'privacy.9.content': { en: 'We implement technical and organizational measures to protect your data from unauthorized access, loss, or destruction. This includes encryption, secure authentication (JWT, Refresh Tokens), and regular security updates.', de: 'Wir setzen technische und organisatorische Maßnahmen ein, um Ihre Daten vor unbefugtem Zugriff, Verlust oder Zerstörung zu schützen. Dies umfasst Verschlüsselung, sichere Authentifizierung (JWT, Refresh Tokens) und regelmäßige Sicherheitsupdates.' },
+
+  'privacy.10.title': { en: '10. Contact', de: '10. Kontakt' },
+  'privacy.10.content': { en: 'For questions about data protection, please contact us using the contact details provided in the imprint.', de: 'Bei Fragen zum Datenschutz kontaktieren Sie uns bitte über die im Impressum angegebenen Kontaktdaten.' },
+
+  // Imprint Sections
+  'imprint.responsible.title': { en: 'Responsible for Content', de: 'Verantwortlich für den Inhalt' },
+  'imprint.responsible.content': { en: 'Smart Pantry is an application for intelligent grocery inventory management with AI-powered recipe suggestions.', de: 'Smart Pantry ist eine Anwendung zur intelligenten Verwaltung von Lebensmittel-Inventaren mit KI-gestützten Rezeptvorschlägen.' },
+  'imprint.developer': { en: 'Developer', de: 'Entwickler' },
+  'imprint.email': { en: 'Email', de: 'E-Mail' },
+  'imprint.website': { en: 'Website', de: 'Website' },
+
+  'imprint.disclaimer.title': { en: 'Disclaimer', de: 'Haftungsausschluss' },
+  'imprint.contentLiability.title': { en: 'Liability for Content', de: 'Haftung für Inhalte' },
+  'imprint.contentLiability.content': { en: 'The contents of our pages have been created with the greatest care. However, we cannot guarantee the accuracy, completeness, and timeliness of the content. As a service provider, we are responsible for our own content on these pages in accordance with § 7 para. 1 TMG under general law.', de: 'Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich.' },
+
+  'imprint.linkLiability.title': { en: 'Liability for Links', de: 'Haftung für Links' },
+  'imprint.linkLiability.content': { en: 'Our offer contains links to external websites of third parties, on whose contents we have no influence. Therefore, we cannot assume any liability for these external contents. The respective provider or operator of the pages is always responsible for the contents of the linked pages.', de: 'Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich.' },
+
+  'imprint.copyright.title': { en: 'Copyright', de: 'Urheberrecht' },
+  'imprint.copyright.content': { en: 'The content and works created by the site operators on these pages are subject to German copyright law. The duplication, processing, distribution, and any kind of exploitation outside the limits of copyright require the written consent of the respective author or creator.', de: 'Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.' },
+
+  'imprint.technology.title': { en: 'Technology', de: 'Technologie' },
+  'imprint.technology.content': { en: 'Smart Pantry uses modern web technologies such as Next.js 16, React 19.2, TypeScript, PostgreSQL, Prisma ORM, and AI APIs (Google Gemini, Spoonacular) for the functionality of the application.', de: 'Smart Pantry nutzt moderne Web-Technologien wie Next.js 16, React 19.2, TypeScript, PostgreSQL, Prisma ORM und KI-APIs (Google Gemini, Spoonacular) für die Funktionalität der Anwendung.' },
+
+  'imprint.privacy.title': { en: 'Privacy', de: 'Datenschutz' },
+  'imprint.privacy.content': { en: 'Information about data protection can be found in our privacy policy, which you can access via the link in the footer.', de: 'Informationen zum Datenschutz finden Sie in unserer Datenschutzerklärung, die Sie über den Link im Footer aufrufen können.' },
+
+  // Feature Comparison Plan Names & Details
+  'plans.features.photoAnalyses Month': { en: 'Photo Analyses/Month', de: 'Foto-Analysen/Monat' },
+  'plans.features.requestNewRecipes': { en: 'Request New Recipes', de: 'Neue Rezepte anfordern' },
+  'plans.features.recipeSuggestionsCacheMonth': { en: 'Recipe Suggestions (Cache)/Month', de: 'Rezeptvorschläge (Cache)/Monat' },
+  'plans.features.chatMessagesMonth': { en: 'Chat Messages/Month', de: 'Chat-Nachrichten/Monat' },
+  'plans.features.recipeSearchViaChatMonth': { en: 'Recipe Search via Chat/Month', de: 'Rezeptsuche via Chat/Monat' },
+  'plans.features.groceriesWithExpiryDate': { en: 'Groceries with Expiry Date', de: 'Lebensmittel mit MHD' },
+  'plans.features.totalGroceries': { en: 'Total Groceries', de: 'Lebensmittel insgesamt' },
+  'plans.features.shoppingList': { en: 'Shopping List', de: 'Einkaufsliste' },
+  'plans.features.manualOnly': { en: 'Manual only', de: 'Nur manuell' },
+  'plans.features.autoSuggestion': { en: 'Auto + Suggestion', de: 'Auto + Vorschlag' },
+  'plans.features.recipeSuggestionsDay': { en: 'Recipe Suggestions/Day', de: 'Rezeptvorschläge/Tag' },
+  'plans.features.notifications': { en: 'Notifications', de: 'Benachrichtigungen' },
+  'plans.features.advertising': { en: 'Advertising', de: 'Werbung' },
+  'plans.features.support': { en: 'Support', de: 'Support' },
+  'plans.button.comparePlans': { en: 'Compare Plans', de: 'Pläne vergleichen' },
+  'plans.button.freeToTry': { en: 'Free to try', de: 'Kostenlos testen' },
+  'plans.button.currentPlan': { en: 'Current Plan', de: 'Aktueller Plan' },
+  'plans.button.bestseller': { en: 'Bestseller', de: 'Bestseller' },
+  'plans.button.upgradeToBasic': { en: 'Upgrade to Basic', de: 'Upgrade zu Basic' },
+  'plans.button.upgradeToPro': { en: 'Upgrade to Pro', de: 'Upgrade zu Pro' },
+  'plans.label.forPowerUsers': { en: 'For Power Users', de: 'Für Power-User' },
+
+  // Upgrade Prompt
+  'upgrade.limitReached': { en: 'Limit Reached', de: 'Limit erreicht' },
+  'upgrade.later': { en: 'Later', de: 'Später' },
+  'upgrade.message.groceries_total': { en: "You've reached the limit of {limit} groceries. Upgrade to Basic or Pro for more groceries!", de: "Du hast das Limit von {limit} Lebensmitteln erreicht. Upgrade auf Basic oder Pro für mehr Lebensmittel!" },
+  'upgrade.message.groceries_with_expiry': { en: "You've reached the limit of {limit} groceries with expiry date. Upgrade for more groceries with expiry dates!", de: "Du hast das Limit von {limit} Lebensmitteln mit MHD erreicht. Upgrade für mehr Lebensmittel mit MHD!" },
+  'upgrade.message.chat_messages': { en: "You've used up your chat quota. Upgrade for more chat messages!", de: "Du hast dein Chat-Kontingent aufgebraucht. Upgrade für mehr Chat-Nachrichten!" },
+  'upgrade.message.cache_recipe_suggestions': { en: "You've used up your recipe suggestion quota. Upgrade for more suggestions!", de: "Du hast dein Kontingent für Rezeptvorschläge aufgebraucht. Upgrade für mehr Vorschläge!" },
+  'upgrade.message.recipe_calls': { en: "You've used up your recipe quota. Upgrade for more recipes!", de: "Du hast dein Kontingent für neue Rezepte aufgebraucht. Upgrade für mehr Rezepte!" },
+  
+  // Chat
+  'chat.action.generalQuestion': { en: 'General Question', de: 'Allgemeine Frage' },
+  'chat.action.reportIssue': { en: 'Report Issue', de: 'Issue melden' },
+  'chat.action.groceriesQuestion': { en: 'Groceries Question', de: 'Lebensmittel fragen' },
+  'chat.action.recipesQuestion': { en: 'Recipe Questions', de: 'Rezept-Fragen' },
+  'chat.action.aboutApp': { en: 'About Smart Pantry', de: 'Über Smart Pantry' },
+  'chat.action.signIn': { en: 'Sign In', de: 'Jetzt anmelden' },
+  'chat.initialMessage': { en: 'Hi! I am your personal kitchen assistant. How can I help you? I can find recipes for you or answer questions about your inventory.', de: 'Hallo! Ich bin dein persönlicher Küchen-Assistent. Wie kann ich dir helfen? Ich kann Rezepte für dich suchen oder Fragen zu deinem Inventar beantworten.' },
+  'chat.initialMessageGuest': { en: 'Hi! I am the Smart Pantry assistant. I\'m happy to answer general questions about the app!', de: 'Hallo! Ich bin der Smart Pantry Assistent. Ich beantworte gerne allgemeine Fragen zur App!' },
+  'chat.helpMessage': { en: 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app', de: 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App' },
+  'chat.helpMessageGuest': { en: 'As a guest you can:\n\n• Ask general questions about the app\n\n• Report an issue\n\n• Learn more about Smart Pantry', de: 'Als Gast kannst du:\n\n• Allgemeine Fragen zur App stellen\n\n• Issue melden\n\n• Mehr über Smart Pantry erfahren' },
+  'chat.actionMessage': { en: 'Just click on one of the options or ask me a question!', de: 'Klicke einfach auf eine der Optionen oder stelle mir eine Frage!' },
+  'chat.inputPlaceholder': { en: 'Type your message...', de: 'Gib deine Nachricht ein...' },
+  'chat.newChat': { en: 'New Chat', de: 'Neuer Chat' },
+  'chat.help.groceries': { en: 'I can help you with questions about your groceries and inventory. You can ask me how many items you have, what\'s expiring soon, or get suggestions based on your inventory.', de: 'Ich kann dir bei Fragen zu deinen Lebensmitteln und deinem Inventar helfen. Du kannst mich fragen, wie viele Artikel du hast, was bald abläuft, oder Vorschläge basierend auf deinem Inventar erhalten.' },
+  'chat.help.recipes': { en: 'I can help you find recipes based on your inventory or answer questions about recipes. Try asking "What can I cook with my current ingredients?"', de: 'Ich kann dir helfen, Rezepte basierend auf deinem Inventar zu finden oder Fragen zu Rezepten zu beantworten. Versuche zu fragen "Was kann ich mit meinen aktuellen Zutaten kochen?"' },
+  'chat.help.issue': { en: 'I can help you report issues or bugs. Would you like me to create an issue for you?', de: 'Ich kann dir helfen, Issues oder Bugs zu melden. Soll ich ein Issue für dich erstellen?' },
+  'chat.help.general': { en: 'I can help you with:\n\n• Questions about groceries and recipes\n\n• Report an issue\n\n• General questions about the app', de: 'Ich kann dir helfen bei:\n\n• Fragen zu Lebensmitteln und Rezepten\n\n• Issue melden\n\n• Allgemeine Fragen zur App' },
+  'chat.help.generalGuest': { en: 'As a guest you can:\n\n• Ask general questions about the app\n\n• Report an issue\n\n• Learn more about Smart Pantry', de: 'Als Gast kannst du:\n\n• Allgemeine Fragen zur App stellen\n\n• Issue melden\n\n• Mehr über Smart Pantry erfahren' },
+  'chat.restrictedMessage': { en: 'To use this feature, please sign in. I can only help with general questions about the app as a guest.', de: 'Um diese Funktion zu nutzen, bitte melde dich an. Als Gast kann ich nur bei allgemeinen Fragen zur App helfen.' },
+  'chat.errorMessage': { en: 'Sorry, I encountered an error. Please try again or report an issue.', de: 'Entschuldigung, es ist ein Fehler aufgetreten. Bitte versuche es erneut oder melde ein Issue.' },
+  'chat.issue.guestReported': { en: 'Issue reported by guest user (not logged in)', de: 'Issue gemeldet von Gast-User (nicht eingeloggt)' },
+  'chat.issue.success': { en: '✅ Issue created successfully! You can find it here:', de: '✅ Issue erfolgreich erstellt! Du findest es hier:' },
+
+  // Date Utils
+  'date.invalid': { en: 'Invalid Date', de: 'Ungültiges Datum' },
+
+  // AdBlocker Detection
+  'adblocker.title': { en: 'AdBlocker Detected', de: 'AdBlocker erkannt' },
+  'adblocker.description': { en: 'An adblocker has been detected in your browser. It may be blocking important features and causing console errors.', de: 'Es wurde ein AdBlocker in Ihrem Browser erkannt. Dieser kann wichtige Funktionen blockieren und Console-Fehler verursachen.' },
+  'adblocker.instruction': { en: 'Please disable the adblocker for this website to use all features and avoid console errors.', de: 'Bitte deaktivieren Sie den AdBlocker für diese Website, um alle Funktionen nutzen zu können und Console-Fehler zu vermeiden.' },
+  'adblocker.upgrade': { en: 'Or upgrade to a Premium plan for an ad-free experience without adblocker issues.', de: 'Oder upgraden Sie auf einen Premium-Plan für eine werbefreie Erfahrung ohne AdBlocker-Probleme.' },
+  'adblocker.button': { en: 'Got it', de: 'Verstanden' },
+
+  // Common UI
+  'common.close': { en: 'Close', de: 'Schließen' },
+  'common.preview': { en: 'Preview', de: 'Vorschau' },
+  'common.enterUserId': { en: 'Enter user ID', de: 'Benutzer-ID eingeben' },
+  // Admin
+  'admin.enterValidId': { en: 'Please enter a valid user ID', de: 'Bitte geben Sie eine gültige Benutzer-ID ein' },
+  'admin.switchedSuccess': { en: 'Switched to user account', de: 'Zu Benutzerkonto gewechselt' },
+  'admin.switchError': { en: 'Failed to switch user', de: 'Benutzerwechsel fehlgeschlagen' },
+  'admin.userIdLabel': { en: 'User ID', de: 'Benutzer-ID' },
+  'admin.userIdPlaceholder': { en: 'Enter user ID', de: 'Benutzer-ID eingeben' },
+  'admin.switching': { en: 'Switching...', de: 'Wechsle...' },
+  'admin.switchToUserButton': { en: 'Switch to User', de: 'Zu Benutzer wechseln' },
 };
 
 let currentLocale: Locale = (typeof window !== 'undefined' && (localStorage.getItem('locale') as Locale)) || 'en';
@@ -346,13 +576,23 @@ export const i18n = {
     }
   },
   
-  t: (key: string): string => {
+  t: (key: string, params?: Record<string, string | number>): string => {
     const translation = translations[key];
-    if (!translation) {
+    let text = key;
+    
+    if (translation) {
+      text = translation[currentLocale] || translation.en;
+    } else {
       console.warn(`Translation missing for key: ${key}`);
-      return key;
     }
-    return translation[currentLocale] || translation.en;
+
+    if (params) {
+      Object.entries(params).forEach(([paramKey, paramValue]) => {
+        text = text.replace(`{${paramKey}}`, String(paramValue));
+      });
+    }
+
+    return text;
   },
 };
 

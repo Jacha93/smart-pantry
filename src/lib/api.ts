@@ -1,5 +1,6 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './storage-keys';
+import { auth } from './auth';
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -7,34 +8,10 @@ declare module 'axios' {
   }
 }
 
-declare global {
-  interface Window {
-    __ENV?: {
-      NEXT_PUBLIC_API_URL?: string;
-    };
-  }
-}
-
-// Backend URL für Server-Side Requests (SSR)
-// In Docker: NEXT_INTERNAL_API_URL ist hardcoded auf http://smart-pantry-backend:3001
-// Lokal: Fallback auf localhost:3001
-const SERVER_BASE_URL =
-  process.env.NEXT_INTERNAL_API_URL ||
-  process.env.API_INTERNAL_URL ||
-  process.env.BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://127.0.0.1:3001';
-
-// API Base URL - wird dynamisch zur Laufzeit berechnet
-// WICHTIG: NEXT_PUBLIC_* Variablen werden zur Build-Zeit kompiliert, daher müssen wir
-// zur Laufzeit den Port dynamisch aus window.location ableiten
+// API Base URL - Vite Proxy
+// Alle Requests gehen über /api, das vom Vite Dev-Server zum Backend proxiert wird
 const getApiBaseUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    // Client-seitig immer über Next.js Proxy laufen
-    return '/api';
-  }
-  // Server-side: Präferiere interne URL (Docker / SSR)
-  return SERVER_BASE_URL;
+  return '/api';
 };
 
 const getStoredToken = (key: string): string | null => {
@@ -91,21 +68,47 @@ authlessApi.interceptors.request.use((config) => {
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {
+  // Aktualisiere baseURL bei jedem Request zur Laufzeit
+  config.baseURL = getApiBaseUrl();
+  
+  // Token IMMER neu aus localStorage lesen (nicht cached)
   const token = getStoredToken(ACCESS_TOKEN_KEY);
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+  
+  // Stelle sicher, dass headers existiert
+  if (!config.headers) {
+    config.headers = {};
   }
   
-  // Log requests for debugging (especially auth endpoints)
-  if (config.url?.includes('/auth/register') || config.url?.includes('/auth/login')) {
-    console.log('API Request:', {
-      url: config.url,
-      method: config.method,
-      baseURL: config.baseURL,
-      fullURL: `${config.baseURL}${config.url}`,
-      hasData: !!config.data,
-      dataKeys: config.data ? Object.keys(config.data) : [],
-    });
+  // Setze Authorization-Header wenn Token vorhanden
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    // Entferne Authorization-Header wenn kein Token vorhanden
+    delete config.headers.Authorization;
+  }
+  
+  // Erweiterte Debug-Logs NUR in Development
+  // In Production: Keine Token-Informationen loggen
+  const isAuthEndpoint = config.url?.includes('/auth/');
+  const hasToken = !!token;
+  
+  if (import.meta.env.DEV) {
+    // In Development: Detaillierte Logs (aber ohne Token-Preview)
+    if (isAuthEndpoint) {
+      console.log('[API Request]', {
+        url: config.url,
+        method: config.method,
+        baseURL: config.baseURL,
+        hasAuthHeader: !!config.headers.Authorization,
+        hasData: !!config.data,
+        dataKeys: config.data ? Object.keys(config.data) : [],
+      });
+    }
+  }
+  
+  // Warnung wenn Token fehlt bei geschützten Endpoints (nur in DEV)
+  if (import.meta.env.DEV && !hasToken && !isAuthEndpoint && config.url && !config.url.includes('/auth/')) {
+    console.warn('[API Request] Missing token for protected endpoint:', config.url);
   }
   
   return config;
@@ -125,16 +128,43 @@ const onRefreshed = (token: string | null) => {
 
 const refreshAccessToken = async (): Promise<string | null> => {
   const refreshToken = getStoredToken(REFRESH_TOKEN_KEY);
-  if (!refreshToken) return null;
-  const response = await authlessApi.post('/auth/refresh', {
-    refresh_token: refreshToken,
-  });
-  const { access_token, refresh_token } = response.data;
-  setStoredToken(ACCESS_TOKEN_KEY, access_token);
-  if (refresh_token) {
-    setStoredToken(REFRESH_TOKEN_KEY, refresh_token);
+  if (!refreshToken) {
+    console.warn('[Token Refresh] No refresh token available');
+    return null;
   }
-  return access_token;
+  
+  console.log('[Token Refresh] Attempting to refresh access token...');
+  
+  try {
+    const response = await authlessApi.post('/auth/refresh', {
+      refresh_token: refreshToken,
+    });
+    
+    const { access_token, refresh_token } = response.data;
+    
+    if (!access_token) {
+      console.error('[Token Refresh] No access_token in response');
+      return null;
+    }
+    
+    setStoredToken(ACCESS_TOKEN_KEY, access_token);
+    if (refresh_token) {
+      setStoredToken(REFRESH_TOKEN_KEY, refresh_token);
+    }
+    
+    // Setze Authorization-Header sofort für zukünftige Requests
+    api.defaults.headers.common.Authorization = `Bearer ${access_token}`;
+    
+    console.log('[Token Refresh] Successfully refreshed access token');
+    return access_token;
+  } catch (error: any) {
+    console.error('[Token Refresh] Failed to refresh token:', {
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data,
+    });
+    return null;
+  }
 };
 
 // Track adblocker detection
@@ -153,6 +183,16 @@ api.interceptors.response.use(
     const isArrayEndpoint = url.includes('/groceries') || 
                             url.includes('/shopping-lists') ||
                             url.includes('/recipes');
+    
+    // Log successful responses in dev mode
+    if (import.meta.env.DEV && !url.includes('/auth/')) {
+      console.log('[API Response]', {
+        url,
+        status: response.status,
+        hasData: !!response.data,
+        dataType: Array.isArray(response.data) ? 'array' : typeof response.data,
+      });
+    }
     
     // Wenn response.data leer ist (leerer String), aber Content-Type JSON ist,
     // normalisiere zu leeren Array/Objekt basierend auf URL
@@ -193,9 +233,26 @@ api.interceptors.response.use(
       !url.includes('/auth/register') &&
       !url.includes('/auth/refresh')
     ) {
+      console.log('[401 Handler] Unauthorized request detected:', {
+        url,
+        method: originalRequest?.method,
+        hasRetryFlag: originalRequest?._retry,
+      });
+      
       originalRequest._retry = true;
       const refreshToken = getStoredToken(REFRESH_TOKEN_KEY);
+      const currentToken = getStoredToken(ACCESS_TOKEN_KEY);
+      
+      // Token-Informationen nur in Development loggen
+      if (import.meta.env.DEV) {
+        console.log('[401 Handler] Token state:', {
+          hasAccessToken: !!currentToken,
+          hasRefreshToken: !!refreshToken,
+        });
+      }
+      
       if (!refreshToken) {
+        console.warn('[401 Handler] No refresh token available, redirecting to login');
         removeStoredToken(ACCESS_TOKEN_KEY);
         removeStoredToken(REFRESH_TOKEN_KEY);
         redirectToLogin();
@@ -221,20 +278,26 @@ api.interceptors.response.use(
         const newToken = await refreshAccessToken();
         onRefreshed(newToken);
         if (!newToken) {
-          removeStoredToken(ACCESS_TOKEN_KEY);
-          removeStoredToken(REFRESH_TOKEN_KEY);
+          console.error('[401 Handler] Token refresh failed, clearing auth and redirecting to login');
+          // Verwende clearAuth für vollständige Bereinigung
+          auth.clearAuth();
           redirectToLogin();
           return Promise.reject(error);
         }
-        api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-        if (originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        
+        // Setze Authorization-Header für den retry-Request
+        if (!originalRequest.headers) {
+          originalRequest.headers = {};
         }
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        
+        console.log('[401 Handler] Retrying request with new token:', originalRequest.url);
         return api(originalRequest);
       } catch (refreshError) {
+        console.error('[401 Handler] Token refresh error:', refreshError);
         onRefreshed(null);
-        removeStoredToken(ACCESS_TOKEN_KEY);
-        removeStoredToken(REFRESH_TOKEN_KEY);
+        // Verwende clearAuth für vollständige Bereinigung
+        auth.clearAuth();
         redirectToLogin();
         return Promise.reject(refreshError);
       } finally {
@@ -244,6 +307,12 @@ api.interceptors.response.use(
 
     // Handle 401 for auth endpoints (login/register) - don't redirect, just reject
     if (status === 401) {
+      console.error('[API] 401 Unauthorized detected:', {
+        url,
+        method: originalRequest?.method,
+        isAuthEndpoint: url.includes('/auth/'),
+      });
+      
       // Für Login/Register: Nicht redirecten, nur Token löschen und Fehler zurückgeben
       if (url.includes('/auth/login') || url.includes('/auth/register')) {
         // Bei Login/Register-Fehlern: Token löschen (falls vorhanden) aber nicht redirecten
@@ -252,22 +321,33 @@ api.interceptors.response.use(
         removeStoredToken(REFRESH_TOKEN_KEY);
       } else {
         // Für alle anderen Endpunkte: Token löschen und redirecten
+        console.error('[API] 401 on protected endpoint, clearing auth and redirecting');
         removeStoredToken(ACCESS_TOKEN_KEY);
         removeStoredToken(REFRESH_TOKEN_KEY);
+        
+        // Dispatch authchange event
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('authchange'));
+        }
+        
+        // Redirect zu Landing Page
         redirectToLogin();
       }
     }
 
-    // Log all errors for debugging (especially registration/login failures)
-    if (url.includes('/auth/register') || url.includes('/auth/login')) {
-      console.error('Auth API Error:', {
+    // Erweiterte Error-Logs für alle Fehler
+    if (import.meta.env.DEV || url.includes('/auth/')) {
+      console.error('[API Error]', {
         url,
+        method: originalRequest?.method,
         status,
         message: error.message,
         response: error.response?.data,
         code: error.code,
-        request: error.request ? 'Request exists' : 'No request',
+        hasRequest: !!error.request,
+        hasResponse: !!error.response,
         hasToken: !!getStoredToken(ACCESS_TOKEN_KEY),
+        baseURL: originalRequest?.baseURL,
       });
     }
 
@@ -275,16 +355,25 @@ api.interceptors.response.use(
   }
 );
 
-// Auth API
+// Auth API - Verwende authlessApi für Login/Register, da noch kein Token vorhanden ist
 export const authAPI = {
-  login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
-  register: (email: string, password: string, name: string) =>
-    api.post('/auth/register', { email, password, name }),
-  refresh: (refreshToken: string) =>
-    api.post('/auth/refresh', { refresh_token: refreshToken }),
-  logout: (refreshToken: string) =>
-    api.post('/auth/logout', { refresh_token: refreshToken }),
+  login: (email: string, password: string) => {
+    console.log('[authAPI] Login request:', { email });
+    return authlessApi.post('/auth/login', { email, password });
+  },
+  register: (email: string, password: string, name: string) => {
+    console.log('[authAPI] Register request:', { email, name });
+    return authlessApi.post('/auth/register', { email, password, name });
+  },
+  refresh: (refreshToken: string) => {
+    console.log('[authAPI] Refresh request');
+    return authlessApi.post('/auth/refresh', { refresh_token: refreshToken });
+  },
+  logout: (refreshToken: string) => {
+    console.log('[authAPI] Logout request');
+    // Für Logout können wir api verwenden, da wir bereits eingeloggt sind
+    return api.post('/auth/logout', { refresh_token: refreshToken });
+  },
 };
 
 interface GroceryData {
@@ -368,6 +457,12 @@ export const photoRecognitionAPI = {
     api.post('/photo-recognition/translate-ingredients', { ingredients, targetLanguage }),
   translateTitle: (title: string, targetLanguage: string) =>
     api.post('/photo-recognition/translate-title', { title, targetLanguage }),
+};
+
+// Recipes API
+export const recipesAPI = {
+  suggestFromInventory: () =>
+    api.post('/recipes/suggest-from-inventory'),
 };
 
 // Chat API

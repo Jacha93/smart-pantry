@@ -1,7 +1,5 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,7 +27,7 @@ interface LoginDialogProps {
 
 export function LoginDialog({ isOpen, onOpenChange, onSuccess, onRegisterClick }: LoginDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { t } = useI18n();
   
   const {
@@ -44,20 +42,34 @@ export function LoginDialog({ isOpen, onOpenChange, onSuccess, onRegisterClick }
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      await auth.login(data.email, data.password);
+      console.log('[LoginDialog] Attempting login for:', data.email);
+      const authResponse = await auth.login(data.email, data.password);
+      console.log('[LoginDialog] Login successful, token received:', {
+        hasAccessToken: !!authResponse.access_token,
+        hasRefreshToken: !!authResponse.refresh_token,
+      });
+      
+      // Verifiziere, dass Token in localStorage vorhanden sind
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        console.error('[LoginDialog] Token not found in localStorage after login!');
+        toast.error('Login erfolgreich, aber Token konnte nicht gespeichert werden. Bitte Seite neu laden.');
+        return;
+      }
+      
       toast.success(t('common.loginSuccess'));
       reset();
       onOpenChange(false);
       
-      // Kurze Verzögerung, damit der Event gefeuert werden kann
+      // Warte etwas länger, damit Token sicher gespeichert sind und Event gefeuert wurde
       setTimeout(() => {
+        console.log('[LoginDialog] Navigating after login...');
         if (onSuccess) {
           onSuccess();
         } else {
-          router.push('/groceries');
-          router.refresh();
+          navigate('/app');
         }
-      }, 100);
+      }, 200);
     } catch (error: unknown) {
       let errorMessage = t('common.loginFailed');
       

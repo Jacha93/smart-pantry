@@ -21,17 +21,14 @@ import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
 import { Loader2 } from 'lucide-react';
 
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+const baseRegisterSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  password: z.string().min(6),
   confirmPassword: z.string()
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
 });
 
-type RegisterForm = z.infer<typeof registerSchema>;
+type RegisterForm = z.infer<typeof baseRegisterSchema>;
 
 interface RegisterDialogProps {
   trigger?: React.ReactNode;
@@ -48,9 +45,20 @@ export function RegisterDialog({
   onSuccess,
   onLoginClick 
 }: RegisterDialogProps) {
+  const { t } = useI18n();
+
+  const registerSchema = z.object({
+    name: z.string().min(2, t('auth.nameMinLength')),
+    email: z.string().email(t('auth.invalidEmail')),
+    password: z.string().min(6, t('auth.passwordMinLength')),
+    confirmPassword: z.string()
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: t('auth.passwordsDoNotMatch'),
+    path: ["confirmPassword"],
+  });
+
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { t } = useI18n();
 
   const isOpen = controlledIsOpen ?? internalIsOpen;
   const setIsOpen = controlledOnOpenChange ?? setInternalIsOpen;
@@ -88,7 +96,7 @@ export function RegisterDialog({
         <DialogHeader>
           <DialogTitle>{t('common.register')}</DialogTitle>
           <DialogDescription>
-            Create a new account to get started.
+            {t('auth.createAccountDesc')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -96,7 +104,7 @@ export function RegisterDialog({
             <Label htmlFor="reg-name">{t('common.name')}</Label>
             <Input
               id="reg-name"
-              placeholder="John Doe"
+              placeholder={t('common.exampleName')}
               {...register('name')}
             />
             {errors.name && (
@@ -108,7 +116,7 @@ export function RegisterDialog({
             <Input
               id="reg-email"
               type="email"
-              placeholder="name@example.com"
+              placeholder={t('common.exampleEmail')}
               {...register('email')}
             />
             {errors.email && (
@@ -142,7 +150,7 @@ export function RegisterDialog({
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Registering...
+                  {t('auth.registering')}
                 </>
               ) : (
                 t('common.register')
@@ -150,7 +158,7 @@ export function RegisterDialog({
             </Button>
             {onLoginClick && (
               <div className="text-center text-sm">
-                Already have an account?{' '}
+                {t('auth.haveAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -159,7 +167,7 @@ export function RegisterDialog({
                   }}
                   className="text-primary hover:underline font-medium"
                 >
-                  Login here
+                  {t('auth.loginHere')}
                 </button>
               </div>
             )}

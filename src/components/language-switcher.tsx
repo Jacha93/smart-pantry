@@ -40,7 +40,7 @@ export function LanguageSwitcher() {
 
   return (
     <Select value={locale} onValueChange={handleChange}>
-      <SelectTrigger className="w-[140px]">
+      <SelectTrigger className="w-[140px] rounded-full border-[#a10dfd]/20 hover:border-[#a10dfd]/40 hover:bg-[#a10dfd]/10 transition-all duration-300">
         <Globe className="h-4 w-4 mr-2" />
         <SelectValue>
           {locale === 'en' ? 'English' : 'Deutsch'}

@@ -240,7 +240,7 @@ export function ShoppingListView() {
         format="rectangle" 
         currentPlan={plan}
         className="mt-6"
-        devMode={process.env.NODE_ENV === 'development'}
+        devMode={import.meta.env.MODE === 'development'}
       />
     </div>
   );

@@ -1,11 +1,11 @@
 import { authAPI } from './api';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './storage-keys';
 
-const AUTH_DISABLED =
-  process.env.NEXT_PUBLIC_AUTH_DISABLED === 'true' ||
-  (process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_AUTH_DISABLED !== 'false');
+// Auth ist nur disabled, wenn explizit auf 'true' gesetzt
+// In Development ist Auth standardmäßig aktiviert, außer explizit deaktiviert
+const AUTH_DISABLED = import.meta.env.VITE_AUTH_DISABLED === 'true';
 
-const USE_MOCK_AUTH = process.env.NEXT_PUBLIC_USE_MOCK_AUTH === 'true';
+const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH === 'true';
 const MOCK_USERS_KEY = 'smart-pantry:mock-users';
 const MOCK_ID_COUNTER_KEY = 'smart-pantry:mock-user-id';
 const MOCK_ACCESS_TOKEN = 'mock-access-token';
@@ -161,12 +161,29 @@ export const auth = {
       // Speichere Token nur wenn sie vorhanden sind
       if (access_token) {
         localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
+        console.log('[Auth] Access token stored successfully');
+      } else {
+        console.error('[Auth] No access_token in login response');
       }
+      
       if (refresh_token) {
         localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
+        console.log('[Auth] Refresh token stored successfully');
+      } else {
+        console.warn('[Auth] No refresh_token in login response');
+      }
+      
+      // Verifiziere, dass Token korrekt gespeichert wurden
+      const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      if (storedToken !== access_token) {
+        console.error('[Auth] Token storage verification failed!', {
+          expected: access_token?.substring(0, 10) + '...',
+          stored: storedToken?.substring(0, 10) + '...',
+        });
       }
       
       dispatchAuthChange();
+      console.log('[Auth] Login successful, authchange event dispatched');
       return { access_token, refresh_token, token_type };
     } catch (error: any) {
       // Stelle sicher, dass Token gelöscht sind bei Fehler
@@ -195,18 +212,66 @@ export const auth = {
   },
 
   logout: async () => {
+    console.log('[Auth] Logout initiated');
+    
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    
+    // Lösche Token SOFORT (synchron)
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
-
+    
+    // Verifiziere, dass Token gelöscht sind
+    const tokenStillExists = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const refreshTokenStillExists = localStorage.getItem(REFRESH_TOKEN_KEY);
+    
+    if (tokenStillExists || refreshTokenStillExists) {
+      console.error('[Auth] Token still exists after removal! Force removing...');
+      // Force remove - mehrfach versuchen
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
+    
+    // Verifiziere erneut
+    const finalCheck = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (finalCheck) {
+      console.error('[Auth] CRITICAL: Token still exists after force removal!');
+      // Letzter Versuch mit clear
+      localStorage.clear();
+      // Setze nur die Token-Keys zurück (falls andere Daten wichtig sind)
+      // localStorage wird komplett geleert, was in diesem Fall akzeptabel ist
+    }
+    
+    console.log('[Auth] Tokens removed, isAuthenticated:', auth.isAuthenticated());
+    
+    // API-Logout (async, aber nicht blockierend)
     if (!AUTH_DISABLED && !USE_MOCK_AUTH && refreshToken) {
       try {
         await authAPI.logout(refreshToken);
       } catch (error) {
-        console.warn('Logout API Fehler:', error);
+        console.warn('[Auth] Logout API Fehler:', error);
+        // Ignoriere Fehler, Token sind bereits gelöscht
       }
     }
-    dispatchAuthChange();
+    
+    // Dispatch Event NACH Token-Löschung mit kleiner Verzögerung für React State-Updates
+    // Verwende setTimeout, damit React State-Updates Zeit haben
+    setTimeout(() => {
+      dispatchAuthChange();
+      console.log('[Auth] Logout complete, authchange event dispatched');
+      
+      // Zusätzlich: Dispatch storage event für Cross-Tab-Synchronisation
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: ACCESS_TOKEN_KEY,
+          oldValue: accessToken,
+          newValue: null,
+          storageArea: localStorage,
+        }));
+      }
+    }, 50);
   },
 
   getToken: (): string | null => {
@@ -241,10 +306,91 @@ export const auth = {
 
   isAuthenticated: (): boolean => {
     if (AUTH_DISABLED) return true;
-    if (USE_MOCK_AUTH) {
-      return !!localStorage.getItem(ACCESS_TOKEN_KEY);
+    
+    // Prüfe Token-Existenz
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+    if (!token) {
+      return false;
     }
-    return !!localStorage.getItem(ACCESS_TOKEN_KEY);
+    
+    // Prüfe Token-Format (sollte nicht leer sein)
+    if (token.trim() === '' || token === 'null' || token === 'undefined') {
+      console.warn('[Auth] Invalid token format detected, clearing...');
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      return false;
+    }
+    
+    // Für Mock-Auth: Token-Existenz reicht
+    if (USE_MOCK_AUTH) {
+      return true;
+    }
+    
+    // Für echte Auth: Token-Existenz reicht (Gültigkeit wird vom Backend geprüft)
+    return true;
+  },
+
+  clearAuth: () => {
+    console.log('[Auth] Clearing all auth data...');
+    
+    // Lösche ALLE Token
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    
+    // Lösche ALLE möglichen Auth-Keys (für Sicherheit)
+    const authKeys = ['token', 'refresh_token', 'access_token', 'auth_token'];
+    authKeys.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+    
+    // Verifiziere, dass alles gelöscht ist
+    const remainingTokens = authKeys.filter(key => 
+      localStorage.getItem(key) || sessionStorage.getItem(key)
+    );
+    
+    if (remainingTokens.length > 0) {
+      console.error('[Auth] Some tokens still exist after clear!', remainingTokens);
+      // Force clear - nur Auth-bezogene Keys
+      authKeys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+      });
+    }
+    
+    // Dispatch Events
+    dispatchAuthChange();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: ACCESS_TOKEN_KEY,
+        oldValue: null,
+        newValue: null,
+        storageArea: localStorage,
+      }));
+    }
+    
+    console.log('[Auth] Auth data cleared');
   },
 };
+
+// Debug-Tools für Console
+if (typeof window !== 'undefined') {
+  (window as any).debugAuth = () => {
+    console.log('=== AUTH DEBUG ===');
+    console.log('isAuthenticated:', auth.isAuthenticated());
+    console.log('hasToken:', !!auth.getToken());
+    console.log('hasRefreshToken:', !!auth.getRefreshToken());
+    console.log('token:', auth.getToken() ? `${auth.getToken()?.substring(0, 20)}...` : 'none');
+    console.log('authDisabled:', authDisabled);
+    console.log('localStorage token:', localStorage.getItem(ACCESS_TOKEN_KEY));
+    console.log('localStorage refresh:', localStorage.getItem(REFRESH_TOKEN_KEY));
+    console.log('==================');
+  };
+  
+  (window as any).clearAuth = () => {
+    console.log('Clearing auth...');
+    auth.clearAuth();
+    window.location.href = '/';
+  };
+}
 

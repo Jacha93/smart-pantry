@@ -1,0 +1,135 @@
+// ============================================
+// Smart Pantry - Datenbank Diagramm
+// ============================================
+// Generiert aus Prisma Schema
+// Für dbdiagram.io: https://dbdiagram.io
+
+// ============================================
+// Enums
+// ============================================
+
+Enum UserRole {
+  USER
+  ADMIN
+}
+
+// ============================================
+// Tabellen
+// ============================================
+
+Table User {
+  id int [primary key, increment]
+  email varchar [unique, not null]
+  name varchar [not null] // Legacy: wird zu fullName migriert
+  fullName varchar // Vor- und Nachname
+  username varchar [unique] // Eindeutiger Benutzername
+  passwordHash varchar [not null]
+  role UserRole [default: 'USER']
+  encryptedProfile varchar
+  
+  // Quoten & Limits
+  quotaLlmTokens int [default: 5000] // Free Tier: ~2-3 Foto-Analysen
+  quotaRecipeCalls int [default: 6] // Free Tier: 6x "neue Rezepte" = 18 Rezepte (3 pro Call)
+  llmTokensUsed int [default: 0]
+  recipeCallsUsed int [default: 0]
+  quotaResetAt timestamp [default: `now()`]
+  
+  // Tier-spezifische Limits (Free Tier Defaults)
+  maxCacheRecipeSuggestions int [default: 12] // Free: 12, Basic: 30, Pro: -1 (unbegrenzt)
+  maxChatMessages int [default: 4] // Free: 4, Basic: 16, Pro: 50
+  maxCacheRecipeSearchViaChat int [default: 4] // Free: 4, Basic: 20, Pro: 100
+  maxGroceriesWithExpiry int [default: 10] // Free: 10, Basic: 100, Pro: -1 (unbegrenzt)
+  maxGroceriesTotal int [default: 20] // Free: 20, Basic: 250, Pro: -1 (unbegrenzt)
+  notificationsEnabled boolean [default: false] // Free: false, Paid: true
+  hasPrioritySupport boolean [default: false] // Nur Pro Tier
+  
+  // Tracking für monatliche Limits
+  cacheRecipeSuggestionsUsed int [default: 0] // Verwendete Cache-Vorschläge (monatlich)
+  chatMessagesUsed int [default: 0] // Verwendete Chat-Nachrichten (monatlich)
+  cacheRecipeSearchViaChatUsed int [default: 0] // Verwendete Rezeptsuche via Chat (monatlich)
+  monthlyLimitResetAt timestamp [default: `now()`] // Reset-Datum für monatliche Limits
+  
+  createdAt timestamp [default: `now()`]
+  updatedAt timestamp [default: `now()`]
+  
+  Note: 'Benutzer-Tabelle mit Authentifizierung, Quoten und Tier-Limits'
+}
+
+Table RefreshToken {
+  id int [primary key, increment]
+  tokenHash varchar [not null]
+  userId int [ref: > User.id]
+  expiresAt timestamp [not null]
+  createdAt timestamp [default: `now()`]
+  revokedAt timestamp
+  userAgent varchar
+  ipAddress varchar
+  
+  Note: 'Refresh Tokens für sichere Session-Verwaltung'
+}
+
+Table Grocery {
+  id int [primary key, increment]
+  userId int [ref: > User.id]
+  name varchar [not null]
+  quantity float [not null]
+  unit varchar [not null]
+  category varchar [not null]
+  expiryDate timestamp
+  addedAt timestamp [default: `now()`]
+  lowStockThreshold float [default: 1]
+  notes varchar
+  
+  Note: 'Lebensmittel-Inventar mit Ablaufdaten'
+}
+
+Table ShoppingList {
+  id int [primary key, increment]
+  userId int [ref: > User.id]
+  name varchar
+  createdAt timestamp [default: `now()`]
+  completed boolean [default: false]
+  
+  Note: 'Einkaufslisten'
+}
+
+Table ShoppingListItem {
+  id int [primary key, increment]
+  listId int [ref: > ShoppingList.id]
+  groceryName varchar [not null]
+  quantity float [default: 1]
+  checked boolean [default: false]
+  
+  Note: 'Einträge in Einkaufslisten'
+}
+
+Table SavedRecipe {
+  id int [primary key, increment]
+  userId int [ref: > User.id]
+  recipeId int [not null]
+  title varchar [not null]
+  image varchar
+  usedIngredients json
+  missedIngredients json
+  likes int [default: 0]
+  sourceUrl varchar
+  savedAt timestamp [default: `now()`]
+  isCustom boolean [default: false]
+  readyInMinutes int
+  servings int
+  instructions text
+  ingredientsJson json
+  
+  Note: 'Gespeicherte Rezepte (von API oder benutzerdefiniert)'
+}
+
+Table CookedRecipe {
+  id int [primary key, increment]
+  userId int [ref: > User.id]
+  recipeId int [not null]
+  recipeTitle varchar [not null]
+  cookedAt timestamp [default: `now()`]
+  rating int
+  
+  Note: 'Gekochte Rezepte mit Bewertung'
+}

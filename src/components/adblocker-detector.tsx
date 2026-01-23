@@ -9,11 +9,13 @@ import { auth } from '@/lib/auth';
 
 /**
  * Detects if an adblocker is active and shows a warning dialog
- * Only shows for non-authenticated users (free users)
+ * Shows for all users (authenticated and non-authenticated)
+ * Can be configured to only show for free tier users
  */
 export function AdBlockerDetector() {
   const [showDialog, setShowDialog] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adBlockerDetected, setAdBlockerDetected] = useState(false);
   const { t, locale } = useI18n();
 
   useEffect(() => {
@@ -30,112 +32,248 @@ export function AdBlockerDetector() {
     window.addEventListener('authchange', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
 
-    // Detect adblocker by multiple methods
-    const detectAdBlocker = () => {
-      // Only show warning for non-authenticated users
-      if (auth.isAuthenticated()) {
-        return;
-      }
-
-      // Use a ref-like approach with a shared object to track state
-      const detectionState = {
-        scriptLoaded: false,
-        scriptErrored: false,
-        domCheckCompleted: false,
-        scriptCheckCompleted: false,
+    // Suppress console errors from blocked scripts when adblocker is detected
+    // Store original console methods
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    let consoleSuppressed = false;
+    
+    const suppressConsoleErrors = () => {
+      if (consoleSuppressed) return; // Already suppressed
+      consoleSuppressed = true;
+      
+      console.error = (...args: any[]) => {
+        const message = args.join(' ');
+        // Filter out ERR_BLOCKED_BY_CLIENT errors
+        if (message.includes('ERR_BLOCKED_BY_CLIENT') || 
+            message.includes('net::ERR_BLOCKED_BY_CLIENT') ||
+            message.includes('hsadspixel') ||
+            message.includes('hs-analytics') ||
+            message.includes('hs-banner')) {
+          return; // Suppress these errors
+        }
+        originalError.apply(console, args);
       };
 
-      const evaluateAndShow = () => {
-        // Both checks must be completed before evaluation
-        if (!detectionState.domCheckCompleted || !detectionState.scriptCheckCompleted) {
-          return;
+      console.warn = (...args: any[]) => {
+        const message = args.join(' ');
+        // Filter out Permissions-Policy warnings
+        if (message.includes('Permissions-Policy') || 
+            message.includes('Unrecognized feature') ||
+            message.includes('Origin trial controlled feature')) {
+          return; // Suppress these warnings
         }
-
-        // Script-Methode ist nur zur Bestätigung - DOM-Methode ist primär
-        // Wenn Script erfolgreich lädt, bestätigt es dass kein AdBlocker aktiv ist
-        if (detectionState.scriptLoaded) {
-          console.log('Ad script loaded successfully - confirms NO AdBlocker');
-          // Popup wurde bereits von DOM-Methode gesteuert, hier nichts tun
-        } else {
-          console.log('Ad script check inconclusive - DOM method is primary indicator');
-          // Popup wurde bereits von DOM-Methode gesteuert
-        }
+        originalWarn.apply(console, args);
       };
-
-      // Method 1: Create a fake ad element that adblockers typically block
-      // This method is less reliable, so we use it as secondary check
-      const fakeAd = document.createElement('div');
-      fakeAd.innerHTML = '&nbsp;';
-      fakeAd.className = 'adsbox';
-      fakeAd.style.position = 'absolute';
-      fakeAd.style.left = '-9999px';
-      fakeAd.style.width = '1px';
-      fakeAd.style.height = '1px';
-      fakeAd.style.opacity = '0';
-      document.body.appendChild(fakeAd);
-
-      setTimeout(() => {
-        // Check if element was blocked/hidden by adblocker
-        const computedStyle = window.getComputedStyle(fakeAd);
-        const isBlocked = computedStyle.display === 'none' && 
-                         computedStyle.visibility === 'hidden';
-        
-        if (fakeAd.parentNode) {
-          document.body.removeChild(fakeAd);
-        }
-
-        // DOM check completed
-        detectionState.domCheckCompleted = true;
-        
-        // DOM-Methode ist jetzt PRIMÄR - wenn Element blockiert ist, ist AdBlocker aktiv
-        if (isBlocked) {
-          console.log('AdBlocker detected via DOM element - showing popup');
-          // Zeige Popup sofort wenn DOM-Methode AdBlocker erkennt
-          setShowDialog(true);
-        } else {
-          console.log('DOM element not blocked - no AdBlocker detected');
-        }
-        
-        evaluateAndShow();
-      }, 500);
-
-      // Method 2: Try to load a known ad script URL (PRIMARY METHOD)
-      // WICHTIG: Wir verwenden fetch() statt <script> Tag, um bessere Fehlerbehandlung zu haben
-      const testAdUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-      
-      fetch(testAdUrl, { 
-        method: 'HEAD',
-        mode: 'no-cors', // Umgeht CORS, aber wir können trotzdem sehen ob es blockiert wurde
-        cache: 'no-cache'
-      })
-      .then(() => {
-        // Request erfolgreich - kein AdBlocker
-        detectionState.scriptLoaded = true;
-        detectionState.scriptCheckCompleted = true;
-        console.log('Ad script request successful - definitively NO AdBlocker');
-        evaluateAndShow();
-      })
-      .catch((error) => {
-        // Request fehlgeschlagen - könnte AdBlocker sein, aber auch Netzwerkfehler
-        // WICHTIG: Wir können bei no-cors mode nicht zwischen AdBlocker und Netzwerkfehler unterscheiden
-        // Daher verwenden wir nur die DOM-Methode als Fallback
-        console.log('Ad script request failed - inconclusive (might be network or adblocker)');
-        detectionState.scriptCheckCompleted = true;
-        evaluateAndShow();
-      });
-      
-      // Timeout fallback - wenn fetch() zu lange dauert
-      setTimeout(() => {
-        if (!detectionState.scriptCheckCompleted) {
-          console.log('Ad script check timeout - inconclusive');
-          detectionState.scriptCheckCompleted = true;
-          evaluateAndShow();
-        }
-      }, 3000);
+    };
+    
+    const restoreConsoleErrors = () => {
+      if (!consoleSuppressed) return; // Not suppressed
+      consoleSuppressed = false;
+      console.error = originalError;
+      console.warn = originalWarn;
     };
 
-    // Run detection after page is fully loaded
-    const timer = setTimeout(detectAdBlocker, 2000);
+    // Robust adblocker detection with three parallel methods
+    const detectAdBlockerRobust = async (): Promise<{
+      detected: boolean;
+      confidence: string;
+      results: Array<{ method: string; detected: boolean }>;
+    }> => {
+      const results: Array<{ method: string; detected: boolean }> = [];
+      
+      // Method 1: Script Loading (most reliable)
+      const detectScriptMethod = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+          try {
+            const testAdUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+            const script = document.createElement('script');
+            script.src = testAdUrl;
+            script.async = true;
+            
+            let resolved = false;
+            const timeout = setTimeout(() => {
+              if (!resolved) {
+                resolved = true;
+                if (script.parentNode) {
+                  script.parentNode.removeChild(script);
+                }
+                resolve(true); // Timeout = likely blocked
+              }
+            }, 2000); // 2 second timeout
+            
+            script.onload = () => {
+              if (!resolved) {
+                resolved = true;
+                clearTimeout(timeout);
+                if (script.parentNode) {
+                  script.parentNode.removeChild(script);
+                }
+                resolve(false); // Script loaded = no adblocker
+              }
+            };
+            
+            script.onerror = () => {
+              if (!resolved) {
+                resolved = true;
+                clearTimeout(timeout);
+                if (script.parentNode) {
+                  script.parentNode.removeChild(script);
+                }
+                resolve(true); // Script error = adblocker likely
+              }
+            };
+            
+            document.head.appendChild(script);
+          } catch (error) {
+            console.warn('[AdBlockerDetector] Script method error:', error);
+            resolve(false); // On error, assume no adblocker
+          }
+        });
+      };
+      
+      // Method 2: DOM Element Check (extended with more selectors)
+      const detectDOMMethod = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+          try {
+            const adSelectors = [
+              { className: 'adsbox', id: 'adsbox' },
+              { className: 'advertisement', id: 'advertisement' },
+              { className: 'ad-banner', id: 'ad-banner' },
+              { className: 'ads', id: 'ads' },
+              { className: 'advert', id: 'advert' },
+              { className: 'ublock', id: 'ublock' }, // uBlock-specific
+            ];
+            
+            const adElements: HTMLDivElement[] = [];
+            
+            adSelectors.forEach(({ className, id }) => {
+              const fakeAd = document.createElement('div');
+              fakeAd.innerHTML = '&nbsp;';
+              fakeAd.className = className;
+              fakeAd.id = id;
+              fakeAd.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;opacity:0;z-index:-9999;';
+              document.body.appendChild(fakeAd);
+              adElements.push(fakeAd);
+            });
+            
+            setTimeout(() => {
+              try {
+                let blockedCount = 0;
+                
+                adElements.forEach((fakeAd) => {
+                  const computedStyle = window.getComputedStyle(fakeAd);
+                  const isBlocked = 
+                    computedStyle.display === 'none' || 
+                    computedStyle.visibility === 'hidden' ||
+                    computedStyle.height === '0px' ||
+                    computedStyle.width === '0px' ||
+                    fakeAd.offsetHeight === 0 ||
+                    fakeAd.offsetWidth === 0;
+                  
+                  if (isBlocked) {
+                    blockedCount++;
+                  }
+                  
+                  if (fakeAd.parentNode) {
+                    document.body.removeChild(fakeAd);
+                  }
+                });
+                
+                // AdBlocker detected if ≥50% of elements are blocked
+                const detected = blockedCount >= adSelectors.length / 2;
+                resolve(detected);
+              } catch (error) {
+                console.warn('[AdBlockerDetector] DOM method error:', error);
+                resolve(false);
+              }
+            }, 200); // 200ms check delay
+          } catch (error) {
+            console.warn('[AdBlockerDetector] DOM method setup error:', error);
+            resolve(false);
+          }
+        });
+      };
+      
+      // Method 3: Fetch Test (confirmation)
+      const detectFetchMethod = (): Promise<boolean> => {
+        return new Promise((resolve) => {
+          try {
+            const testAdUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+            const timeout = setTimeout(() => {
+              resolve(true); // Timeout = likely blocked
+            }, 2000);
+            
+            fetch(testAdUrl, {
+              method: 'HEAD',
+              mode: 'no-cors',
+              cache: 'no-cache'
+            })
+            .then(() => {
+              clearTimeout(timeout);
+              resolve(false); // Fetch succeeded (though we can't verify with no-cors)
+            })
+            .catch(() => {
+              clearTimeout(timeout);
+              resolve(true); // Fetch failed = likely blocked
+            });
+          } catch (error) {
+            console.warn('[AdBlockerDetector] Fetch method error:', error);
+            resolve(false);
+          }
+        });
+      };
+      
+      // Run all three methods in parallel
+      try {
+        const [scriptResult, domResult, fetchResult] = await Promise.all([
+          detectScriptMethod(),
+          detectDOMMethod(),
+          detectFetchMethod(),
+        ]);
+        
+        results.push({ method: 'script', detected: scriptResult });
+        results.push({ method: 'dom', detected: domResult });
+        results.push({ method: 'fetch', detected: fetchResult });
+        
+        // Evaluation: At least 2 of 3 methods must detect adblocker
+        const detectedCount = results.filter(r => r.detected).length;
+        const detected = detectedCount >= 2;
+        
+        return {
+          detected,
+          confidence: `${detectedCount}/3 methods`,
+          results
+        };
+      } catch (error) {
+        console.error('[AdBlockerDetector] Detection error:', error);
+        return {
+          detected: false,
+          confidence: 'error',
+          results: []
+        };
+      }
+    };
+
+    // Main detection function
+    const detectAdBlocker = async () => {
+      const detection = await detectAdBlockerRobust();
+      
+      console.log('[AdBlockerDetector] Detection results:', {
+        detected: detection.detected,
+        confidence: detection.confidence,
+        results: detection.results
+      });
+      
+      if (detection.detected) {
+        setAdBlockerDetected(true);
+        setShowDialog(true);
+        suppressConsoleErrors();
+      }
+    };
+
+    // Run detection after 1 second (improved timing)
+    const timer = setTimeout(detectAdBlocker, 1000);
     
     // Also try to detect immediately if page is already loaded
     if (document.readyState === 'complete') {
@@ -145,9 +283,16 @@ export function AdBlockerDetector() {
     }
 
     // Listen for adblocker detection from API interceptor
+    // This serves as an additional confirmation
     const handleAdBlockerDetected = (event: CustomEvent) => {
-      if (event.detail && !isAuthenticated) {
-        setShowDialog(true);
+      if (event.detail) {
+        console.log('[AdBlockerDetector] AdBlocker detected via API interceptor (additional confirmation)');
+        // Only set if not already detected to avoid duplicate popups
+        if (!adBlockerDetected) {
+          setAdBlockerDetected(true);
+          setShowDialog(true);
+          suppressConsoleErrors();
+        }
       }
     };
     window.addEventListener('adblocker-detected', handleAdBlockerDetected as EventListener);
@@ -158,8 +303,12 @@ export function AdBlockerDetector() {
       window.removeEventListener('storage', handleAuthChange);
       window.removeEventListener('adblocker-detected', handleAdBlockerDetected as EventListener);
       window.removeEventListener('load', detectAdBlocker);
+      // Restore console methods on cleanup
+      if (adBlockerDetected) {
+        restoreConsoleErrors();
+      }
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, adBlockerDetected]);
 
   // Hide dialog if user becomes authenticated
   useEffect(() => {
@@ -168,20 +317,21 @@ export function AdBlockerDetector() {
     }
   }, [isAuthenticated, showDialog]);
 
+  // Use i18n translations instead of hardcoded messages
   const messages = {
     de: {
-      title: 'AdBlocker erkannt',
-      description: 'Es wurde ein AdBlocker in Ihrem Browser erkannt. Dieser blockiert möglicherweise wichtige Funktionen wie die Registrierung oder den Login.',
-      instruction: 'Bitte deaktivieren Sie den AdBlocker für diese Website, um alle Funktionen nutzen zu können.',
-      upgrade: 'Oder upgraden Sie auf einen Premium-Plan für eine werbefreie Erfahrung ohne AdBlocker-Probleme.',
-      button: 'Verstanden',
+      title: t('adblocker.title') || 'AdBlocker erkannt',
+      description: t('adblocker.description') || 'Es wurde ein AdBlocker in Ihrem Browser erkannt. Dieser kann wichtige Funktionen blockieren.',
+      instruction: t('adblocker.instruction') || 'Bitte deaktivieren Sie den AdBlocker für diese Website, um alle Funktionen nutzen zu können.',
+      upgrade: t('adblocker.upgrade') || 'Oder upgraden Sie auf einen Premium-Plan für eine werbefreie Erfahrung ohne AdBlocker-Probleme.',
+      button: t('adblocker.button') || 'Verstanden',
     },
     en: {
-      title: 'AdBlocker Detected',
-      description: 'An adblocker has been detected in your browser. It may be blocking important features such as registration or login.',
-      instruction: 'Please disable the adblocker for this website to use all features.',
-      upgrade: 'Or upgrade to a Premium plan for an ad-free experience without adblocker issues.',
-      button: 'Got it',
+      title: t('adblocker.title') || 'AdBlocker Detected',
+      description: t('adblocker.description') || 'An adblocker has been detected in your browser. It may be blocking important features.',
+      instruction: t('adblocker.instruction') || 'Please disable the adblocker for this website to use all features.',
+      upgrade: t('adblocker.upgrade') || 'Or upgrade to a Premium plan for an ad-free experience without adblocker issues.',
+      button: t('adblocker.button') || 'Got it',
     },
   };
 

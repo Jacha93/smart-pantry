@@ -9,6 +9,7 @@ import { AdBlock } from './ad-block';
 import { useUserPlan } from '@/hooks/use-user-plan';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
+import { motion } from 'framer-motion';
 
 interface Recipe {
   id: number;
@@ -57,71 +58,96 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
   const displayedRecipes = showAll ? recipes : recipes.slice(0, initialCount);
   const hasMore = recipes.length > initialCount;
 
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemAnim = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0 }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3"
+      >
         {displayedRecipes.map((recipe) => (
-          <Card key={recipe.id} className="overflow-hidden">
-            <div className="aspect-video relative">
-              <img
-                src={recipe.image}
-                alt={recipe.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-sm mb-2 line-clamp-2">
-                {recipe.title}
-              </h3>
-              <div className="space-y-2">
-                <div className="text-xs text-muted-foreground">
-                  <span className="font-medium">{t('fridge.usedIngredients')}</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {(recipe.used_ingredients || []).slice(0, 3).map((ingredient, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {ingredient.name}
-                      </Badge>
-                    ))}
-                    {(recipe.used_ingredients || []).length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{t('fridge.moreIngredients').replace('{count}', String((recipe.used_ingredients || []).length - 3))}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                {(recipe.missed_ingredients || []).length > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    <span className="font-medium">{t('fridge.missingIngredients')}</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {(recipe.missed_ingredients || []).slice(0, 2).map((ingredient, idx) => (
-                        <Badge key={idx} variant="destructive" className="text-xs">
-                          {ingredient.name}
-                        </Badge>
-                      ))}
-                      {(recipe.missed_ingredients || []).length > 2 && (
-                        <Badge variant="destructive" className="text-xs">
-                          +{t('fridge.moreIngredients').replace('{count}', String((recipe.missed_ingredients || []).length - 2))}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>❤️ {t('fridge.likes').replace('{count}', String(recipe.likes))}</span>
+          <motion.div key={recipe.id} variants={itemAnim} whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+            <Card className="overflow-hidden h-full hover:shadow-xl hover:border-brand-accent/50 transition-all duration-300 group">
+              <div className="aspect-video relative overflow-hidden">
+                <motion.img
+                  src={recipe.image}
+                  alt={recipe.title}
+                  className="w-full h-full object-cover"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.4 }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                   <Button 
                     size="sm" 
-                    variant="outline" 
-                    className="text-xs"
+                    className="w-full font-medium shadow-lg translate-y-4 group-hover:translate-y-0 transition-all duration-300"
                     onClick={() => onRecipeClick(recipe.id)}
                   >
                     {t('fridge.viewRecipe')}
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+              <CardContent className="p-4 flex flex-col gap-2">
+                <h3 className="font-semibold text-base line-clamp-2 min-h-[3rem] group-hover:text-brand-accent transition-colors">
+                  {recipe.title}
+                </h3>
+                <div className="space-y-3 mt-auto">
+                  <div className="text-xs text-muted-foreground">
+                    <span className="font-medium text-brand-accent uppercase tracking-wider text-[10px]">{t('fridge.usedIngredients')}</span>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {(recipe.used_ingredients || []).slice(0, 3).map((ingredient, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs bg-[#17f6fe]/5 border-[#17f6fe]/20">
+                          {ingredient.name}
+                        </Badge>
+                      ))}
+                      {(recipe.used_ingredients || []).length > 3 && (
+                        <Badge variant="outline" className="text-xs bg-muted">
+                          +{t('fridge.moreIngredients').replace('{count}', String((recipe.used_ingredients || []).length - 3))}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {(recipe.missed_ingredients || []).length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-destructive uppercase tracking-wider text-[10px]">{t('fridge.missingIngredients')}</span>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {(recipe.missed_ingredients || []).slice(0, 2).map((ingredient, idx) => (
+                          <Badge key={idx} variant="destructive" className="text-xs opacity-90">
+                            {ingredient.name}
+                          </Badge>
+                        ))}
+                        {(recipe.missed_ingredients || []).length > 2 && (
+                          <Badge variant="destructive" className="text-xs opacity-70">
+                            +{t('fridge.moreIngredients').replace('{count}', String((recipe.missed_ingredients || []).length - 2))}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="pt-2 mt-2 border-t flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">❤️ {t('fridge.likes').replace('{count}', String(recipe.likes))}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* Werbung für Free Tier (nach erstem Rezept) */}
       {isFreeTier && !showAll && recipes.length > 0 && (
@@ -129,15 +155,16 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
           format="rectangle" 
           currentPlan={plan}
           className="my-4"
-          devMode={process.env.NODE_ENV === 'development'}
+          devMode={import.meta.env.MODE === 'development'}
         />
       )}
 
       {/* "Weitere anzeigen" Button */}
       {hasMore && !showAll && (
-        <div className="flex justify-center">
+        <div className="flex justify-center py-4">
           <Button
             variant="outline"
+            className="group hover:border-brand-accent hover:text-brand-accent transition-colors"
             onClick={() => setShowAll(true)}
           >
             {locale === 'de' 
@@ -154,10 +181,9 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
           format="horizontal" 
           currentPlan={plan}
           className="my-4"
-          devMode={process.env.NODE_ENV === 'development'}
+          devMode={import.meta.env.MODE === 'development'}
         />
       )}
     </div>
   );
 }
-

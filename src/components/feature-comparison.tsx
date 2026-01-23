@@ -12,77 +12,77 @@ interface FeatureComparisonProps {
 }
 
 export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   const features = [
     {
-      name: locale === 'de' ? 'Foto-Analysen/Monat' : 'Photo Analyses/Month',
+      name: t('plans.features.photoAnalyses Month'),
       free: '5',
       basic: '15',
       pro: '50'
     },
     {
-      name: locale === 'de' ? 'Neue Rezepte anfordern' : 'Request New Recipes',
+      name: t('plans.features.requestNewRecipes'),
       free: '6x (18 Rezepte)',
       basic: '15x (45 Rezepte)',
       pro: '48x (144 Rezepte)'
     },
     {
-      name: locale === 'de' ? 'Rezeptvorschläge (Cache)/Monat' : 'Recipe Suggestions (Cache)/Month',
+      name: t('plans.features.recipeSuggestionsCacheMonth'),
       free: '12',
       basic: '30',
-      pro: locale === 'de' ? 'Unbegrenzt' : 'Unlimited'
+      pro: t('profile.unlimited')
     },
     {
-      name: locale === 'de' ? 'Chat-Nachrichten/Monat' : 'Chat Messages/Month',
+      name: t('plans.features.chatMessagesMonth'),
       free: '4',
       basic: '16',
       pro: '50'
     },
     {
-      name: locale === 'de' ? 'Rezeptsuche via Chat/Monat' : 'Recipe Search via Chat/Month',
+      name: t('plans.features.recipeSearchViaChatMonth'),
       free: '4',
       basic: '20',
       pro: '100'
     },
     {
-      name: locale === 'de' ? 'Lebensmittel mit MHD' : 'Groceries with Expiry Date',
+      name: t('plans.features.groceriesWithExpiryDate'),
       free: 'Max. 10',
       basic: 'Max. 100',
-      pro: locale === 'de' ? 'Unbegrenzt' : 'Unlimited'
+      pro: t('profile.unlimited')
     },
     {
-      name: locale === 'de' ? 'Lebensmittel insgesamt' : 'Total Groceries',
+      name: t('plans.features.totalGroceries'),
       free: 'Max. 20',
       basic: 'Max. 250',
-      pro: locale === 'de' ? 'Unbegrenzt' : 'Unlimited'
+      pro: t('profile.unlimited')
     },
     {
-      name: locale === 'de' ? 'Einkaufsliste' : 'Shopping List',
-      free: locale === 'de' ? 'Nur manuell' : 'Manual only',
-      basic: locale === 'de' ? 'Auto + Vorschlag' : 'Auto + Suggestion',
-      pro: locale === 'de' ? 'Auto + Vorschlag' : 'Auto + Suggestion'
+      name: t('plans.features.shoppingList'),
+      free: t('plans.features.manualOnly'),
+      basic: t('plans.features.autoSuggestion'),
+      pro: t('plans.features.autoSuggestion')
     },
     {
-      name: locale === 'de' ? 'Rezeptvorschläge/Tag' : 'Recipe Suggestions/Day',
+      name: t('plans.features.recipeSuggestionsDay'),
       free: '2 (je 1)',
       basic: '8 (je 2)',
       pro: '16 (je 2)'
     },
     {
-      name: locale === 'de' ? 'Benachrichtigungen' : 'Notifications',
+      name: t('plans.features.notifications'),
       free: false,
       basic: true,
       pro: true
     },
     {
-      name: locale === 'de' ? 'Werbung' : 'Advertising',
+      name: t('plans.features.advertising'),
       free: true,
       basic: false,
       pro: false
     },
     {
-      name: locale === 'de' ? 'Support' : 'Support',
+      name: t('plans.features.support'),
       free: false,
       basic: false,
       pro: true
@@ -95,13 +95,10 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crown className="h-5 w-5 text-primary" />
-            {locale === 'de' ? 'Pläne vergleichen' : 'Compare Plans'}
+            {t('plans.button.comparePlans')}
           </DialogTitle>
           <DialogDescription>
-            {locale === 'de' 
-              ? 'Wähle den Plan, der am besten zu dir passt'
-              : 'Choose the plan that best fits you'
-            }
+            {t('profile.planManagementDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -111,7 +108,7 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
             <CardHeader>
               <CardTitle className="text-lg">Free</CardTitle>
               <CardDescription>
-                {locale === 'de' ? 'Kostenlos testen' : 'Free to try'}
+                {t('plans.button.freeToTry')}
               </CardDescription>
               <div className="text-3xl font-bold mt-2">€0</div>
             </CardHeader>
@@ -133,7 +130,7 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
                 </div>
               ))}
               <Button variant="outline" className="w-full mt-4" disabled>
-                {locale === 'de' ? 'Aktueller Plan' : 'Current Plan'}
+                {t('plans.button.currentPlan')}
               </Button>
             </CardContent>
           </Card>
@@ -146,7 +143,7 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
                 Basic
               </CardTitle>
               <CardDescription>
-                {locale === 'de' ? 'Bestseller' : 'Bestseller'}
+                {t('plans.button.bestseller')}
               </CardDescription>
               <div className="text-3xl font-bold mt-2">€4.99<span className="text-sm font-normal">/Monat</span></div>
             </CardHeader>
@@ -168,7 +165,7 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
                 </div>
               ))}
               <Button className="w-full mt-4">
-                {locale === 'de' ? 'Upgrade zu Basic' : 'Upgrade to Basic'}
+                {t('plans.button.upgradeToBasic')}
               </Button>
             </CardContent>
           </Card>
@@ -181,7 +178,7 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
                 Pro
               </CardTitle>
               <CardDescription>
-                {locale === 'de' ? 'Für Power-User' : 'For Power Users'}
+                {t('plans.label.forPowerUsers')}
               </CardDescription>
               <div className="text-3xl font-bold mt-2">€9.99<span className="text-sm font-normal">/Monat</span></div>
             </CardHeader>
@@ -203,7 +200,7 @@ export function FeatureComparison({ isOpen, onOpenChange }: FeatureComparisonPro
                 </div>
               ))}
               <Button variant="outline" className="w-full mt-4">
-                {locale === 'de' ? 'Upgrade zu Pro' : 'Upgrade to Pro'}
+                {t('plans.button.upgradeToPro')}
               </Button>
             </CardContent>
           </Card>

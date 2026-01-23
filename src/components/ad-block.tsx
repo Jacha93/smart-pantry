@@ -32,7 +32,7 @@ interface AdBlockProps {
   currentPlan?: 'free' | 'basic' | 'pro';
   /**
    * Dev-Mode: Zeige Ads auch für Paid User (default: false)
-   * Kann auch via NEXT_PUBLIC_SHOW_ADS_FOR_ALL=true gesetzt werden
+   * Kann auch via VITE_SHOW_ADS_FOR_ALL=true gesetzt werden
    */
   devMode?: boolean;
 }
@@ -66,9 +66,8 @@ export function AdBlock({
 
   // Prüfe ob Ad angezeigt werden soll
   useEffect(() => {
-    // Dev-Mode: Zeige Ads für alle wenn NEXT_PUBLIC_SHOW_ADS_FOR_ALL=true
-    const showAdsForAll = typeof window !== 'undefined' && 
-      (window as any).__ENV?.NEXT_PUBLIC_SHOW_ADS_FOR_ALL === 'true';
+    // Dev-Mode: Zeige Ads für alle wenn VITE_SHOW_ADS_FOR_ALL=true
+    const showAdsForAll = import.meta.env.VITE_SHOW_ADS_FOR_ALL === 'true';
     
     if (devMode || showAdsForAll || !showOnlyForFreeTier || currentPlan === 'free') {
       setShowAd(true);

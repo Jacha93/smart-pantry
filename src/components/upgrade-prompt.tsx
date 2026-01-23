@@ -16,33 +16,14 @@ interface UpgradePromptProps {
 }
 
 export function UpgradePrompt({ limitType, currentValue, limit, onDismiss }: UpgradePromptProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const [showComparison, setShowComparison] = useState(false);
 
-  const messages = {
-    groceries_total: {
-      de: `Du hast das Limit von ${limit} Lebensmitteln erreicht. Upgrade auf Basic oder Pro für mehr Lebensmittel!`,
-      en: `You've reached the limit of ${limit} groceries. Upgrade to Basic or Pro for more groceries!`
-    },
-    groceries_with_expiry: {
-      de: `Du hast das Limit von ${limit} Lebensmitteln mit MHD erreicht. Upgrade für mehr Lebensmittel mit MHD!`,
-      en: `You've reached the limit of ${limit} groceries with expiry date. Upgrade for more groceries with expiry dates!`
-    },
-    chat_messages: {
-      de: `Du hast dein Chat-Kontingent aufgebraucht. Upgrade für mehr Chat-Nachrichten!`,
-      en: `You've used up your chat quota. Upgrade for more chat messages!`
-    },
-    cache_recipe_suggestions: {
-      de: `Du hast dein Kontingent für Rezeptvorschläge aufgebraucht. Upgrade für mehr Vorschläge!`,
-      en: `You've used up your recipe suggestion quota. Upgrade for more suggestions!`
-    },
-    recipe_calls: {
-      de: `Du hast dein Kontingent für neue Rezepte aufgebraucht. Upgrade für mehr Rezepte!`,
-      en: `You've used up your recipe quota. Upgrade for more recipes!`
-    }
+  const getMessage = () => {
+    const key = `upgrade.message.${limitType}`;
+    const text = t(key);
+    return text.replace('{limit}', limit.toString());
   };
-
-  const message = messages[limitType][locale as 'de' | 'en'] || messages[limitType].en;
 
   return (
     <>
@@ -50,10 +31,10 @@ export function UpgradePrompt({ limitType, currentValue, limit, onDismiss }: Upg
         <AlertCircle className="h-4 w-4 text-primary" />
         <AlertTitle className="flex items-center gap-2">
           <Crown className="h-4 w-4" />
-          {locale === 'de' ? 'Limit erreicht' : 'Limit Reached'}
+          {t('upgrade.limitReached')}
         </AlertTitle>
         <AlertDescription className="mt-2">
-          <p className="mb-3">{message}</p>
+          <p className="mb-3">{getMessage()}</p>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -61,7 +42,7 @@ export function UpgradePrompt({ limitType, currentValue, limit, onDismiss }: Upg
               className="flex items-center gap-2"
             >
               <Sparkles className="h-4 w-4" />
-              {locale === 'de' ? 'Pläne vergleichen' : 'Compare Plans'}
+              {t('plans.button.comparePlans')}
             </Button>
             {onDismiss && (
               <Button
@@ -69,7 +50,7 @@ export function UpgradePrompt({ limitType, currentValue, limit, onDismiss }: Upg
                 variant="ghost"
                 onClick={onDismiss}
               >
-                {locale === 'de' ? 'Später' : 'Later'}
+                {t('upgrade.later')}
               </Button>
             )}
           </div>

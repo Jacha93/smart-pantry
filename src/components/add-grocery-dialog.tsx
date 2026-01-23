@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { GROCERY_CATEGORIES, UNITS } from '@/types';
+import { GROCERY_CATEGORIES, UNITS as GROCERY_UNITS } from '@/types';
 import { groceriesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
@@ -138,7 +138,7 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
                   <SelectValue placeholder={t('groceries.selectUnit')} />
                 </SelectTrigger>
                 <SelectContent  className="z-[100]">
-                  {UNITS.map((unit) => (
+                  {GROCERY_UNITS.map((unit) => (
                     <SelectItem key={unit} value={unit}>
                       {unit}
                     </SelectItem>
