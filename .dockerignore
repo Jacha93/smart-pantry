@@ -58,10 +58,12 @@ API_KEYS_SETUP.md
 scripts/*
 !scripts/start-backend.sh
 !scripts/start-frontend.sh
+!scripts/start.sh
 # *.sh generell ignorieren, aber Start-Scripte erlauben
 *.sh
 !scripts/start-backend.sh
 !scripts/start-frontend.sh
+!scripts/start.sh
 
 # IDE & Editor
 .vscode
