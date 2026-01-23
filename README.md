@@ -2,7 +2,7 @@
 
 Eine intelligente KI-gestützte Lebensmittel-Inventarverwaltung mit automatischer Bildanalyse und Rezeptvorschlägen.
 
-> **⚠️ Disclaimer:** Dieses Projekt ist ein Experiment und wird im Rahmen eines Selbststudiums von einer KI programmiert. Der Code dient Lernzwecken und sollte nicht als Produktionscode betrachtet werden.
+> **⚠️ Disclaimer:** Dieses Projekt ist ein Experiment und wird im Rahmen eines Selbststudiums in Zusammenarbeit mit einer KI programmiert (kein stumpfes VibeCoding). Der Code dient Lernzwecken und sollte nicht als Produktionscode betrachtet werden.
 
 ## 🚀 Features
 
