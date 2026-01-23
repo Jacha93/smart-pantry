@@ -14,10 +14,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { GROCERY_CATEGORIES, UNITS } from '@/types';
+import { GROCERY_CATEGORIES, UNITS as GROCERY_UNITS } from '@/types';
 import { groceriesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { UpgradePrompt } from '@/components/upgrade-prompt';
 
 const grocerySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -37,6 +38,7 @@ interface AddGroceryDialogProps {
 export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [limitError, setLimitError] = useState<{ limitType: 'groceries_total' | 'groceries_with_expiry', limit: number, current: number } | null>(null);
   const { t } = useI18n();
 
   const {
@@ -64,17 +66,36 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
       reset();
       onGroceryAdded();
     } catch (error: unknown) {
-      const apiError = error as { response?: { data?: { detail?: string } } };
-      toast.error(apiError.response?.data?.detail || t('groceries.failedToAdd'));
+      const apiError = error as { response?: { data?: { detail?: string; limit?: string; limitReached?: boolean } } };
+      if (apiError.response?.data?.limitReached && apiError.response?.data?.limit) {
+        const limitType = apiError.response.data.limit as 'groceries_total' | 'groceries_with_expiry';
+        // Parse limit from error message or use default
+        const limitMatch = apiError.response.data.detail?.match(/(\d+)/);
+        const limit = limitMatch ? parseInt(limitMatch[1]) : (limitType === 'groceries_total' ? 20 : 10);
+        setLimitError({ limitType, limit, current: limit });
+      } else {
+        toast.error(apiError.response?.data?.detail || t('groceries.failedToAdd'));
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      {limitError && (
+        <div className="mb-4">
+          <UpgradePrompt
+            limitType={limitError.limitType}
+            currentValue={limitError.current}
+            limit={limitError.limit}
+            onDismiss={() => setLimitError(null)}
+          />
+        </div>
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+        <Button>
           <Plus className="h-4 w-4 mr-2" />
           {t('groceries.add')}
         </Button>
@@ -116,8 +137,8 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
                 <SelectTrigger>
                   <SelectValue placeholder={t('groceries.selectUnit')} />
                 </SelectTrigger>
-                <SelectContent position="popper" className="z-[100]">
-                  {UNITS.map((unit) => (
+                <SelectContent  className="z-[100]">
+                  {GROCERY_UNITS.map((unit) => (
                     <SelectItem key={unit} value={unit}>
                       {unit}
                     </SelectItem>
@@ -136,12 +157,15 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
               <SelectTrigger>
                 <SelectValue placeholder={t('groceries.selectCategory')} />
               </SelectTrigger>
-              <SelectContent position="popper" className="z-[100]">
-                {GROCERY_CATEGORIES.map((category) => (
+              <SelectContent  className="z-[100]">
+                {GROCERY_CATEGORIES.map((category) => {
+                  const categoryKey = `category.${category.toLowerCase()}`;
+                  return (
                   <SelectItem key={category} value={category}>
-                    {category}
+                      {t(categoryKey) || category}
                   </SelectItem>
-                ))}
+                  );
+                })}
               </SelectContent>
             </Select>
             {errors.category && (
@@ -193,12 +217,13 @@ export function AddGroceryDialog({ onGroceryAdded }: AddGroceryDialogProps) {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {t('groceries.cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading} className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+            <Button type="submit" disabled={isLoading}>
               {isLoading ? t('groceries.adding') : t('groceries.add')}
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

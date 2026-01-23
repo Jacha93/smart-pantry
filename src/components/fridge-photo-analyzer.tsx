@@ -8,6 +8,7 @@ import { Camera, Upload, Plus, ChefHat, Loader2 } from 'lucide-react';
 import { photoRecognitionAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import { RecipeDetailsModal } from './recipe-details-modal';
+import { RecipeSuggestionsGrid } from './recipe-suggestions-grid';
 import { useI18n } from '@/hooks/use-i18n';
 
 
@@ -120,7 +121,7 @@ export function FridgePhotoAnalyzer() {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <Button onClick={() => fileInputRef.current?.click()} className="hover:scale-[1.02] active:scale-[0.98] transition-transform">
+              <Button onClick={() => fileInputRef.current?.click()}>
                 <Camera className="h-4 w-4 mr-2" />
                 {t('fridge.choosePhoto')}
               </Button>
@@ -145,7 +146,7 @@ export function FridgePhotoAnalyzer() {
               <Button
                 onClick={handleAnalyze}
                 disabled={isAnalyzing}
-                className="w-full hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="w-full"
               >
                 {isAnalyzing ? (
                   <>
@@ -188,7 +189,7 @@ export function FridgePhotoAnalyzer() {
               <Button
                 onClick={handleAddToInventory}
                 disabled={isAddingGroceries}
-                className="w-full hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="w-full"
               >
                 {isAddingGroceries ? (
                   <>
@@ -217,72 +218,13 @@ export function FridgePhotoAnalyzer() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {(analysisResult.recipe_suggestions || []).map((recipe) => (
-                  <Card key={recipe.id} className="overflow-hidden">
-                    <div className="aspect-video relative">
-                      <img
-                        src={recipe.image}
-                        alt={recipe.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-sm mb-2 line-clamp-2">
-                        {recipe.title}
-                      </h3>
-                      <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground">
-                          <span className="font-medium">{t('fridge.usedIngredients')}</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {(recipe.used_ingredients || []).slice(0, 3).map((ingredient, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {ingredient.name}
-                              </Badge>
-                            ))}
-                            {(recipe.used_ingredients || []).length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{t('fridge.moreIngredients').replace('{count}', String((recipe.used_ingredients || []).length - 3))}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        {(recipe.missed_ingredients || []).length > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            <span className="font-medium">{t('fridge.missingIngredients')}</span>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {(recipe.missed_ingredients || []).slice(0, 2).map((ingredient, idx) => (
-                                <Badge key={idx} variant="destructive" className="text-xs">
-                                  {ingredient.name}
-                                </Badge>
-                              ))}
-                              {(recipe.missed_ingredients || []).length > 2 && (
-                                <Badge variant="destructive" className="text-xs">
-                                  +{t('fridge.moreIngredients').replace('{count}', String((recipe.missed_ingredients || []).length - 2))}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>❤️ {t('fridge.likes').replace('{count}', String(recipe.likes))}</span>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-xs"
-                            onClick={() => {
-                              setSelectedRecipeId(recipe.id);
-                              setIsRecipeModalOpen(true);
-                            }}
-                          >
-                            {t('fridge.viewRecipe')}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <RecipeSuggestionsGrid 
+                recipes={analysisResult.recipe_suggestions || []}
+                onRecipeClick={(recipeId) => {
+                  setSelectedRecipeId(recipeId);
+                  setIsRecipeModalOpen(true);
+                }}
+              />
             </CardContent>
           </Card>
         </div>

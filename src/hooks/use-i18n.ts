@@ -26,7 +26,7 @@ export function useI18n() {
   const currentLocale = mounted ? locale : 'en';
 
   // Memoize the translation function to ensure it uses the latest locale
-  const t = useCallback((key: string) => {
+  const t = useCallback((key: string, params?: Record<string, string | number>) => {
     // If not mounted yet, always use English to match server render
     if (!mounted) {
       const translation = translations[key];
@@ -34,7 +34,13 @@ export function useI18n() {
         console.warn(`Translation missing for key: ${key}`);
         return key;
       }
-      return translation.en;
+      let text = translation.en;
+      if (params) {
+        Object.entries(params).forEach(([paramKey, paramValue]) => {
+          text = text.replace(`{${paramKey}}`, String(paramValue));
+        });
+      }
+      return text;
     }
     // Use current locale from state
     const translation = translations[key];
@@ -42,7 +48,13 @@ export function useI18n() {
       console.warn(`Translation missing for key: ${key}`);
       return key;
     }
-    return translation[currentLocale] || translation.en;
+    let text = translation[currentLocale] || translation.en;
+    if (params) {
+      Object.entries(params).forEach(([paramKey, paramValue]) => {
+        text = text.replace(`{${paramKey}}`, String(paramValue));
+      });
+    }
+    return text;
   }, [mounted, currentLocale]);
 
   return {
