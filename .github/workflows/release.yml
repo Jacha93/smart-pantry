@@ -1,0 +1,114 @@
+name: Create GitHub Release
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tags
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine version
+        id: version
+        run: |
+          # Prüfe, ob ein Git Tag für den aktuellen Commit existiert
+          LATEST_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+          
+          if [ -n "$LATEST_TAG" ]; then
+            # Entferne 'v' Präfix falls vorhanden
+            VERSION=$(echo "$LATEST_TAG" | sed 's/^v//')
+            echo "Using version from Git tag: $LATEST_TAG ($VERSION)"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+            echo "use_tag=true" >> $GITHUB_OUTPUT
+          else
+            # Lese Version aus package.json
+            VERSION=$(jq -r .version package.json)
+            TAG="v$VERSION"
+            echo "Using version from package.json: $VERSION"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "tag=$TAG" >> $GITHUB_OUTPUT
+            echo "use_tag=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Git tag if not exists
+        if: steps.version.outputs.use_tag == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          # Konfiguriere Git für Tag-Push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Prüfe, ob Tag bereits existiert
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Creating tag $TAG for current commit"
+            git tag "$TAG"
+            git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git "$TAG"
+          else
+            echo "Tag $TAG already exists"
+          fi
+
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Versuche Release Notes aus CHANGELOG.md zu extrahieren
+          if [ -f CHANGELOG.md ]; then
+            # Suche nach dem entsprechenden Release-Eintrag
+            # Entferne 'v' Präfix für Suche
+            VERSION_SEARCH=$(echo "$VERSION" | sed 's/^v//')
+            
+            # Extrahiere den Changelog-Eintrag für diese Version
+            # Suche nach "## [version]" oder "## [vversion]"
+            CHANGELOG_CONTENT=$(awk "/^## \[${VERSION_SEARCH}\]/,/^## \[/" CHANGELOG.md | sed '$d' || awk "/^## \[v${VERSION_SEARCH}\]/,/^## \[/" CHANGELOG.md | sed '$d' || echo "")
+            
+            if [ -n "$CHANGELOG_CONTENT" ]; then
+              echo "Found changelog entry for version $VERSION_SEARCH"
+              echo "notes<<EOF" >> $GITHUB_OUTPUT
+              echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "No changelog entry found, using default notes"
+              echo "notes<<EOF" >> $GITHUB_OUTPUT
+              echo "## Release $TAG" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "CHANGELOG.md not found, using default notes"
+            echo "notes<<EOF" >> $GITHUB_OUTPUT
+            echo "## Release $TAG" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Automated release from main branch." >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: ${{ steps.changelog.outputs.notes }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true

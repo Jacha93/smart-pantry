@@ -93,3 +93,66 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  create-release-on-tag:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Extrahiere Version aus Tag (z.B. v1.0.0 -> 1.0.0)
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          # Versuche Release Notes aus CHANGELOG.md zu extrahieren
+          if [ -f CHANGELOG.md ]; then
+            # Extrahiere den Changelog-Eintrag für diese Version
+            CHANGELOG_CONTENT=$(awk "/^## \[${VERSION}\]/,/^## \[/" CHANGELOG.md | sed '$d' || awk "/^## \[v${VERSION}\]/,/^## \[/" CHANGELOG.md | sed '$d' || echo "")
+            
+            if [ -n "$CHANGELOG_CONTENT" ]; then
+              echo "Found changelog entry for version $VERSION"
+              echo "notes<<EOF" >> $GITHUB_OUTPUT
+              echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "No changelog entry found, using default notes"
+              echo "notes<<EOF" >> $GITHUB_OUTPUT
+              echo "## Release ${{ steps.version.outputs.tag }}" >> $GITHUB_OUTPUT
+              echo "" >> $GITHUB_OUTPUT
+              echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "CHANGELOG.md not found, using default notes"
+            echo "notes<<EOF" >> $GITHUB_OUTPUT
+            echo "## Release ${{ steps.version.outputs.tag }}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "Automated release from tag push." >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: ${{ steps.changelog.outputs.notes }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
