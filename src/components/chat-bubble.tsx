@@ -480,25 +480,10 @@ export function ChatBubble() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 rounded-full h-14 w-14 flex items-center justify-center transition-all duration-200 hover:scale-110"
-          style={{
-            background: 'rgba(26, 26, 26, 0.5)',
-            backdropFilter: 'blur(30px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(30px) saturate(200%)',
-            border: '1px solid rgba(255, 255, 255, 0.25)',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(6, 182, 212, 0.1) inset, 0 0 20px rgba(6, 182, 212, 0.15)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.35)';
-            e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(6, 182, 212, 0.2) inset, 0 0 30px rgba(6, 182, 212, 0.25)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.25)';
-            e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(6, 182, 212, 0.1) inset, 0 0 20px rgba(6, 182, 212, 0.15)';
-          }}
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-[#101014]/90 shadow-[0_14px_38px_rgba(0,0,0,0.42),0_0_0_1px_rgba(23,246,254,0.08)_inset] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#17f6fe]/35 hover:bg-[#111923] hover:shadow-[0_18px_48px_rgba(0,0,0,0.5),0_0_0_1px_rgba(23,246,254,0.18)_inset]"
           aria-label="Open chat"
         >
-          <MessageCircle className="h-6 w-6 text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" />
+          <MessageCircle className="h-6 w-6 text-primary" />
         </button>
       )}
 
@@ -506,7 +491,7 @@ export function ChatBubble() {
       {isOpen && (
         <Card 
           ref={chatWindowRef}
-          className={`fixed bottom-6 right-6 z-50 h-[600px] w-[400px] border border-white/10 shadow-2xl chat-bubble-container overflow-hidden ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
+          className={`fixed bottom-6 right-6 z-50 h-[600px] w-[400px] overflow-hidden border border-white/10 shadow-[0_24px_72px_rgba(0,0,0,0.52)] chat-bubble-container ${isAnimating ? 'chat-bubble-slide-up' : ''}`}
         >
           {/* Wrapper für Hintergrund + Content */}
           <div className="relative h-full w-full">

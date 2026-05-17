@@ -108,19 +108,16 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <Sidebar />
       </div>
-      
-      {/* Mobile Sidebar */}
+
       <div className="md:hidden">
         <MobileSidebar />
       </div>
-      
-      {/* Main Content with Sticky Footer */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        <main className="flex-1 max-w-7xl mx-auto w-full py-6 px-4 sm:px-6 lg:px-8 md:pt-6 pt-20">
+
+      <div className="flex min-h-screen flex-1 flex-col md:ml-64">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pt-20 sm:px-6 md:pt-6 lg:px-8">
           <Outlet />
         </main>
         <Footer />

@@ -7,7 +7,7 @@ import { GroceryTable } from '@/components/grocery-table';
 import { AdBlock } from '@/components/ad-block';
 import { useI18n } from '@/hooks/use-i18n';
 import { useUserPlan } from '@/hooks/use-user-plan';
-import { ChefHat } from 'lucide-react';
+import { ChefHat, PackageSearch } from 'lucide-react';
 import { recipesAPI } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -61,33 +61,40 @@ export default function GroceriesPage() {
   };
 
   return (
-    <div className="space-y-2 md:space-y-6 px-0.5 sm:px-0">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-foreground">{t('groceries.title')}</h1>
-          <p className="text-xs sm:text-base text-muted-foreground">{t('groceries.subtitle')}</p>
-        </div>
-        <div className="flex-shrink-0">
-          <AddGroceryDialog onGroceryAdded={handleGroceryAdded} />
+    <div className="space-y-4 md:space-y-6">
+      <div className="rounded-lg border border-white/10 bg-[#101014] p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase text-[#17f6fe]">Inventory</p>
+            <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">{t('groceries.title')}</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{t('groceries.subtitle')}</p>
+          </div>
+          <div className="flex-shrink-0">
+            <AddGroceryDialog onGroceryAdded={handleGroceryAdded} />
+          </div>
         </div>
       </div>
 
-      {/* CTA-Bereich für Rezeptvorschläge */}
-      <Card className="border-[#17f6fe]/20">
-        <CardContent className="p-2 sm:p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-xs sm:text-base">{t('groceries.findRecipes')}</h3>
-              <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5">
-                {t('groceries.findRecipesDesc')}
-              </p>
+      <Card className="border-[#17f6fe]/20 bg-[#17f6fe]/[0.055]">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border border-[#17f6fe]/25 bg-[#17f6fe]/10">
+                <PackageSearch className="h-5 w-5 text-[#17f6fe]" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold sm:text-base">{t('groceries.findRecipes')}</h3>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
+                  {t('groceries.findRecipesDesc')}
+                </p>
+              </div>
             </div>
             <Button 
               onClick={handleFindRecipes}
               disabled={isFindingRecipes}
-              className="flex items-center gap-1.5 sm:gap-2 h-8 sm:h-10 text-xs sm:text-base w-full sm:w-auto justify-center sm:justify-start"
+              className="w-full justify-center sm:w-auto"
             >
-              <ChefHat className="h-3 w-3 sm:h-4 sm:w-4" />
+              <ChefHat className="h-4 w-4" />
               {isFindingRecipes ? t('groceries.findingRecipes') : t('groceries.findRecipesButton')}
             </Button>
           </div>
@@ -95,18 +102,17 @@ export default function GroceriesPage() {
       </Card>
 
       <Card>
-        <CardHeader className="p-2 sm:p-6 pb-2 sm:pb-4">
-          <CardTitle className="text-base sm:text-xl">{t('groceries.inventory')}</CardTitle>
-          <CardDescription className="text-[10px] sm:text-sm">
+        <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
+          <CardTitle className="text-lg sm:text-xl">{t('groceries.inventory')}</CardTitle>
+          <CardDescription className="text-xs leading-5 sm:text-sm">
             {t('groceries.inventoryDesc')}
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-2 sm:p-6 pt-0">
+        <CardContent className="p-2 pt-0 sm:p-6 sm:pt-0">
           <GroceryTable key={refreshKey} onGroceryUpdated={handleGroceryUpdated} />
         </CardContent>
       </Card>
 
-      {/* Ad Block für Free Tier User */}
       <AdBlock 
         format="rectangle" 
         currentPlan={plan}

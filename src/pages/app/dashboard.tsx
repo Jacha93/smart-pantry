@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, ShoppingCart, Camera, ChefHat, TrendingUp, AlertTriangle, Calendar } from 'lucide-react';
-import { groceriesAPI, profileAPI } from '@/lib/api';
+import { Package, ShoppingCart, Camera, ChefHat, TrendingUp, AlertTriangle, ArrowRight } from 'lucide-react';
+import { groceriesAPI } from '@/lib/api';
 import { useI18n } from '@/hooks/use-i18n';
 import { toast } from 'sonner';
 
@@ -63,6 +63,7 @@ export default function DashboardPage() {
       description: t('groceries.subtitle'),
       link: '/app/groceries',
       color: 'text-[#17f6fe]',
+      tint: 'bg-[#17f6fe]/10 border-[#17f6fe]/20',
     },
     {
       icon: ShoppingCart,
@@ -70,6 +71,7 @@ export default function DashboardPage() {
       description: 'Verwalte deine Einkaufslisten',
       link: '/app/shopping-list',
       color: 'text-[#a10dfd]',
+      tint: 'bg-[#a10dfd]/10 border-[#a10dfd]/20',
     },
     {
       icon: Camera,
@@ -77,12 +79,45 @@ export default function DashboardPage() {
       description: 'Analysiere deinen Kühlschrank',
       link: '/app/fridge-analyzer',
       color: 'text-[#17f6fe]',
+      tint: 'bg-[#17f6fe]/10 border-[#17f6fe]/20',
     },
     {
       icon: ChefHat,
       title: t('nav.recipes'),
       description: 'Entdecke neue Rezepte',
       link: '/app/recipes',
+      color: 'text-[#a10dfd]',
+      tint: 'bg-[#a10dfd]/10 border-[#a10dfd]/20',
+    },
+  ];
+
+  const statCards = [
+    {
+      label: t('groceries.title'),
+      value: stats.totalGroceries,
+      detail: 'Gesamt im Inventar',
+      icon: Package,
+      color: 'text-[#17f6fe]',
+    },
+    {
+      label: 'Läuft bald ab',
+      value: stats.expiringSoon,
+      detail: 'In den nächsten 3 Tagen',
+      icon: AlertTriangle,
+      color: 'text-amber-300',
+    },
+    {
+      label: 'Niedriger Bestand',
+      value: stats.lowStock,
+      detail: 'Benötigt Nachschub',
+      icon: TrendingUp,
+      color: 'text-amber-300',
+    },
+    {
+      label: 'Rezepte',
+      value: stats.totalRecipes,
+      detail: 'Gespeicherte Rezepte',
+      icon: ChefHat,
       color: 'text-[#a10dfd]',
     },
   ];
@@ -100,71 +135,54 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Willkommen zurück! Hier ist eine Übersicht deiner Daten.</p>
+      <div className="rounded-lg border border-white/10 bg-[#101014] p-5 sm:p-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+          <div>
+            <p className="text-sm font-semibold uppercase text-[#17f6fe]">Kitchen overview</p>
+            <h1 className="mt-2 text-2xl font-semibold text-foreground sm:text-3xl">Dashboard</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Willkommen zurück. Deine wichtigsten Küchen-Signale sind hier kompakt zusammengefasst.
+            </p>
+          </div>
+          <Link to="/app/groceries">
+            <Button variant="outline">
+              Bestand prüfen
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Statistiken */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('groceries.title')}</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalGroceries}</div>
-            <p className="text-xs text-muted-foreground">Gesamt im Inventar</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Läuft bald ab</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">{stats.expiringSoon}</div>
-            <p className="text-xs text-muted-foreground">In den nächsten 3 Tagen</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Niedriger Bestand</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">{stats.lowStock}</div>
-            <p className="text-xs text-muted-foreground">Benötigt Nachschub</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rezepte</CardTitle>
-            <ChefHat className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalRecipes}</div>
-            <p className="text-xs text-muted-foreground">Gespeicherte Rezepte</p>
-          </CardContent>
-        </Card>
+        {statCards.map((stat) => (
+          <Card key={stat.label}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
+              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-semibold ${stat.color}`}>{stat.value}</div>
+              <p className="mt-1 text-xs text-muted-foreground">{stat.detail}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Quick Actions */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground mb-4">Schnellzugriff</h2>
+        <h2 className="mb-4 text-xl font-semibold text-foreground">Schnellzugriff</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {quickActions.map((action, index) => (
             <Link key={index} to={action.link}>
-              <Card className="hover:border-[#17f6fe]/50 transition-all duration-300 hover:shadow-lg cursor-pointer">
+              <Card className="group cursor-pointer">
                 <CardHeader>
-                  <div className={`w-12 h-12 rounded-xl bg-[#17f6fe]/10 flex items-center justify-center mb-2`}>
+                  <div className={`mb-5 flex h-11 w-11 items-center justify-center rounded-md border ${action.tint}`}>
                     <action.icon className={`h-6 w-6 ${action.color}`} />
                   </div>
                   <CardTitle className="text-lg">{action.title}</CardTitle>
                   <CardDescription>{action.description}</CardDescription>
+                  <div className="pt-3 text-sm font-semibold text-[#17f6fe] opacity-0 transition-opacity group-hover:opacity-100">
+                    Öffnen
+                  </div>
                 </CardHeader>
               </Card>
             </Link>

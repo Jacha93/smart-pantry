@@ -76,7 +76,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-          "relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-lg border border-white/10 bg-[rgba(30,30,30,0.95)] backdrop-blur-xl shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-100 data-[state=open]:duration-200 data-[state=closed]:duration-150",
+          "anchored-surface-motion relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-lg border border-white/10 bg-[#101014]/95 backdrop-blur-xl shadow-[0_18px_48px_rgba(0,0,0,0.42)]",
         className
       )}
       position={position}
@@ -119,7 +119,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-md py-2.5 pl-8 pr-2 text-sm text-foreground outline-none focus:bg-primary/20 focus:text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-white/5 transition-colors",
+      "relative flex w-full cursor-pointer select-none items-center rounded-md py-2.5 pl-8 pr-2 text-sm text-foreground outline-none focus:bg-[#a10dfd]/18 focus:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50 hover:bg-white/5 transition-colors",
       className
     )}
     {...props}

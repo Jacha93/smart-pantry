@@ -13,7 +13,7 @@ export function Footer() {
 
   return (
     <>
-      <footer className="border-t border-white/10 py-6 mt-auto w-full">
+      <footer className="mt-auto w-full border-t border-white/10 bg-[#0f0f13] py-6 shadow-[0_-18px_40px_rgba(0,0,0,0.22)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center space-x-3">
@@ -156,11 +156,28 @@ export function Footer() {
             <section>
               <h3 className="font-semibold text-foreground mb-2">{t('imprint.responsible.title')}</h3>
               <p>{t('imprint.responsible.content')}</p>
-              <p className="mt-2">
-                <strong>{t('imprint.developer')}:</strong> [Ihr Name]<br />
-                <strong>{t('imprint.email')}:</strong> [Ihre E-Mail-Adresse]<br />
-                <strong>{t('imprint.website')}:</strong> https://github.com/Jacha93/smart-pantry
-              </p>
+              <dl className="mt-3 grid gap-2 sm:grid-cols-[max-content_1fr]">
+                <dt className="font-semibold text-foreground">{t('imprint.developer')}:</dt>
+                <dd>Jakob Leibel</dd>
+                <dt className="font-semibold text-foreground">{t('imprint.email')}:</dt>
+                <dd>
+                  <a className="text-[#17f6fe] hover:text-[#4ff8ff] hover:underline" href="mailto:info@leibel.me">
+                    info@leibel.me
+                  </a>
+                </dd>
+                <dt className="font-semibold text-foreground">{t('imprint.website')}:</dt>
+                <dd>
+                  <a className="text-[#17f6fe] hover:text-[#4ff8ff] hover:underline" href="https://smartpantry.app" target="_blank" rel="noreferrer">
+                    https://smartpantry.app
+                  </a>
+                </dd>
+                <dt className="font-semibold text-foreground">{t('imprint.repository')}:</dt>
+                <dd>
+                  <a className="text-[#17f6fe] hover:text-[#4ff8ff] hover:underline" href="https://github.com/Jacha93/smart-pantry" target="_blank" rel="noreferrer">
+                    https://github.com/Jacha93/smart-pantry
+                  </a>
+                </dd>
+              </dl>
             </section>
 
             <section>
@@ -190,4 +207,3 @@ export function Footer() {
     </>
   );
 }
-

@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark Theme 2025 - Modern Color Palette */
+  /* Smart Pantry dark product palette */
   --background: #09090b;
   --foreground: #ffffff;
 
-  /* Surfaces - Liquid Glass */
-  --card: rgba(24, 24, 27, 0.6);
+  /* Surfaces */
+  --card: rgba(18, 18, 22, 0.92);
   --card-foreground: #ffffff;
-  --popover: rgba(24, 24, 27, 0.85);
+  --popover: rgba(20, 20, 24, 0.96);
   --popover-foreground: #ffffff;
 
   /* Primary - Vibrant Cyan */
@@ -17,11 +17,11 @@
   --primary-hover: #4ff8ff;
 
   /* Secondary */
-  --secondary: rgba(54, 54, 54, 0.6);
+  --secondary: rgba(38, 38, 43, 0.9);
   --secondary-foreground: #ffffff;
 
   /* Muted */
-  --muted: rgba(64, 64, 64, 0.4);
+  --muted: rgba(45, 45, 52, 0.72);
   --muted-foreground: #a1a1aa;
 
   /* Accent - Electric Purple */
@@ -53,20 +53,17 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Shadows for depth */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md:
-    0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg:
-    0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
-  --shadow-xl:
-    0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.6);
+  /* Shadows for restrained depth */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.42);
+  --shadow-xl: 0 28px 72px rgba(0, 0, 0, 0.5);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: Aptos, "Avenir Next", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
   --color-brand-accent: var(--brand-accent);
   --color-brand-accent-foreground: var(--brand-accent-foreground);
@@ -81,47 +78,44 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    linear-gradient(180deg, rgba(23, 246, 254, 0.035), transparent 28rem),
+    linear-gradient(135deg, rgba(161, 13, 253, 0.055), transparent 32rem),
+    var(--background);
   color: var(--foreground);
   font-family:
-    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+    Aptos, "Avenir Next", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   min-height: 100vh;
-  
-  /* Dotted Grid Pattern - Standard 20px */
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-attachment: fixed;
 }
 
-/* Dotted Grid Pattern - 24px für Landing Page */
 .dotted-grid-24 {
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-attachment: fixed;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
-/* Liquid Glass effect utility class */
 .glass {
   background: var(--popover);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-card {
-  background: rgba(26, 26, 26, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: linear-gradient(180deg, rgba(27, 27, 32, 0.92), rgba(15, 15, 19, 0.92));
+  backdrop-filter: blur(14px) saturate(145%);
+  -webkit-backdrop-filter: blur(14px) saturate(145%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 /* leibel.me Design Language Utilities */
 .glassmorphic {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(26, 26, 26, 0.5);
+  backdrop-filter: blur(12px) saturate(130%);
+  -webkit-backdrop-filter: blur(12px) saturate(130%);
+  background: rgba(20, 20, 24, 0.78);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -130,9 +124,9 @@ body {
 }
 
 .card-lift:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   border-color: rgba(23, 246, 254, 0.3);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(23, 246, 254, 0.1);
+  box-shadow: var(--shadow-lg), 0 0 0 1px rgba(23, 246, 254, 0.08);
 }
 
 .button-glow-primary {
@@ -143,47 +137,14 @@ body {
   box-shadow: 0 0 20px rgba(161, 13, 253, 0.4), 0 0 40px rgba(161, 13, 253, 0.2);
 }
 
-/* Viewport Glows - Fixed Position */
-.glow-top {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 400px;
-  background: radial-gradient(
-    ellipse 80% 50% at 50% -20%,
-    rgba(23, 246, 254, 0.12),
-    transparent
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-.glow-bottom {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 400px;
-  background: radial-gradient(
-    ellipse 80% 50% at 50% 120%,
-    rgba(161, 13, 253, 0.08),
-    transparent
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Radial glows for background accents */
 .bg-glow-cyan {
-  background: radial-gradient(circle at 0% 0%, rgba(23, 246, 254, 0.15), transparent 50%);
+  background: linear-gradient(135deg, rgba(23, 246, 254, 0.12), transparent 58%);
 }
 
 .bg-glow-purple {
-  background: radial-gradient(circle at 100% 100%, rgba(161, 13, 253, 0.15), transparent 50%);
+  background: linear-gradient(315deg, rgba(161, 13, 253, 0.12), transparent 58%);
 }
 
-/* Smooth transitions */
 * {
   transition-property:
     background-color, border-color, color, fill, stroke, opacity, box-shadow,
@@ -192,10 +153,167 @@ body {
   transition-duration: 150ms;
 }
 
+.app-overlay-motion[data-state="open"] {
+  animation: overlay-enter 160ms ease-out;
+}
+
+.app-overlay-motion[data-state="closed"] {
+  animation: overlay-exit 120ms ease-in;
+}
+
+.app-modal-motion {
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+}
+
+.app-modal-motion[data-state="open"] {
+  animation: modal-enter 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-modal-motion[data-state="closed"] {
+  animation: modal-exit 130ms ease-in;
+}
+
+.anchored-surface-motion {
+  transform-origin: var(--radix-popover-content-transform-origin, var(--radix-select-content-transform-origin, center));
+}
+
+.anchored-surface-motion[data-side="top"] {
+  --anchored-y: 6px;
+}
+
+.anchored-surface-motion[data-side="right"] {
+  --anchored-x: -6px;
+}
+
+.anchored-surface-motion[data-side="bottom"] {
+  --anchored-y: -6px;
+}
+
+.anchored-surface-motion[data-side="left"] {
+  --anchored-x: 6px;
+}
+
+.anchored-surface-motion[data-state="open"] {
+  animation: anchored-surface-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.anchored-surface-motion[data-state="closed"] {
+  animation: anchored-surface-exit 100ms ease-in;
+}
+
+.popover-surface-motion[data-state="open"] {
+  animation: popover-surface-enter 120ms ease-out;
+}
+
+.popover-surface-motion[data-state="closed"] {
+  animation: popover-surface-exit 90ms ease-in;
+}
+
+[data-radix-popper-content-wrapper] {
+  transition: none !important;
+}
+
+.local-menu-motion {
+  animation: local-menu-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: left bottom;
+}
+
+@keyframes overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes overlay-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-enter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes modal-exit {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.985);
+  }
+}
+
+@keyframes anchored-surface-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--anchored-x, 0), var(--anchored-y, 0), 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes anchored-surface-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(var(--anchored-x, 0), var(--anchored-y, 0), 0) scale(0.985);
+  }
+}
+
+@keyframes popover-surface-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popover-surface-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes local-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Chat Bubble Smooth Slide-Up Animation */
 @keyframes chat-slide-up {
   0% {
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(16px) scale(0.97);
     opacity: 0;
   }
   100% {
@@ -219,7 +337,7 @@ body {
 }
 
 .chat-bubble-slide-up {
-  animation: chat-slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: chat-slide-up 220ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-fill-mode: forwards;
 }
 
@@ -229,26 +347,23 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
-/* Fix für Radix UI Select/Popover - Verhindert sichtbare Positionierung */
-[data-radix-select-content],
-[data-radix-popover-content] {
-  /* Verhindere sichtbare Animation während initialer Positionierung */
-  animation: none !important;
-  transform: none !important;
-}
-
-/* Sanfte Fade-In Animation nur nach Positionierung */
-[data-radix-select-content][data-state="open"],
-[data-radix-popover-content][data-state="open"] {
-  animation: fadeIn 150ms ease-in-out;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
   }
 }
 
