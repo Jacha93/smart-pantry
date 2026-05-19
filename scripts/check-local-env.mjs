@@ -31,9 +31,15 @@ function parseEnv(path) {
 }
 
 function assertRequired(values, keys, path) {
-  const missing = keys.filter((key) => !values.get(key));
+  const missing = keys.filter((key) => !values.has(key));
+  const empty = keys.filter((key) => values.has(key) && !values.get(key));
+
   if (missing.length) {
     throw new Error(`${path} is missing: ${missing.join(', ')}`);
+  }
+
+  if (empty.length) {
+    throw new Error(`${path} has empty values for: ${empty.join(', ')}`);
   }
 }
 
