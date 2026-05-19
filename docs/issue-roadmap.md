@@ -27,7 +27,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | #13 | hreflang, canonical, x-default locale model | Pending |
 | #14 | Public legal and trust pages | Pending |
 | #15 | Structured data | Pending |
-| #17 | robots.txt, sitemap.xml, index rules | Pending |
+| #17 | robots.txt, sitemap.xml, index rules | Transitional `robots.txt`, `sitemap.xml`, and client-side noindex for `/app` routes added; Astro locale sitemap still pending |
 | #24 | Content architecture for feature, use-case, and blog pages | Pending |
 
 ## Phase 4: Ads, Consent, Analytics, and Performance
@@ -63,6 +63,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | #25 | API versioning, OpenAPI reuse, deep-link separation, web-vs-mobile ads documented | Generated contracts and mobile-specific tests |
 | #26 | Staging surfaces, redirect matrix, smoke tests, rollback scopes documented | Executable redirect checks and deployed staging verification |
 | #16 | Route pages, chat, adblocker detection, React, markdown, motion, and form dependencies are split into separate chunks; `npm run build` has no chunk-size warning | Formal budget thresholds, CI checks, Lighthouse/PageSpeed workflow, image/font budget |
+| #17 | Current Vite deploy serves `robots.txt` and `sitemap.xml`; `/app` routes receive `noindex,nofollow` in the document head after hydration | Astro `/de` and `/en` locale sitemap, canonical/hreflang, server-level private route headers |
 
 ## Next Code Slice
 
