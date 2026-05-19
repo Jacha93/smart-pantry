@@ -107,6 +107,10 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
    - Frontend: http://localhost:5173 (Vite Dev Server)
    - Backend: http://localhost:3001
 
+Für echte lokale End-to-End-Tests mit Supabase, Backend und mehreren Testusern siehe [docs/local-testing.md](./docs/local-testing.md).
+
+Die geplante Trennung von Marketing, Web-App und API ist in [docs/adr/0001-monorepo-split-domain-strategy.md](./docs/adr/0001-monorepo-split-domain-strategy.md) dokumentiert. Der aktuelle Issue-Fahrplan steht in [docs/issue-roadmap.md](./docs/issue-roadmap.md).
+
 ### Lokale Tests ohne Backend oder Datenbank
 
 Wenn du das Projekt auf einem Entwicklungsrechner ohne Supabase ausführst, kannst du den **Mock-Auth-Modus** aktivieren:
