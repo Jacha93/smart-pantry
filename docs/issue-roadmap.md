@@ -7,7 +7,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | Issue | Work item | Status |
 | --- | --- | --- |
 | #8 | Architecture ADR for monorepo split and domain strategy | Started in `docs/adr/0001-monorepo-split-domain-strategy.md` |
-| #9 | Repository structure, scripts, shared boundaries | Target documented; root scripts expose `dev:web`, `build:web`, `preview:web`, and `dev:api`; code move still pending |
+| #9 | Repository structure, scripts, shared boundaries | Target documented; root scripts expose `dev:web`, `build:web`, `preview:web`, `dev:api`, local env check, and API smoke test; code move still pending |
 | #19 | Domains, reverse proxy, CORS, environment config | Initial concept documented; deploy config pending |
 | #26 | Rollout, redirects, staging, rollback | Operational checklist started in `docs/operations/rollout-staging-rollback.md`; redirect tests pending |
 
@@ -58,7 +58,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | Issue | Covered now | Still missing |
 | --- | --- | --- |
 | #8 | ADR exists with domain, build, deployment, SEO, migration, rollback, and risk boundaries | Final review after first code move |
-| #9 | Target tree, migration order, and root-level deployable scripts documented | Actual `apps/web`, `apps/marketing`, and package/workspace split |
+| #9 | Target tree, migration order, root-level deployable scripts, local env check, and API smoke test documented | Actual `apps/web`, `apps/marketing`, and package/workspace split |
 | #19 | Domain, local origins, API origin concept, auth/indexing boundaries documented | Concrete proxy/CORS deployment config |
 | #25 | API versioning, OpenAPI reuse, deep-link separation, web-vs-mobile ads documented | Generated contracts and mobile-specific tests |
 | #26 | Staging surfaces, redirect matrix, smoke tests, rollback scopes documented | Executable redirect checks and deployed staging verification |
@@ -72,6 +72,6 @@ The current safe implementation slice is issue #9:
 
 1. Root scripts name the future deployables while still pointing to the current working app.
 2. Placeholder directories are intentionally deferred until they have a build owner.
-3. Verify `npm run build` and, when real environment values are available, run the local smoke test from `docs/local-testing.md`.
+3. Verify `npm run build` and, when real environment values are available, run `npm run check:local-env` and `npm run smoke:api`.
 
 The `apps/web` move from issue #10 should happen only after this script layer is committed, because it changes import paths, Vite config, Tailwind inputs, Docker paths, and CI assumptions at the same time.

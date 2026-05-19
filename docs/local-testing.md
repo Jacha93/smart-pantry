@@ -113,6 +113,14 @@ Expected response:
 {"status":"ok"}
 ```
 
+Automated API smoke test after `npm run check:local-env` and `npm run dev:api`:
+
+```bash
+npm run smoke:api
+```
+
+The smoke test creates two unique temporary users, checks auth, profile, groceries, saved recipes, shopping lists, and user-data isolation, then deletes the records it created. The user accounts remain in the test database so auth/token behavior stays auditable.
+
 If the backend starts but frontend requests fail, open the browser developer tools and verify that requests go to `/api/...` on `localhost:5173` or directly to `http://127.0.0.1:3001`, depending on the code path being tested.
 
 ## Test Users
@@ -141,7 +149,9 @@ Test both users independently:
 
 Run this before pushing issue work:
 
+- `npm run check:local-env` passes.
 - Backend `/health` returns `{"status":"ok"}`.
+- `npm run smoke:api` passes.
 - Frontend loads at `http://localhost:5173`.
 - Register works with `VITE_USE_MOCK_AUTH=false`.
 - Login returns access and refresh tokens.
