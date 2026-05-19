@@ -41,6 +41,8 @@ SPOONACULAR_API_KEY=
 
 For image analysis or recipe API testing, fill `GEMINI_API_KEY` and `SPOONACULAR_API_KEY`. For inventory, shopping list, auth, profile, and most app smoke tests they can remain empty.
 
+Replace every placeholder literally. If `DATABASE_URL` still contains `<SUPABASE_PROJECT_REF>`, the backend can start but registration/login will fail when it tries to resolve the database host.
+
 Generate `JWT_SECRET` locally, for example:
 
 ```bash
@@ -72,13 +74,14 @@ Install dependencies once:
 ```bash
 npm install
 cd backend_python
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 cd ..
 ```
 
 Run backend and frontend together:
 
 ```bash
+npm run check:local-env
 npm run dev:all
 ```
 

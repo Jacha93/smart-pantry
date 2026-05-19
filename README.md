@@ -61,7 +61,7 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
 3. **Backend-Abhängigkeiten installieren**
    ```bash
    cd backend_python
-   pip install -r requirements.txt
+   python3 -m pip install -r requirements.txt
    cd ..
    ```
 
@@ -98,7 +98,7 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
    ```bash
    # Terminal 1: Backend
    cd backend_python
-   python -m uvicorn app.main:app --reload --port 3001
+   python3 -m uvicorn app.main:app --reload --port 3001
 
    # Terminal 2: Frontend
    npm run dev
