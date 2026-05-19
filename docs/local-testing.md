@@ -43,7 +43,7 @@ For image analysis or recipe API testing, fill `GEMINI_API_KEY` and `SPOONACULAR
 
 Replace every placeholder literally. If `DATABASE_URL` still contains `<SUPABASE_PROJECT_REF>`, the backend can start but registration/login will fail when it tries to resolve the database host.
 
-If `npm run check:local-env` says the `DATABASE_URL` host does not resolve, copy the current connection string from Supabase again. Some Supabase projects require the pooler connection string instead of the direct `db.<project-ref>.supabase.co` host on local networks. Keep the URL `postgresql://...` and URL-encode special characters in the password.
+If `npm run check:local-env` says the `DATABASE_URL` host does not resolve, copy the current connection string from Supabase again. Some Supabase projects require the Session Pooler connection string instead of the direct `db.<project-ref>.supabase.co` host on local networks. `postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password.
 
 Generate `JWT_SECRET` locally, for example:
 

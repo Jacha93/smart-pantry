@@ -57,8 +57,8 @@ async function assertBackend(values) {
   const jwtSecret = values.get('JWT_SECRET') || '';
   let parsedDatabaseUrl;
 
-  if (!databaseUrl.startsWith('postgresql://')) {
-    throw new Error('backend_python/.env DATABASE_URL must start with postgresql://');
+  if (!databaseUrl.startsWith('postgresql://') && !databaseUrl.startsWith('postgres://')) {
+    throw new Error('backend_python/.env DATABASE_URL must start with postgresql:// or postgres://');
   }
 
   try {
