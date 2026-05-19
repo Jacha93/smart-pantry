@@ -67,7 +67,7 @@ The database must contain the tables expected by `backend_python/app/models.py`:
 - `ShoppingList`
 - `ShoppingListItem`
 
-The table names are case sensitive. If the schema is missing, apply the existing project schema from the known Smart Pantry database backup or recreate it from `database-dumps/smart_pantry_dbdiagram_20261008_171021.dbml` before testing user flows.
+The table names are case sensitive. If the schema is missing in a disposable/staging Supabase database, apply `database-dumps/smart_pantry_schema.sql`. The older `database-dumps/smart_pantry_dbdiagram_20261008_171021.dbml` is useful for visualization, but the SQL file follows the current FastAPI/SQLModel backend more closely.
 
 ## Start Commands
 
