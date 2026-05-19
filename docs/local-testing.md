@@ -85,12 +85,11 @@ npm run dev:all
 Or run them separately:
 
 ```bash
-cd backend_python
-python -m uvicorn app.main:app --reload --port 3001
+npm run dev:api
 ```
 
 ```bash
-npm run dev
+npm run dev:web
 ```
 
 Open the web app at:

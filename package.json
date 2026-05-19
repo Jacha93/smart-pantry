@@ -3,13 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "npm run dev:web",
+    "build": "npm run build:web",
+    "preview": "npm run preview:web",
+    "dev:web": "vite --host",
+    "build:web": "vite build",
+    "preview:web": "vite preview",
+    "dev:api": "cd backend_python && python -m uvicorn app.main:app --reload --port 3001",
     "lint": "eslint",
     "clean": "rm -rf dist .next",
     "dev:clean": "npm run clean && npm run dev",
-    "dev:all": "concurrently \"npm run dev\" \"cd backend_python && python -m uvicorn app.main:app --reload\""
+    "dev:all": "concurrently \"npm run dev:web\" \"npm run dev:api\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
