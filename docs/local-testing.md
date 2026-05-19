@@ -84,6 +84,7 @@ Run backend and frontend together:
 
 ```bash
 npm run check:local-env
+npm run check:db-schema
 npm run dev:all
 ```
 
@@ -115,7 +116,7 @@ Expected response:
 {"status":"ok"}
 ```
 
-Automated API smoke test after `npm run check:local-env` and `npm run dev:api`:
+Automated API smoke test after `npm run check:local-env`, `npm run check:db-schema`, and `npm run dev:api`:
 
 ```bash
 npm run smoke:api
@@ -152,6 +153,7 @@ Test both users independently:
 Run this before pushing issue work:
 
 - `npm run check:local-env` passes.
+- `npm run check:db-schema` passes.
 - Backend `/health` returns `{"status":"ok"}`.
 - `npm run smoke:api` passes.
 - Frontend loads at `http://localhost:5173`.
