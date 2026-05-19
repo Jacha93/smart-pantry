@@ -1,8 +1,14 @@
+import { lazy, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
-import { ChatBubble } from '@/components/chat-bubble';
-import { AdBlockerDetector } from '@/components/adblocker-detector';
 import '../styles/globals.css';
+
+const ChatBubble = lazy(() =>
+  import('@/components/chat-bubble').then((module) => ({ default: module.ChatBubble }))
+);
+const AdBlockerDetector = lazy(() =>
+  import('@/components/adblocker-detector').then((module) => ({ default: module.AdBlockerDetector }))
+);
 
 export function RootLayout() {
   return (
@@ -13,8 +19,10 @@ export function RootLayout() {
       
       <Outlet />
       <Toaster />
-      <ChatBubble />
-      <AdBlockerDetector />
+      <Suspense fallback={null}>
+        <ChatBubble />
+        <AdBlockerDetector />
+      </Suspense>
     </>
   );
 }

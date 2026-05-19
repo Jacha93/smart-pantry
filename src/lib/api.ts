@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosHeaders, AxiosRequestConfig } from 'axios';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from './storage-keys';
 import { auth } from './auth';
 
@@ -74,18 +74,17 @@ api.interceptors.request.use((config) => {
   // Token IMMER neu aus localStorage lesen (nicht cached)
   const token = getStoredToken(ACCESS_TOKEN_KEY);
   
-  // Stelle sicher, dass headers existiert
-  if (!config.headers) {
-    config.headers = {};
-  }
+  const headers = AxiosHeaders.from(config.headers);
   
   // Setze Authorization-Header wenn Token vorhanden
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    headers.set('Authorization', `Bearer ${token}`);
   } else {
     // Entferne Authorization-Header wenn kein Token vorhanden
-    delete config.headers.Authorization;
+    headers.delete('Authorization');
   }
+
+  config.headers = headers;
   
   // Erweiterte Debug-Logs NUR in Development
   // In Production: Keine Token-Informationen loggen
@@ -472,4 +471,3 @@ export const chatAPI = {
   createIssue: (title: string, body: string, labels: string[] = [], isAuthenticated: boolean = false) =>
     api.post('/chat/create-issue', { title, body, labels, is_authenticated: isAuthenticated }),
 };
-

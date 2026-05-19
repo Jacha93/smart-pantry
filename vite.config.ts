@@ -43,5 +43,34 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) {
+            return;
+          }
+
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router-dom)[\\/]/.test(id)) {
+            return 'vendor-react';
+          }
+
+          if (/[\\/]node_modules[\\/](i18next|react-i18next)[\\/]/.test(id)) {
+            return 'vendor-i18n';
+          }
+
+          if (/[\\/]node_modules[\\/](react-hook-form|@hookform|zod)[\\/]/.test(id)) {
+            return 'vendor-forms';
+          }
+
+          if (/[\\/]node_modules[\\/](react-markdown|remark-gfm|unified|micromark|mdast-util|hast-util)[\\/]/.test(id)) {
+            return 'vendor-markdown';
+          }
+
+          if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) {
+            return 'vendor-motion';
+          }
+        },
+      },
+    },
   },
 });

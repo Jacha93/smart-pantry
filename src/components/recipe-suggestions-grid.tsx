@@ -10,6 +10,7 @@ import { useUserPlan } from '@/hooks/use-user-plan';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 
 interface Recipe {
   id: number;
@@ -68,7 +69,7 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
     }
   };
 
-  const itemAnim = {
+  const itemAnim: Variants = {
     hidden: { opacity: 0, y: 10 },
     show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] } }
   };

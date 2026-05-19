@@ -34,7 +34,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 
 | Issue | Work item | Status |
 | --- | --- | --- |
-| #16 | Performance and Core Web Vitals budgets | Pending |
+| #16 | Performance and Core Web Vitals budgets | Initial route-level code splitting and Vite manual chunks added; formal budgets/CI pending |
 | #20 | AdSense readiness, certified CMP, consent mode | Pending |
 | #21 | Marketing ad placements | Pending |
 | #22 | App ad slots for free users and paid-user suppression | Pending |
@@ -62,6 +62,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | #19 | Domain, local origins, API origin concept, auth/indexing boundaries documented | Concrete proxy/CORS deployment config |
 | #25 | API versioning, OpenAPI reuse, deep-link separation, web-vs-mobile ads documented | Generated contracts and mobile-specific tests |
 | #26 | Staging surfaces, redirect matrix, smoke tests, rollback scopes documented | Executable redirect checks and deployed staging verification |
+| #16 | Route pages, chat, adblocker detection, React, markdown, motion, and form dependencies are split into separate chunks; `npm run build` has no chunk-size warning | Formal budget thresholds, CI checks, Lighthouse/PageSpeed workflow, image/font budget |
 
 ## Next Code Slice
 
