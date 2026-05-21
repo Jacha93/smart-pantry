@@ -1,6 +1,6 @@
 # GitHub Issue Roadmap
 
-Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
+Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 
 ## Phase 1: Stabilize Decisions and Local Testing
 
@@ -70,10 +70,12 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 
 ## Next Code Slice
 
-The current safe implementation slice is issue #9:
+The current blocker for end-to-end local testing is the Supabase database URL in `backend_python/.env`:
 
-1. Root scripts name the future deployables while still pointing to the current working app.
-2. Placeholder directories are intentionally deferred until they have a build owner.
-3. Verify `npm run build` and, when real environment values are available, run `npm run check:local-env` and `npm run smoke:api`.
+1. Replace the direct `db.<project-ref>.supabase.co` URL with the Supabase Session Pooler URL.
+2. Run `npm run check:local-env`.
+3. Run `npm run check:db-schema`; apply `database-dumps/smart_pantry_schema.sql` to the disposable/staging Supabase database if tables are missing.
+4. Run `npm run dev:api`, then `npm run smoke:api`.
+5. Start `npm run dev:web` and complete the browser smoke checklist before pushing.
 
-The `apps/web` move from issue #10 should happen only after this script layer is committed, because it changes import paths, Vite config, Tailwind inputs, Docker paths, and CI assumptions at the same time.
+The `apps/web` move from issue #10 should happen only after a real backend smoke test passes, because it changes import paths, Vite config, Tailwind inputs, Docker paths, and CI assumptions at the same time.

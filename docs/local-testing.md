@@ -28,8 +28,10 @@ VITE_ADSENSE_AD_SLOT_VERTICAL=
 
 ### `backend_python/.env`
 
+Prefer the Supabase Session Pooler URL for local testing unless you know your network can reach the direct IPv6 database host:
+
 ```env
-DATABASE_URL=postgresql://postgres:<SUPABASE_DB_PASSWORD>@db.<SUPABASE_PROJECT_REF>.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres.<SUPABASE_PROJECT_REF>:<SUPABASE_DB_PASSWORD>@aws-0-<SUPABASE_REGION>.pooler.supabase.com:5432/postgres
 JWT_SECRET=<AT_LEAST_32_RANDOM_CHARACTERS>
 ENVIRONMENT=development
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
@@ -43,7 +45,7 @@ For image analysis or recipe API testing, fill `GEMINI_API_KEY` and `SPOONACULAR
 
 Replace every placeholder literally. If `DATABASE_URL` still contains `<SUPABASE_PROJECT_REF>`, the backend can start but registration/login will fail when it tries to resolve the database host.
 
-If `npm run check:local-env` says the `DATABASE_URL` host does not resolve, copy the current connection string from Supabase again. Some Supabase projects require the Session Pooler connection string instead of the direct `db.<project-ref>.supabase.co` host on local networks. `postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password.
+If `npm run check:local-env` says the `DATABASE_URL` host does not resolve, do not keep using the direct host form `db.<project-ref>.supabase.co`. Copy the Session Pooler connection string from Supabase instead. `postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password.
 
 Generate `JWT_SECRET` locally, for example:
 
