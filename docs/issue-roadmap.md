@@ -38,7 +38,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #20 | AdSense readiness, certified CMP, consent mode | Pending |
 | #21 | Marketing ad placements | Pending |
 | #22 | App ad slots for free users and paid-user suppression | Pending |
-| #23 | Analytics, Search Console, AdSense monitoring, SEO QA | Pending |
+| #23 | Analytics, Search Console, AdSense monitoring, SEO QA | Transitional `check:seo` gate added for robots, sitemap, canonical, x-default, and JSON-LD; analytics/Search Console setup pending |
 
 ## Phase 5: Mobile Readiness
 
@@ -67,6 +67,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #15 | Current Vite shell exposes conservative Organization, WebSite, and SoftwareApplication JSON-LD without ratings/review claims | Locale-specific JSON-LD, BreadcrumbList, schema validator run, central typed schema data |
 | #14 | Legal pages are directly routable and footer links point to real URLs in the active locale | Astro static legal pages, crawlable locale-specific metadata, legal review of ads/consent text |
 | #13 | Current Vite shell keeps private app routes noindexed, clears canonicals on private routes, and emits canonical/x-default/locale alternates for the public legal routes | Real `/de` and `/en` marketing routes, server-rendered head output, redirect matrix, final x-default strategy |
+| #23 | `npm run check:seo` validates robots, sitemap public URLs, canonical root, x-default root alternate, and core JSON-LD graph in CI | Search Console, analytics events, AdSense monitoring, rendered-route SEO validation after Astro split |
 
 ## Next Code Slice
 

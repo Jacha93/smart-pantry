@@ -30,6 +30,9 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Check SEO surface
+        run: npm run check:seo
+
       - name: Build web
         run: npm run build:web
 
