@@ -6,6 +6,8 @@ This guide is the current source of truth for testing the web app locally with r
 
 Create or update these two local files. Do not commit them.
 
+If the old Supabase project was deleted, ignore every previous `db.<project-ref>.supabase.co` value and create a fresh disposable/staging Supabase project first. The local smoke tests need a live Postgres database with the Smart Pantry schema; the app does not depend on the deleted project once the new `DATABASE_URL` is in place.
+
 ### Root `.env`
 
 ```env
@@ -58,6 +60,14 @@ Never reuse production secrets for local testing.
 ## Supabase Requirements
 
 Use a disposable Supabase project or a staging database, not production.
+
+For a new Supabase project:
+
+1. Create the project and save its database password locally.
+2. In Supabase, open the database connection settings and copy the Session Pooler connection string.
+3. Put that value into `backend_python/.env` as `DATABASE_URL`; URL-encode special characters in the password.
+4. Open the SQL editor and run `database-dumps/smart_pantry_schema.sql`.
+5. Run `npm run check:local-env` and `npm run check:db-schema`.
 
 The database must contain the tables expected by `backend_python/app/models.py`:
 

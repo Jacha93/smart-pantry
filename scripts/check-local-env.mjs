@@ -74,7 +74,12 @@ async function assertBackend(values) {
   try {
     await lookup(parsedDatabaseUrl.hostname);
   } catch {
-    throw new Error(`backend_python/.env DATABASE_URL host does not resolve: ${parsedDatabaseUrl.hostname}`);
+    const directSupabaseHostPattern = /^db\.[^.]+\.supabase\.co$/;
+    const hint = directSupabaseHostPattern.test(parsedDatabaseUrl.hostname)
+      ? ' The Supabase project may be deleted or the direct database host may be unreachable locally; create/select a staging Supabase project and use its Session Pooler URL.'
+      : '';
+
+    throw new Error(`backend_python/.env DATABASE_URL host does not resolve: ${parsedDatabaseUrl.hostname}.${hint}`);
   }
 
   if (jwtSecret.length < 32) {

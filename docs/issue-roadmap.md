@@ -58,7 +58,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | Issue | Covered now | Still missing |
 | --- | --- | --- |
 | #8 | ADR exists with domain, build, deployment, SEO, migration, rollback, and risk boundaries | Final review after first code move |
-| #9 | Target tree, migration order, root-level deployable scripts, local env check, and API smoke test documented | Actual `apps/web`, `apps/marketing`, and package/workspace split |
+| #9 | Target tree, migration order, root-level deployable scripts, local env check, API smoke test, and new Supabase project bootstrap path documented | Actual `apps/web`, `apps/marketing`, and package/workspace split |
 | #19 | Domain, local origins, API origin concept, auth/indexing boundaries documented | Concrete proxy/CORS deployment config |
 | #25 | API versioning, OpenAPI reuse, deep-link separation, web-vs-mobile ads documented | Generated contracts and mobile-specific tests |
 | #26 | Staging surfaces, redirect matrix, smoke tests, rollback scopes documented | Executable redirect checks and deployed staging verification |
@@ -70,12 +70,13 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 
 ## Next Code Slice
 
-The current blocker for end-to-end local testing is the Supabase database URL in `backend_python/.env`:
+The current blocker for end-to-end local testing is that the previous Supabase project was deleted:
 
-1. Replace the direct `db.<project-ref>.supabase.co` URL with the Supabase Session Pooler URL.
-2. Run `npm run check:local-env`.
-3. Run `npm run check:db-schema`; apply `database-dumps/smart_pantry_schema.sql` to the disposable/staging Supabase database if tables are missing.
-4. Run `npm run dev:api`, then `npm run smoke:api`.
-5. Start `npm run dev:web` and complete the browser smoke checklist before pushing.
+1. Create a new disposable/staging Supabase project.
+2. Put the new Session Pooler URL into `backend_python/.env` as `DATABASE_URL`.
+3. Apply `database-dumps/smart_pantry_schema.sql` in the new project's SQL editor.
+4. Run `npm run check:local-env` and `npm run check:db-schema`.
+5. Run `npm run dev:api`, then `npm run smoke:api`.
+6. Start `npm run dev:web` and complete the browser smoke checklist before pushing.
 
 The `apps/web` move from issue #10 should happen only after a real backend smoke test passes, because it changes import paths, Vite config, Tailwind inputs, Docker paths, and CI assumptions at the same time.
