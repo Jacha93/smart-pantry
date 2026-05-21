@@ -34,7 +34,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 
 | Issue | Work item | Status |
 | --- | --- | --- |
-| #16 | Performance and Core Web Vitals budgets | Initial route-level code splitting and Vite manual chunks added; formal budgets/CI pending |
+| #16 | Performance and Core Web Vitals budgets | Initial route-level code splitting, Vite manual chunks, `budget:web`, and web quality CI added; Lighthouse/PageSpeed pending |
 | #20 | AdSense readiness, certified CMP, consent mode | Pending |
 | #21 | Marketing ad placements | Pending |
 | #22 | App ad slots for free users and paid-user suppression | Pending |
@@ -62,7 +62,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #19 | Domain, local origins, API origin concept, auth/indexing boundaries documented | Concrete proxy/CORS deployment config |
 | #25 | API versioning, OpenAPI reuse, deep-link separation, web-vs-mobile ads documented | Generated contracts and mobile-specific tests |
 | #26 | Staging surfaces, redirect matrix, smoke tests, rollback scopes documented | Executable redirect checks and deployed staging verification |
-| #16 | Route pages, chat, adblocker detection, React, markdown, motion, and form dependencies are split into separate chunks; `npm run build` has no chunk-size warning | Formal budget thresholds, CI checks, Lighthouse/PageSpeed workflow, image/font budget |
+| #16 | Route pages, chat, adblocker detection, React, markdown, motion, and form dependencies are split into separate chunks; `npm run build` has no chunk-size warning; `npm run budget:web` enforces JS/CSS gzip budgets in CI | Lighthouse/PageSpeed workflow, image/font budget, separate marketing/app budgets after the split |
 | #17 | Current Vite deploy serves `robots.txt` and `sitemap.xml`; `/app` routes receive `noindex,nofollow` in the document head after hydration | Astro `/de` and `/en` locale sitemap, canonical/hreflang, server-level private route headers |
 | #15 | Current Vite shell exposes conservative Organization, WebSite, and SoftwareApplication JSON-LD without ratings/review claims | Locale-specific JSON-LD, BreadcrumbList, schema validator run, central typed schema data |
 | #14 | Legal pages are directly routable and footer links point to real URLs in the active locale | Astro static legal pages, crawlable locale-specific metadata, legal review of ads/consent text |

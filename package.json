@@ -8,6 +8,7 @@
     "preview": "npm run preview:web",
     "dev:web": "vite --host",
     "build:web": "vite build",
+    "budget:web": "node scripts/check-build-budget.mjs",
     "preview:web": "vite preview",
     "dev:api": "cd backend_python && python3 -m uvicorn app.main:app --reload --port 3001",
     "check:local-env": "node scripts/check-local-env.mjs",
