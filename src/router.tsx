@@ -8,6 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 const LandingPage = lazy(() => import('./pages/index'));
 const LoginPage = lazy(() => import('./pages/login'));
 const RegisterPage = lazy(() => import('./pages/register'));
+const LegalPage = lazy(() => import('./pages/legal'));
 const DashboardPage = lazy(() => import('./pages/app/dashboard'));
 const GroceriesPage = lazy(() => import('./pages/groceries'));
 const ShoppingListPage = lazy(() => import('./pages/shopping-list'));
@@ -45,6 +46,22 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: lazyPage(<RegisterPage />),
+      },
+      {
+        path: 'de/datenschutz',
+        element: lazyPage(<LegalPage />),
+      },
+      {
+        path: 'de/impressum',
+        element: lazyPage(<LegalPage />),
+      },
+      {
+        path: 'en/privacy',
+        element: lazyPage(<LegalPage />),
+      },
+      {
+        path: 'en/legal-notice',
+        element: lazyPage(<LegalPage />),
       },
       {
         path: 'app',

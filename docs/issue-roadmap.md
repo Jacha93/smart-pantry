@@ -25,7 +25,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | Issue | Work item | Status |
 | --- | --- | --- |
 | #13 | hreflang, canonical, x-default locale model | Pending |
-| #14 | Public legal and trust pages | Pending |
+| #14 | Public legal and trust pages | Transitional Vite routes added for `/de/datenschutz`, `/de/impressum`, `/en/privacy`, and `/en/legal-notice`; Astro/legal metadata still pending |
 | #15 | Structured data | Basic Organization, WebSite, and SoftwareApplication JSON-LD added to current Vite shell; locale-specific Astro output and breadcrumbs pending |
 | #17 | robots.txt, sitemap.xml, index rules | Transitional `robots.txt`, `sitemap.xml`, and client-side noindex for `/app` routes added; Astro locale sitemap still pending |
 | #24 | Content architecture for feature, use-case, and blog pages | Pending |
@@ -65,6 +65,7 @@ Open issues read on 2026-05-19 from `jacha93/smart-pantry`.
 | #16 | Route pages, chat, adblocker detection, React, markdown, motion, and form dependencies are split into separate chunks; `npm run build` has no chunk-size warning | Formal budget thresholds, CI checks, Lighthouse/PageSpeed workflow, image/font budget |
 | #17 | Current Vite deploy serves `robots.txt` and `sitemap.xml`; `/app` routes receive `noindex,nofollow` in the document head after hydration | Astro `/de` and `/en` locale sitemap, canonical/hreflang, server-level private route headers |
 | #15 | Current Vite shell exposes conservative Organization, WebSite, and SoftwareApplication JSON-LD without ratings/review claims | Locale-specific JSON-LD, BreadcrumbList, schema validator run, central typed schema data |
+| #14 | Legal pages are directly routable and footer links point to real URLs in the active locale | Astro static legal pages, crawlable locale-specific metadata, legal review of ads/consent text |
 
 ## Next Code Slice
 
