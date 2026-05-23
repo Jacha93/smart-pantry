@@ -61,18 +61,18 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
 3. **Backend-Abhängigkeiten installieren**
    ```bash
    cd backend_python
-   pip install -r requirements.txt
+   python3 -m pip install -r requirements.txt
    cd ..
    ```
 
 4. **Supabase Setup**
    - Erstelle ein Projekt auf [Supabase](https://supabase.com)
-   - Kopiere die Connection String (DATABASE_URL) aus den Project Settings
-   - Die URL sieht aus wie: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`
+   - Kopiere die Session Pooler Connection String (DATABASE_URL) aus den Project Settings
+   - Die URL sieht aus wie: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[POOLER_REGION].pooler.supabase.com:5432/postgres`
 
 5. **Backend-Umgebungsvariablen setzen (`backend_python/.env`)**
    ```env
-   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
+   DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[POOLER_REGION].pooler.supabase.com:5432/postgres
    JWT_SECRET=CHANGE_ME_JWT_SECRET
    GEMINI_API_KEY=YOUR_GEMINI_API_KEY
    SPOONACULAR_API_KEY=YOUR_SPOONACULAR_API_KEY
@@ -98,7 +98,7 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
    ```bash
    # Terminal 1: Backend
    cd backend_python
-   python -m uvicorn app.main:app --reload --port 3001
+   python3 -m uvicorn app.main:app --reload --port 3001
 
    # Terminal 2: Frontend
    npm run dev
@@ -106,6 +106,10 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
 
    - Frontend: http://localhost:5173 (Vite Dev Server)
    - Backend: http://localhost:3001
+
+Für echte lokale End-to-End-Tests mit Supabase, Backend und mehreren Testusern siehe [docs/local-testing.md](./docs/local-testing.md).
+
+Die geplante Trennung von Marketing, Web-App und API ist in [docs/adr/0001-monorepo-split-domain-strategy.md](./docs/adr/0001-monorepo-split-domain-strategy.md) dokumentiert. Der aktuelle Issue-Fahrplan steht in [docs/issue-roadmap.md](./docs/issue-roadmap.md); die SEO-Content-Struktur fuer die spaetere Marketing-App in [docs/content-architecture.md](./docs/content-architecture.md).
 
 ### Lokale Tests ohne Backend oder Datenbank
 
@@ -136,18 +140,23 @@ Für Präsentationen ist der Login im Entwicklungsmodus automatisch deaktiviert.
 
 Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Docker Image gebaut und zu GitHub Container Registry (ghcr.io) gepusht:
 
-- **Latest**: `ghcr.io/jacha93/smart-pantry:latest` (nur von main)
-- **Versioned**: `ghcr.io/jacha93/smart-pantry:v1.0.0` (Semantic Versioning via Semantic Release)
+- **App-Image**: `ghcr.io/jacha93/smart-pantry-app`
+- **Marketing-/Landingpage-Image**: `ghcr.io/jacha93/smart-pantry-marketing`
+
+Jedes Image erhält dieselben Branch- und Versions-Tags:
+
+- **Latest**: `ghcr.io/jacha93/smart-pantry-app:latest` und `ghcr.io/jacha93/smart-pantry-marketing:latest` (nur von main)
+- **Versioned**: `ghcr.io/jacha93/smart-pantry-app:v1.0.0` und `ghcr.io/jacha93/smart-pantry-marketing:v1.0.0`
 - **Dev/Nightly** (von dev branch):
-  - `ghcr.io/jacha93/smart-pantry:dev` (immer aktuellster dev Build)
-  - `ghcr.io/jacha93/smart-pantry:nightly` (immer aktuellster nightly Build)
-  - `ghcr.io/jacha93/smart-pantry:1.0.0-dev` (Version + Suffix)
-  - `ghcr.io/jacha93/smart-pantry:1.0.0-nightly` (Version + Suffix)
-  - `ghcr.io/jacha93/smart-pantry:1.0.0-nightly-<sha>` (Version + Suffix + Git SHA für eindeutige Identifikation)
+  - `ghcr.io/jacha93/smart-pantry-app:dev` und `ghcr.io/jacha93/smart-pantry-marketing:dev`
+  - `ghcr.io/jacha93/smart-pantry-app:nightly` und `ghcr.io/jacha93/smart-pantry-marketing:nightly`
+  - `ghcr.io/jacha93/smart-pantry-app:1.0.0-dev` und `ghcr.io/jacha93/smart-pantry-marketing:1.0.0-dev`
+  - `ghcr.io/jacha93/smart-pantry-app:1.0.0-nightly` und `ghcr.io/jacha93/smart-pantry-marketing:1.0.0-nightly`
+  - `ghcr.io/jacha93/smart-pantry-app:1.0.0-nightly-<sha>` und `ghcr.io/jacha93/smart-pantry-marketing:1.0.0-nightly-<sha>`
 - **Pre-Alpha** (von agent branch):
-  - `ghcr.io/jacha93/smart-pantry:pre-alpha` (immer aktuellster agent Build)
-  - `ghcr.io/jacha93/smart-pantry:1.0.0-pre-alpha` (Version + Suffix)
-  - `ghcr.io/jacha93/smart-pantry:1.0.0-pre-alpha-<sha>` (Version + Suffix + Git SHA)
+  - `ghcr.io/jacha93/smart-pantry-app:pre-alpha` und `ghcr.io/jacha93/smart-pantry-marketing:pre-alpha`
+  - `ghcr.io/jacha93/smart-pantry-app:1.0.0-pre-alpha` und `ghcr.io/jacha93/smart-pantry-marketing:1.0.0-pre-alpha`
+  - `ghcr.io/jacha93/smart-pantry-app:1.0.0-pre-alpha-<sha>` und `ghcr.io/jacha93/smart-pantry-marketing:1.0.0-pre-alpha-<sha>`
 
 **Versionierung**: Die Version wird automatisch durch [Semantic Release](https://github.com/semantic-release/semantic-release) basierend auf Commit-Messages berechnet:
 - `feat:` → Minor Version (v1.0.0 → v1.1.0)
@@ -177,13 +186,11 @@ Das Projekt wird automatisch bei jedem Push zu `main`, `dev` oder `agent` als Do
    
    **Hinweis**: Beim ersten Start kann es 1-2 Minuten dauern, bis das Image von GitHub Container Registry gepullt wurde.
 
-Die App läuft dann auf:
-- **Frontend**: http://localhost:${FRONTEND_PORT:-3000} (Host-Port, konfigurierbar über `.env`)
-- **Backend**: Intern im Container auf Port 3001, erreichbar über Nginx Proxy (`/api`)
+Der Stack läuft dann mit zwei getrennten Containern:
+- **Marketing / Landingpage**: `ghcr.io/jacha93/smart-pantry-marketing`
+- **App**: `ghcr.io/jacha93/smart-pantry-app`
 
-> **Container-Ports sind hardcoded**: Frontend 3000, Backend 3001  
-> **Nur `FRONTEND_PORT` ist konfigurierbar** für den Host-Port des Frontends  
-> **Backend kommuniziert intern** mit Frontend über Nginx Proxy (`/api` → `localhost:3001`)
+Die öffentlichen Marketing-Seiten und die private App sind damit getrennte Deployables. Das App-Image enthält weiterhin Frontend und FastAPI-Backend zusammen; die Landingpage ist ein eigenständiges statisches Image.
 
 #### Umgebungsvariablen konfigurieren
 
@@ -202,24 +209,24 @@ Die `.env.example` Datei enthält alle benötigten Variablen mit Beschreibungen:
 - `BACKEND_PORT` - Backend Port (Standard: `3001`)
 
 **Docker:**
-- `FRONTEND_PORT` - Host-Port für Frontend (Standard: `3000`)
+- `MARKETING_PORT` - Host-Port für die Landingpage (Standard: `3000`)
+- `APP_PORT` - Host-Port für die App (Standard: `3001`)
 
 **Wichtig**: 
 - `JWT_SECRET` sollte mindestens 32 zufällige Zeichen sein
 - `DATABASE_URL` muss von Supabase kopiert werden
 - Alle Passwörter sollten stark und eindeutig sein
-- **Container-Ports sind hardcoded**: Frontend 3000, Backend 3001
-- **Nur `FRONTEND_PORT` ist konfigurierbar** für den Host-Port des Frontends
-- **Backend ist nur intern erreichbar** - Kommunikation erfolgt über Nginx Proxy (`/api`)
+- **Container-Ports sind hardcoded**: Landingpage 3000, App-Frontend 3000, App-Backend 3001
+- **Nur `MARKETING_PORT` und `APP_PORT` sind konfigurierbar** für die Host-Ports
+- **Die App kommuniziert intern** zwischen Nginx und FastAPI (`/api` → `localhost:3001`)
 
 ### Docker Image Struktur
 
 Das Docker Image enthält:
-- **Frontend**: Vite Build (statische Dateien in `/app/frontend/dist`)
-- **Backend**: Python/FastAPI mit uvicorn
-- **Nginx**: Dient Frontend-Dateien und proxied API-Requests zum Backend
+- **Marketing-Image**: Vite Build als statische Site
+- **App-Image**: Vite Build plus Python/FastAPI plus Nginx Proxy
 
-**Einzelnes Image**: Frontend und Backend laufen im selben Container, was Deployment vereinfacht.
+**Zwei Images**: Die öffentliche Landingpage und die private App werden getrennt gebaut, veröffentlicht und im Compose-Stack separat gestartet.
 
 ## 🔒 Sicherheit
 
@@ -284,13 +291,13 @@ Siehe [LICENSE.md](./LICENSE.md) für Details.
 
 2. **Connection String kopieren**
    - Gehe zu Project Settings → Database
-   - Kopiere die Connection String (URI)
-   - Die URL sieht aus wie: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`
+   - Kopiere die Session Pooler Connection String (URI)
+   - Die URL sieht aus wie: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[POOLER_REGION].pooler.supabase.com:5432/postgres`
    - Setze diese als `DATABASE_URL` in deiner `.env` Datei
 
 3. **Datenbank-Schema**
-   - Das Backend erstellt Tabellen automatisch beim ersten Start (via SQLModel)
-   - Keine manuellen Migrations nötig
+   - Wende das SQL-Schema aus `database-dumps/smart_pantry_schema.sql` oder die entsprechende Supabase-Migration an
+   - Die Tabellen müssen vor dem ersten echten Login vorhanden sein
 
 #### Backup & Wiederherstellung
 

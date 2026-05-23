@@ -251,10 +251,10 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
                 {filteredGroceries.map((grocery, index) => (
                   <MotionTableRow 
                     key={grocery.id}
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    exit={{ opacity: 0, x: 8 }}
+                    transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1], delay: Math.min(index * 0.012, 0.12) }}
                     className="group hover:bg-muted/50 transition-colors"
                   >
                     <TableCell className="font-medium">{grocery.name}</TableCell>
@@ -287,7 +287,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-[#17f6fe] hover:bg-[#17f6fe]/15 hover:scale-110 transition-all duration-200"
+                          className="h-8 w-8 text-muted-foreground hover:-translate-y-0.5 hover:text-[#17f6fe] hover:bg-[#17f6fe]/15 transition-all duration-200"
                           onClick={() => handleEdit(grocery)}
                         >
                           <Edit className="h-4 w-4" />
@@ -295,7 +295,7 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/15 hover:scale-110 transition-all duration-200"
+                          className="h-8 w-8 text-muted-foreground hover:-translate-y-0.5 hover:text-red-500 hover:bg-red-500/15 transition-all duration-200"
                           onClick={() => openDeleteConfirm(grocery)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -321,10 +321,10 @@ export function GroceryTable({ onGroceryUpdated }: GroceryTableProps) {
             {filteredGroceries.map((grocery, index) => (
               <motion.div
                 key={grocery.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2, delay: index * 0.05 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1], delay: Math.min(index * 0.012, 0.12) }}
               >
                 <Card>
                   <CardContent className="p-2">

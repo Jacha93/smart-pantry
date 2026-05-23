@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, LogOut } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/auth';
 import { profileAPI } from '@/lib/api';
 import { useI18n } from '@/hooks/use-i18n';
@@ -19,6 +17,7 @@ export function UserProfileDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { t } = useI18n();
 
@@ -38,6 +37,30 @@ export function UserProfileDropdown() {
 
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   const handleLogout = async () => {
     console.log('[UserProfileDropdown] Logout button clicked');
@@ -73,53 +96,51 @@ export function UserProfileDropdown() {
   const displayName = user?.name || user?.email || 'User';
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <button
-          className={cn(
-            'w-full flex items-center space-x-3 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200',
-            'hover:bg-[#17f6fe]/10 hover:text-[#17f6fe] text-foreground/90'
-          )}
-        >
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#17f6fe]/20 flex items-center justify-center text-[#17f6fe] font-semibold text-xs">
-            {isLoading ? (
+    <div ref={containerRef} className="relative">
+      {isOpen && (
+        <div className="local-menu-motion absolute bottom-full left-0 z-50 mb-3 w-56 rounded-lg border border-white/12 bg-[#101014] p-2 text-popover-foreground shadow-[0_18px_48px_rgba(0,0,0,0.42)]">
+          <div className="space-y-1">
+            <Link
+              to="/app/profile"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm hover:bg-[#17f6fe]/10 hover:text-[#17f6fe] transition-colors text-foreground/90"
+            >
               <User className="h-4 w-4" />
-            ) : (
-              getUserInitials(displayName)
-            )}
+              <span>{t('nav.profile')}</span>
+            </Link>
+            <div className="border-t border-white/10 my-1" />
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm hover:bg-red-500/10 hover:text-red-400 transition-colors text-foreground/90"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>{t('nav.logout')}</span>
+            </button>
           </div>
-          <div className="flex-1 text-left min-w-0">
-            <div className="truncate font-medium">{displayName}</div>
-            <div className="truncate text-xs text-foreground/60">{user?.email}</div>
-          </div>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent 
-        side="bottom"
-        align="end"
-        sideOffset={8}
-        collisionPadding={8}
-        className="w-56 p-2 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[state=open]:duration-150 data-[state=closed]:duration-150"
-      >
-        <div className="space-y-1">
-          <Link
-            to="/app/profile"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm hover:bg-[#17f6fe]/10 hover:text-[#17f6fe] transition-colors text-foreground/90"
-          >
-            <User className="h-4 w-4" />
-            <span>{t('nav.profile')}</span>
-          </Link>
-          <div className="border-t border-white/10 my-1" />
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-sm hover:bg-red-500/10 hover:text-red-400 transition-colors text-foreground/90"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>{t('nav.logout')}</span>
-          </button>
         </div>
-      </PopoverContent>
-    </Popover>
+      )}
+
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+        className={cn(
+          'w-full flex items-center space-x-3 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200',
+          'hover:bg-[#17f6fe]/10 hover:text-[#17f6fe] text-foreground/90'
+        )}
+      >
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#17f6fe]/20 flex items-center justify-center text-[#17f6fe] font-semibold text-xs">
+          {isLoading ? (
+            <User className="h-4 w-4" />
+          ) : (
+            getUserInitials(displayName)
+          )}
+        </div>
+        <div className="flex-1 text-left min-w-0">
+          <div className="truncate font-medium">{displayName}</div>
+          <div className="truncate text-xs text-foreground/60">{user?.email}</div>
+        </div>
+      </button>
+    </div>
   );
 }

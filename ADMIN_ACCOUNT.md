@@ -6,10 +6,10 @@ Der Admin-Account wird automatisch beim Start des Backend-Servers erstellt, fall
 
 ### Standard-Credentials:
 
-- **Email:** `admin@smartpantry.app`
-- **Username:** `admin`
-- **Password:** `admin123`
-- **Full Name:** `Administrator`
+- **Email:** `your_admin_email@example.com`
+- **Username:** `your_admin_username`
+- **Password:** `your_secure_admin_password_here`
+- **Full Name:** `Your Admin Full Name`
 - **Role:** `ADMIN`
 
 ## Anpassung der Zugangsdaten
@@ -17,11 +17,11 @@ Der Admin-Account wird automatisch beim Start des Backend-Servers erstellt, fall
 Die Zugangsdaten können über Umgebungsvariablen angepasst werden:
 
 ```bash
-ADMIN_USER_EMAIL=admin@smartpantry.app
-ADMIN_USER_NAME=Admin User
+ADMIN_USER_EMAIL=your_admin_email@example.com
+ADMIN_USER_NAME=your_admin_name
 ADMIN_USER_PASSWORD=dein_sicheres_passwort
-ADMIN_USER_FULLNAME=Administrator
-ADMIN_USER_USERNAME=admin
+ADMIN_USER_FULLNAME=Your Admin Full Name
+ADMIN_USER_USERNAME=your_admin_username
 ```
 
 ## Admin-Berechtigungen
@@ -54,4 +54,3 @@ ADMIN_USER_PASSWORD=dein_sehr_sicheres_passwort_hier
 
 - `GET /admin/users` - Liste aller Benutzer
 - `POST /admin/switch` - Wechsel zu einem anderen User-Account
-

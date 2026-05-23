@@ -274,6 +274,29 @@ export const translations: Translations = {
   'landing.getStarted': { en: 'Get Started Free', de: 'Kostenlos starten' },
   'landing.aiPowered': { en: 'AI-Powered', de: 'KI-gestützt' },
   'landing.secure': { en: 'Secure', de: 'Sicher' },
+  'landing.heroBadge': { en: 'AI-Powered Pantry OS', de: 'KI-gestützt Pantry OS' },
+  'landing.metricCoreFlows': { en: 'Core flows', de: 'Kernabläufe' },
+  'landing.metricPhotoScan': { en: 'Photo scan', de: 'Foto-Scan' },
+  'landing.metricFast': { en: 'Fast', de: 'Schnell' },
+  'landing.metricViteApp': { en: 'Vite app', de: 'Vite-App' },
+  'landing.previewTitle': { en: 'Kitchen command center', de: 'Küchen-Kommandozentrale' },
+  'landing.previewLive': { en: 'Live', de: 'Live' },
+  'landing.previewInventoryHealth': { en: 'Inventory health', de: 'Bestandsstatus' },
+  'landing.previewItem1Name': { en: 'Avocado', de: 'Avocado' },
+  'landing.previewItem1Meta': { en: '2 pcs', de: '2 Stk.' },
+  'landing.previewItem1State': { en: 'Fresh', de: 'Frisch' },
+  'landing.previewItem2Name': { en: 'Oat milk', de: 'Hafermilch' },
+  'landing.previewItem2Meta': { en: '1 bottle', de: '1 Flasche' },
+  'landing.previewItem2State': { en: 'Low', de: 'Knapp' },
+  'landing.previewItem3Name': { en: 'Tomatoes', de: 'Tomaten' },
+  'landing.previewItem3Meta': { en: '450 g', de: '450 g' },
+  'landing.previewItem3State': { en: '3 days', de: '3 Tage' },
+  'landing.previewRecipeMatch': { en: 'Recipe match', de: 'Rezept-Treffer' },
+  'landing.previewRecipeMatchDesc': { en: '12 ideas from stock', de: '12 Ideen aus Vorrat' },
+  'landing.previewScanQueue': { en: 'Scan queue', de: 'Scan-Warteschlange' },
+  'landing.previewScanQueueDesc': { en: 'Fridge photo ready', de: 'Kühlschrankfoto bereit' },
+  'landing.previewExpiringSoon': { en: 'Expiring soon', de: 'Läuft bald ab' },
+  'landing.previewExpiringSoonDesc': { en: '3 items need attention', de: '3 Artikel brauchen Aufmerksamkeit' },
   'landing.featuresTitle': { en: 'Everything You Need', de: 'Alles was du brauchst' },
   'landing.featuresSubtitle': { en: 'Smart features to make your kitchen life easier', de: 'Smarte Funktionen für einen einfacheren Küchenalltag' },
   'landing.feature1Title': { en: 'Inventory Management', de: 'Inventarverwaltung' },
@@ -466,6 +489,7 @@ export const translations: Translations = {
   'imprint.developer': { en: 'Developer', de: 'Entwickler' },
   'imprint.email': { en: 'Email', de: 'E-Mail' },
   'imprint.website': { en: 'Website', de: 'Website' },
+  'imprint.repository': { en: 'GitHub repository', de: 'GitHub Repository' },
 
   'imprint.disclaimer.title': { en: 'Disclaimer', de: 'Haftungsausschluss' },
   'imprint.contentLiability.title': { en: 'Liability for Content', de: 'Haftung für Inhalte' },
@@ -478,7 +502,7 @@ export const translations: Translations = {
   'imprint.copyright.content': { en: 'The content and works created by the site operators on these pages are subject to German copyright law. The duplication, processing, distribution, and any kind of exploitation outside the limits of copyright require the written consent of the respective author or creator.', de: 'Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.' },
 
   'imprint.technology.title': { en: 'Technology', de: 'Technologie' },
-  'imprint.technology.content': { en: 'Smart Pantry uses modern web technologies such as Next.js 16, React 19.2, TypeScript, PostgreSQL, Prisma ORM, and AI APIs (Google Gemini, Spoonacular) for the functionality of the application.', de: 'Smart Pantry nutzt moderne Web-Technologien wie Next.js 16, React 19.2, TypeScript, PostgreSQL, Prisma ORM und KI-APIs (Google Gemini, Spoonacular) für die Funktionalität der Anwendung.' },
+  'imprint.technology.content': { en: 'Smart Pantry uses modern web technologies such as Vite, React 19, TypeScript, FastAPI, SQLModel, PostgreSQL/Supabase, and AI APIs (Google Gemini, Spoonacular) for the functionality of the application.', de: 'Smart Pantry nutzt moderne Web-Technologien wie Vite, React 19, TypeScript, FastAPI, SQLModel, PostgreSQL/Supabase und KI-APIs (Google Gemini, Spoonacular) für die Funktionalität der Anwendung.' },
 
   'imprint.privacy.title': { en: 'Privacy', de: 'Datenschutz' },
   'imprint.privacy.content': { en: 'Information about data protection can be found in our privacy policy, which you can access via the link in the footer.', de: 'Informationen zum Datenschutz finden Sie in unserer Datenschutzerklärung, die Sie über den Link im Footer aufrufen können.' },
@@ -565,6 +589,19 @@ export const translations: Translations = {
 
 let currentLocale: Locale = (typeof window !== 'undefined' && (localStorage.getItem('locale') as Locale)) || 'en';
 
+const dispatchLocaleChange = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.dispatchEvent(new Event('localechange'));
+  } catch {
+    if (typeof document === 'undefined') return;
+    const event = document.createEvent('Event');
+    event.initEvent('localechange', true, true);
+    window.dispatchEvent(event);
+  }
+};
+
 export const i18n = {
   getLocale: (): Locale => currentLocale,
   
@@ -572,7 +609,7 @@ export const i18n = {
     currentLocale = locale;
     if (typeof window !== 'undefined') {
       localStorage.setItem('locale', locale);
-      window.dispatchEvent(new Event('localechange'));
+      dispatchLocaleChange();
     }
   },
   
@@ -603,4 +640,3 @@ if (typeof window !== 'undefined') {
     currentLocale = saved;
   }
 }
-

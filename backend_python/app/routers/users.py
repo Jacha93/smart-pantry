@@ -11,12 +11,14 @@ router = APIRouter(prefix="", tags=["users"]) # Prefix leer lassen wenn wir /me 
 
 @router.get("/me", response_model=UserProfile)
 async def get_my_profile(current_user: User = Depends(get_current_user)):
+    display_name = current_user.fullName or current_user.username or current_user.email
+
     # Bereite die Response vor (Quotas etc.)
     # Vereinfacht für jetzt:
     return UserProfile(
         id=current_user.id,
         email=current_user.email,
-        name=current_user.fullName or current_user.name, # Legacy mapping
+        name=display_name,
         role=current_user.role,
         createdAt=current_user.createdAt,
         fullName=current_user.fullName,

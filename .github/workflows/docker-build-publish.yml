@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Build and Publish Docker Images
 
 on:
   push:
@@ -10,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -18,6 +17,16 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suffix: app
+            target: app-runner
+            build_script: build:web
+          - suffix: marketing
+            target: marketing-runner
+            build_script: build:marketing
 
     steps:
       - name: Checkout repository
@@ -40,43 +49,30 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/smart-pantry-${{ matrix.suffix }}
           tags: |
-            # Branch 'main' -> latest
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            
-            # Tag push -> 1.2.3, 1.2, 1
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            
-            # Branch 'dev' -> nightly, dev
             type=raw,value=nightly,enable=${{ github.ref == 'refs/heads/dev' }}
             type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
 
       - name: Generate custom version tags
         id: custom_tags
         run: |
-          # Read version from package.json using jq for safety
           PACKAGE_VERSION=$(jq -r .version package.json)
           echo "Detected project version: $PACKAGE_VERSION"
-          
-          # Start with tags from metadata-action
           TAGS="${{ steps.meta.outputs.tags }}"
-          
-          # Ensure repository name is lowercase
-          REPO_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          REPO_LOWER=$(echo "${{ github.repository_owner }}/smart-pantry-${{ matrix.suffix }}" | tr '[:upper:]' '[:lower:]')
           FULL_IMAGE_NAME="${{ env.REGISTRY }}/$REPO_LOWER"
-          
-          # Logic for dev branch: Add vX.X.X-dev and vX.X.X-nightly
+
           if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
             echo "Adding dev/nightly version tags..."
-            # Append new tags (newline separated is fine for build-push-action)
             TAGS="${TAGS}
             ${FULL_IMAGE_NAME}:v${PACKAGE_VERSION}-dev
             ${FULL_IMAGE_NAME}:v${PACKAGE_VERSION}-nightly"
           fi
-          
-          # Output multiline string to GITHUB_OUTPUT
+
           {
             echo 'final_tags<<EOF'
             echo "$TAGS"
@@ -87,8 +83,11 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
+          target: ${{ matrix.target }}
+          build-args: |
+            BUILD_SCRIPT=${{ matrix.build_script }}
           push: true
-          # This builds ONE image and pushes it with ALL generated tags
           tags: ${{ steps.custom_tags.outputs.final_tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -109,7 +108,6 @@ jobs:
       - name: Extract version from tag
         id: version
         run: |
-          # Extrahiere Version aus Tag (z.B. v1.0.0 -> 1.0.0)
           TAG_NAME=${GITHUB_REF#refs/tags/}
           VERSION=$(echo "$TAG_NAME" | sed 's/^v//')
           echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
@@ -119,12 +117,10 @@ jobs:
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          
-          # Versuche Release Notes aus CHANGELOG.md zu extrahieren
+
           if [ -f CHANGELOG.md ]; then
-            # Extrahiere den Changelog-Eintrag für diese Version
             CHANGELOG_CONTENT=$(awk "/^## \[${VERSION}\]/,/^## \[/" CHANGELOG.md | sed '$d' || awk "/^## \[v${VERSION}\]/,/^## \[/" CHANGELOG.md | sed '$d' || echo "")
-            
+
             if [ -n "$CHANGELOG_CONTENT" ]; then
               echo "Found changelog entry for version $VERSION"
               echo "notes<<EOF" >> $GITHUB_OUTPUT

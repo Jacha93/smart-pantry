@@ -62,7 +62,6 @@ export function RecipeDetailsModal({ recipeId, isOpen, onClose }: RecipeDetailsM
       setTranslatedInstructions(null);
       setTranslatedIngredients(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipeId, isOpen, locale]); // locale als Dependency für Re-Übersetzung bei Sprachwechsel
 
   const checkIfCooked = async () => {

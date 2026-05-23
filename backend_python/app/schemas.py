@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, Any
 from datetime import datetime
 from app.models import UserRole
 
@@ -67,8 +67,8 @@ class SavedRecipeBase(BaseModel):
     recipeId: int
     title: str
     image: Optional[str] = None
-    usedIngredients: Optional[dict] = None
-    missedIngredients: Optional[dict] = None
+    usedIngredients: Optional[Any] = None
+    missedIngredients: Optional[Any] = None
     sourceUrl: Optional[str] = None
     readyInMinutes: Optional[int] = None
     servings: Optional[int] = None

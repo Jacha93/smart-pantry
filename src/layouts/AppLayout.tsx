@@ -35,8 +35,8 @@ export function AppLayout() {
       if (authDisabled) {
         // Bei disabled Auth: Prüfe nur Token-Existenz
         if (!token) {
-          console.warn('[AppLayout] Auth disabled but no token, redirecting to home');
-          window.location.href = '/';
+          console.warn('[AppLayout] Auth disabled but no token, redirecting to login');
+          window.location.href = '/login';
           return;
         }
         console.log('[AppLayout] Auth disabled, token present, allowing access');
@@ -46,9 +46,9 @@ export function AppLayout() {
       
       // Normale Auth-Prüfung
       if (!isAuth || !token) {
-        console.warn('[AppLayout] Not authenticated, clearing auth and redirecting to home');
+        console.warn('[AppLayout] Not authenticated, clearing auth and redirecting to login');
         auth.clearAuth();
-        window.location.href = '/';
+        window.location.href = '/login';
         return;
       }
       
@@ -56,7 +56,7 @@ export function AppLayout() {
       if (token.trim() === '' || token === 'null' || token === 'undefined') {
         console.error('[AppLayout] Invalid token format, clearing auth');
         auth.clearAuth();
-        window.location.href = '/';
+        window.location.href = '/login';
         return;
       }
       
@@ -108,19 +108,16 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <Sidebar />
       </div>
-      
-      {/* Mobile Sidebar */}
+
       <div className="md:hidden">
         <MobileSidebar />
       </div>
-      
-      {/* Main Content with Sticky Footer */}
-      <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
-        <main className="flex-1 max-w-7xl mx-auto w-full py-6 px-4 sm:px-6 lg:px-8 md:pt-6 pt-20">
+
+      <div className="flex min-h-screen flex-1 flex-col md:ml-64">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pt-20 sm:px-6 md:pt-6 lg:px-8">
           <Outlet />
         </main>
         <Footer />

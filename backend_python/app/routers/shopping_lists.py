@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
 from sqlmodel import select
 from typing import List
 from datetime import datetime
@@ -128,11 +129,7 @@ async def delete_list(
     if not sl:
         raise HTTPException(status_code=404, detail="Shopping list not found")
         
-    # Cascade delete items manually (if not handled by DB)
-    item_stmt = select(ShoppingListItem).where(ShoppingListItem.shoppingListId == list_id)
-    items_res = await session.execute(item_stmt)
-    for item in items_res.scalars().all():
-        await session.delete(item)
-        
+    # Delete child items explicitly before removing the parent row.
+    await session.execute(delete(ShoppingListItem).where(ShoppingListItem.shoppingListId == list_id))
     await session.delete(sl)
     await session.commit()

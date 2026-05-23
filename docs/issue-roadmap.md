@@ -1,0 +1,87 @@
+# GitHub Issue Roadmap
+
+Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
+
+## Phase 1: Stabilize Decisions and Local Testing
+
+| Issue | Work item | Status |
+| --- | --- | --- |
+| #8 | Architecture ADR for monorepo split and domain strategy | Started in `docs/adr/0001-monorepo-split-domain-strategy.md` |
+| #9 | Repository structure, scripts, shared boundaries | Target documented; root scripts expose `dev:web`, `build:web`, `preview:web`, `dev:api`, local env check, and API smoke test; code move still pending |
+| #19 | Domains, reverse proxy, CORS, environment config | Initial concept documented; deploy config pending |
+| #26 | Rollout, redirects, staging, rollback | Operational checklist started in `docs/operations/rollout-staging-rollback.md`; redirect tests pending |
+
+## Phase 2: Split Deployables
+
+| Issue | Work item | Status |
+| --- | --- | --- |
+| #10 | Move current Vite app into `apps/web` | Pending |
+| #11 | Scaffold Astro marketing app with `/de` and `/en` | Pending |
+| #12 | Port landing page to Astro | Pending |
+| #18 | Separate Docker images and CI/CD for marketing, web, API | Pending |
+
+## Phase 3: SEO Content and Indexing
+
+| Issue | Work item | Status |
+| --- | --- | --- |
+| #13 | hreflang, canonical, x-default locale model | Transitional route head manager added for current public Vite routes; Astro locale routes still pending |
+| #14 | Public legal and trust pages | Transitional Vite routes added for `/de/datenschutz`, `/de/impressum`, `/en/privacy`, and `/en/legal-notice`; Astro/legal metadata still pending |
+| #15 | Structured data | Basic Organization, WebSite, and SoftwareApplication JSON-LD added to current Vite shell; locale-specific Astro output and breadcrumbs pending |
+| #17 | robots.txt, sitemap.xml, index rules | Transitional `robots.txt`, `sitemap.xml`, and client-side noindex for `/app` routes added; Astro locale sitemap still pending |
+| #24 | Content architecture for feature, use-case, and blog pages | Route families, content model, page structure, internal linking, and schema boundaries documented |
+
+## Phase 4: Ads, Consent, Analytics, and Performance
+
+| Issue | Work item | Status |
+| --- | --- | --- |
+| #16 | Performance and Core Web Vitals budgets | Initial route-level code splitting, Vite manual chunks, `budget:web`, and web quality CI added; Lighthouse/PageSpeed pending |
+| #20 | AdSense readiness, certified CMP, consent mode | Transitional AdSense feature and consent gates added; certified CMP/runtime consent flow pending |
+| #21 | Marketing ad placements | Placement matrix and no-go zones documented; implementation waits for CMP and Astro marketing pages |
+| #22 | App ad slots for free users and paid-user suppression | Transitional slot plan and backend entitlement requirement documented; final suppression API pending |
+| #23 | Analytics, Search Console, AdSense monitoring, SEO QA | Transitional `check:seo` gate added for robots, sitemap, canonical, x-default, and JSON-LD; analytics/Search Console setup pending |
+
+## Phase 5: Mobile Readiness
+
+| Issue | Work item | Status |
+| --- | --- | --- |
+| #25 | Flutter/mobile API, deep links, shared contracts | Initial decision documented; contracts pending |
+
+## Execution Rules
+
+- Keep commits small and tied to one phase or issue group.
+- Preserve the current app until equivalent local tests are green.
+- Do not push until local real-backend smoke tests have been run or the missing environment is explicitly documented.
+- Never commit `.env` files or real credentials.
+
+## Current Acceptance Coverage
+
+| Issue | Covered now | Still missing |
+| --- | --- | --- |
+| #8 | ADR exists with domain, build, deployment, SEO, migration, rollback, and risk boundaries | Final review after first code move |
+| #9 | Target tree, migration order, root-level deployable scripts, local env check, API smoke test, and new Supabase project bootstrap path documented | Actual `apps/web`, `apps/marketing`, and package/workspace split |
+| #19 | Domain, local origins, API origin concept, auth/indexing boundaries documented | Concrete proxy/CORS deployment config |
+| #25 | API versioning, OpenAPI reuse, deep-link separation, web-vs-mobile ads documented | Generated contracts and mobile-specific tests |
+| #26 | Staging surfaces, redirect matrix, smoke tests, rollback scopes documented | Executable redirect checks and deployed staging verification |
+| #16 | Route pages, chat, adblocker detection, React, markdown, motion, and form dependencies are split into separate chunks; `npm run build` has no chunk-size warning; `npm run budget:web` enforces JS/CSS gzip budgets in CI | Lighthouse/PageSpeed workflow, image/font budget, separate marketing/app budgets after the split |
+| #17 | Current Vite deploy serves `robots.txt` and `sitemap.xml`; `/app` routes receive `noindex,nofollow` in the document head after hydration | Astro `/de` and `/en` locale sitemap, canonical/hreflang, server-level private route headers |
+| #15 | Current Vite shell exposes conservative Organization, WebSite, and SoftwareApplication JSON-LD without ratings/review claims | Locale-specific JSON-LD, BreadcrumbList, schema validator run, central typed schema data |
+| #14 | Legal pages are directly routable and footer links point to real URLs in the active locale | Astro static legal pages, crawlable locale-specific metadata, legal review of ads/consent text |
+| #13 | Current Vite shell keeps private app routes noindexed, clears canonicals on private routes, and emits canonical/x-default/locale alternates for the public legal routes | Real `/de` and `/en` marketing routes, server-rendered head output, redirect matrix, final x-default strategy |
+| #23 | `npm run check:seo` validates robots, sitemap public URLs, canonical root, x-default root alternate, and core JSON-LD graph in CI | Search Console, analytics events, AdSense monitoring, rendered-route SEO validation after Astro split |
+| #20 | AdSense scripts do not load unless `VITE_ADSENSE_ENABLED=true` and `VITE_ADSENSE_CONSENT_GRANTED=true`; dev ad testing can show placeholders without loading external scripts | Certified CMP, runtime consent mode, legal review, paid-user entitlement enforcement |
+| #24 | `docs/content-architecture.md` defines German/English route families, page models, feature/use-case/blog structures, internal linking, and structured-data boundaries | Astro implementation, typed content collections, rendered page QA |
+| #21 | `docs/ads-consent.md` defines allowed marketing placements and hero/legal/sticky/layout-shift no-go zones | Astro page implementation, reserved slot dimensions, CMP-gated rendered QA |
+| #22 | `docs/ads-consent.md` maps current app ad surfaces and requires backend-owned `ads/no_ads` entitlements before real app ads go live | Backend entitlement field, frontend wiring to entitlement source, paid-user smoke test |
+
+## Next Code Slice
+
+The current blocker for end-to-end local testing is that the previous Supabase project was deleted:
+
+1. Create a new disposable/staging Supabase project.
+2. Put the new Supabase Session Pooler connection string into `backend_python/.env` as `DATABASE_URL`.
+3. Apply `database-dumps/smart_pantry_schema.sql` in the new project's SQL editor.
+4. Run `npm run check:local-env` and `npm run check:db-schema`.
+5. Run `npm run dev:api`, then `npm run smoke:api`.
+6. Start `npm run dev:web` and complete the browser smoke checklist before pushing.
+
+The `apps/web` move from issue #10 should happen only after a real backend smoke test passes, because it changes import paths, Vite config, Tailwind inputs, Docker paths, and CI assumptions at the same time.

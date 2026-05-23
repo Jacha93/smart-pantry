@@ -10,6 +10,7 @@ import { useUserPlan } from '@/hooks/use-user-plan';
 import { api } from '@/lib/api';
 import { auth } from '@/lib/auth';
 import { motion } from 'framer-motion';
+import type { Variants } from 'framer-motion';
 
 interface Recipe {
   id: number;
@@ -63,14 +64,14 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
+        staggerChildren: 0.045
       }
     }
   };
 
-  const itemAnim = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+  const itemAnim: Variants = {
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] } }
   };
 
   return (
@@ -82,15 +83,15 @@ export function RecipeSuggestionsGrid({ recipes, onRecipeClick }: RecipeSuggesti
         className="grid gap-6 md:gap-8 md:grid-cols-2 lg:grid-cols-3"
       >
         {displayedRecipes.map((recipe) => (
-          <motion.div key={recipe.id} variants={itemAnim} whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+          <motion.div key={recipe.id} variants={itemAnim} whileHover={{ y: -3 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
             <Card className="overflow-hidden h-full hover:shadow-xl hover:border-brand-accent/50 transition-all duration-300 group">
               <div className="aspect-video relative overflow-hidden">
                 <motion.img
                   src={recipe.image}
                   alt={recipe.title}
                   className="w-full h-full object-cover"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.4 }}
+                  whileHover={{ scale: 1.035 }}
+                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                   <Button 
