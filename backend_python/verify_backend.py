@@ -2,10 +2,14 @@ import requests
 import os
 
 BASE_URL = "http://localhost:3001"
-EMAIL = "admin@smartpantry.app"
-PASSWORD = "BeispielAdminPasswort"
+EMAIL = os.getenv("VERIFY_BACKEND_EMAIL")
+PASSWORD = os.getenv("VERIFY_BACKEND_PASSWORD")
 
 def test_backend():
+    if not EMAIL or not PASSWORD:
+        print("❌ VERIFY_BACKEND_EMAIL and VERIFY_BACKEND_PASSWORD must be set")
+        return
+
     print("--- 1. Login ---")
     login_payload = {"email": EMAIL, "password": PASSWORD}
     try:
