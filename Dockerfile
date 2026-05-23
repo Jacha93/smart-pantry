@@ -1,12 +1,13 @@
 # Multi-stage Dockerfile für Frontend + Backend
-# Frontend: Vite Build → statische Dateien
-# Backend: Python/FastAPI mit uvicorn
+# App-Ziel: Vite-App + FastAPI in einem Container
+# Marketing-Ziel: Nur die öffentliche Landingpage als statische Site
 
 # ============================================
 # Stage 1: Frontend Builder (Vite)
 # ============================================
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
+ARG BUILD_SCRIPT=build:web
 
 # Kopiere Package-Dateien
 COPY package*.json ./
@@ -22,12 +23,27 @@ COPY public ./public
 COPY index.html ./
 
 # Build Frontend (Output: /app/dist/)
-RUN npm run build
+RUN npm run ${BUILD_SCRIPT}
 
 # ============================================
-# Stage 2: Production Runner (Python + Frontend)
+# Stage 2: Marketing Runner (Nginx only)
 # ============================================
-FROM python:3.13-slim AS runner
+FROM nginx:1.27-alpine AS marketing-runner
+WORKDIR /usr/share/nginx/html
+
+# Copy marketing build output
+COPY --from=frontend-builder /app/dist ./
+
+# Minimaler Static-Server für die öffentliche Landingpage
+COPY nginx-marketing.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]
+
+# ============================================
+# Stage 3: App Runner (Python + Frontend)
+# ============================================
+FROM python:3.13-slim AS app-runner
 WORKDIR /app
 
 # Installiere System-Dependencies (Nginx für Frontend Serving)

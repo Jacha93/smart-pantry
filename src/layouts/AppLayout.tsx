@@ -35,8 +35,8 @@ export function AppLayout() {
       if (authDisabled) {
         // Bei disabled Auth: Prüfe nur Token-Existenz
         if (!token) {
-          console.warn('[AppLayout] Auth disabled but no token, redirecting to home');
-          window.location.href = '/';
+          console.warn('[AppLayout] Auth disabled but no token, redirecting to login');
+          window.location.href = '/login';
           return;
         }
         console.log('[AppLayout] Auth disabled, token present, allowing access');
@@ -46,9 +46,9 @@ export function AppLayout() {
       
       // Normale Auth-Prüfung
       if (!isAuth || !token) {
-        console.warn('[AppLayout] Not authenticated, clearing auth and redirecting to home');
+        console.warn('[AppLayout] Not authenticated, clearing auth and redirecting to login');
         auth.clearAuth();
-        window.location.href = '/';
+        window.location.href = '/login';
         return;
       }
       
@@ -56,7 +56,7 @@ export function AppLayout() {
       if (token.trim() === '' || token === 'null' || token === 'undefined') {
         console.error('[AppLayout] Invalid token format, clearing auth');
         auth.clearAuth();
-        window.location.href = '/';
+        window.location.href = '/login';
         return;
       }
       

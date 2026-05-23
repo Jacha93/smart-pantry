@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { auth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { useI18n } from '@/hooks/use-i18n';
+import { getMarketingUrl } from '@/lib/build-target';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -98,7 +99,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <Link to="/" className="flex justify-center mb-2 hover:opacity-80 transition-opacity">
+          <a href={getMarketingUrl('/')} className="flex justify-center mb-2 hover:opacity-80 transition-opacity">
             <img
               src="/smart-pantry-favicon.png"
               alt="Smart Pantry Icon"
@@ -106,7 +107,7 @@ export default function RegisterPage() {
               height={56}
               className="rounded-xl shadow-[0_0_30px_rgba(23,246,254,0.35)]"
             />
-          </Link>
+          </a>
           <CardTitle className="text-2xl font-bold text-center text-card-foreground">{t('auth.createAccount')}</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
             {t('auth.enterDetails')}

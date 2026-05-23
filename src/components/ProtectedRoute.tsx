@@ -17,13 +17,13 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   console.log('[ProtectedRoute] Auth check:', { isAuth, hasToken, authDisabled });
   
   if (!isAuth || !hasToken) {
-    console.warn('[ProtectedRoute] Not authenticated, redirecting to /');
+    console.warn('[ProtectedRoute] Not authenticated, redirecting to /login');
     // Lösche Token falls vorhanden (könnten ungültig sein)
     if (hasToken) {
       console.warn('[ProtectedRoute] Token exists but auth check failed, clearing...');
       auth.clearAuth();
     }
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   return <>{children}</>;

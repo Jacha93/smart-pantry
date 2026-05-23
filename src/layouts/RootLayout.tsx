@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { applyRouteSeo } from '@/lib/seo';
+import { isMarketingBuild } from '@/lib/build-target';
 import '../styles/globals.css';
 
 const ChatBubble = lazy(() =>
@@ -26,10 +27,12 @@ export function RootLayout() {
       
       <Outlet />
       <Toaster />
-      <Suspense fallback={null}>
-        <ChatBubble />
-        <AdBlockerDetector />
-      </Suspense>
+      {!isMarketingBuild && (
+        <Suspense fallback={null}>
+          <ChatBubble />
+          <AdBlockerDetector />
+        </Suspense>
+      )}
     </>
   );
 }

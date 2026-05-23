@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   Camera,
@@ -7,7 +6,6 @@ import {
   ChefHat,
   LayoutDashboard,
   LogIn,
-  LogOut,
   Package,
   ScanLine,
   ShieldCheck,
@@ -17,12 +15,10 @@ import {
   Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { auth, authDisabled } from '@/lib/auth';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { LoginDialog } from '@/components/login-dialog';
-import { RegisterDialog } from '@/components/register-dialog';
 import { Footer } from '@/components/footer';
 import { useI18n } from '@/hooks/use-i18n';
+import { getAppUrl } from '@/lib/build-target';
 
 const pantryItems = [
   {
@@ -46,60 +42,10 @@ const pantryItems = [
 ];
 
 export default function LandingPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
-  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
   const { t } = useI18n();
-
-  const checkAuth = () => {
-    const token = auth.getToken();
-    const authenticated = authDisabled ? !!token : token && auth.isAuthenticated();
-
-    setIsAuthenticated(!!authenticated);
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    checkAuth();
-
-    const handleAuthChange = () => {
-      window.setTimeout(checkAuth, 10);
-    };
-
-    window.addEventListener('storage', handleAuthChange);
-    window.addEventListener('authchange', handleAuthChange);
-
-    return () => {
-      window.removeEventListener('storage', handleAuthChange);
-      window.removeEventListener('authchange', handleAuthChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    checkAuth();
-  }, [location.pathname]);
-
-  const openLoginDialog = () => {
-    setIsRegisterDialogOpen(false);
-    setIsLoginDialogOpen(true);
-  };
-
-  const openRegisterDialog = () => {
-    setIsLoginDialogOpen(false);
-    setIsRegisterDialogOpen(true);
-  };
-
-  const handleLoginSuccess = () => {
-    checkAuth();
-    navigate('/app');
-  };
-
-  const handleRegisterSuccess = () => {
-    openLoginDialog();
-  };
+  const appLoginUrl = getAppUrl('/login');
+  const appRegisterUrl = getAppUrl('/register');
+  const appDashboardUrl = getAppUrl('/app');
 
   const features = [
     {
@@ -146,26 +92,6 @@ export default function LandingPage() {
     },
   ];
 
-  const authActions = isAuthenticated ? (
-    <Link to="/app">
-      <Button className="flex items-center gap-2">
-        <LayoutDashboard className="h-4 w-4" />
-        {t('landing.goToApp')}
-      </Button>
-    </Link>
-  ) : (
-    <>
-      <Button variant="outline" className="flex items-center gap-2" onClick={openLoginDialog}>
-        <LogIn className="h-4 w-4" />
-        {t('auth.signIn')}
-      </Button>
-      <Button className="flex items-center gap-2" onClick={openRegisterDialog}>
-        {t('auth.signUp')}
-        <ArrowRight className="h-4 w-4" />
-      </Button>
-    </>
-  );
-
   return (
     <div className="min-h-screen overflow-hidden bg-background dotted-grid-24">
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-[#09090b]/82 backdrop-blur-xl">
@@ -183,26 +109,20 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher />
-            {!isLoading && (
-              <div className="hidden items-center gap-2 sm:flex">
-                {authActions}
-                {isAuthenticated && (
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      await auth.logout();
-                      window.setTimeout(() => {
-                        checkAuth();
-                        window.location.href = '/';
-                      }, 100);
-                    }}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    {t('nav.logout')}
-                  </Button>
-                )}
-              </div>
-            )}
+            <div className="hidden items-center gap-2 sm:flex">
+              <Button asChild variant="outline" className="flex items-center gap-2">
+                <a href={appLoginUrl}>
+                  <LogIn className="h-4 w-4" />
+                  {t('auth.signIn')}
+                </a>
+              </Button>
+              <Button asChild className="flex items-center gap-2">
+                <a href={appRegisterUrl}>
+                  {t('auth.signUp')}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
@@ -223,29 +143,26 @@ export default function LandingPage() {
                 {t('landing.heroSubtitle')}
               </p>
 
-              {!isLoading && (
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  {isAuthenticated ? (
-                    <Link to="/app">
-                      <Button size="lg" className="w-full sm:w-auto">
-                        <LayoutDashboard className="h-5 w-5" />
-                        {t('landing.goToApp')}
-                      </Button>
-                    </Link>
-                  ) : (
-                    <>
-                      <Button size="lg" className="w-full sm:w-auto" onClick={openRegisterDialog}>
-                        {t('landing.getStarted')}
-                        <ArrowRight className="h-5 w-5" />
-                      </Button>
-                      <Button variant="outline" size="lg" className="w-full sm:w-auto" onClick={openLoginDialog}>
-                        <LogIn className="h-5 w-5" />
-                        {t('auth.signIn')}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )}
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="w-full sm:w-auto">
+                  <a href={appRegisterUrl}>
+                    {t('landing.getStarted')}
+                    <ArrowRight className="h-5 w-5" />
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                  <a href={appLoginUrl}>
+                    <LogIn className="h-5 w-5" />
+                    {t('auth.signIn')}
+                  </a>
+                </Button>
+                <Button asChild variant="ghost" size="lg" className="w-full sm:w-auto">
+                  <a href={appDashboardUrl}>
+                    <LayoutDashboard className="h-5 w-5" />
+                    {t('landing.goToApp')}
+                  </a>
+                </Button>
+              </div>
 
               <div className="mt-10 grid max-w-xl grid-cols-3 gap-3 text-sm">
                 <div className="border-l border-[#17f6fe]/45 pl-4">
@@ -398,40 +315,17 @@ export default function LandingPage() {
               <h2 className="text-2xl font-semibold text-foreground">{t('landing.ctaTitle')}</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{t('landing.ctaSubtitle')}</p>
             </div>
-            {!isLoading && (
-              isAuthenticated ? (
-                <Link to="/app">
-                  <Button size="lg">
-                    <LayoutDashboard className="h-5 w-5" />
-                    {t('landing.goToApp')}
-                  </Button>
-                </Link>
-              ) : (
-                <Button size="lg" onClick={openRegisterDialog}>
-                  {t('landing.getStarted')}
-                  <ArrowRight className="h-5 w-5" />
-                </Button>
-              )
-            )}
+            <Button asChild size="lg">
+              <a href={appRegisterUrl}>
+                {t('landing.getStarted')}
+                <ArrowRight className="h-5 w-5" />
+              </a>
+            </Button>
           </div>
         </section>
       </main>
 
       <Footer />
-
-      <LoginDialog
-        isOpen={isLoginDialogOpen}
-        onOpenChange={setIsLoginDialogOpen}
-        onSuccess={handleLoginSuccess}
-        onRegisterClick={openRegisterDialog}
-      />
-
-      <RegisterDialog
-        isOpen={isRegisterDialogOpen}
-        onOpenChange={setIsRegisterDialogOpen}
-        onSuccess={handleRegisterSuccess}
-        onLoginClick={openLoginDialog}
-      />
     </div>
   );
 }

@@ -1,9 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { Navigate, createBrowserRouter, useLocation } from 'react-router-dom';
 import { RootLayout } from './layouts/RootLayout';
 import { AppLayout } from './layouts/AppLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { getAppUrl, isMarketingBuild } from './lib/build-target';
 
 const LandingPage = lazy(() => import('./pages/index'));
 const LoginPage = lazy(() => import('./pages/login'));
@@ -30,73 +31,124 @@ function lazyPage(element: ReactNode) {
   return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
 }
 
+function ExternalRedirect() {
+  const location = useLocation();
+
+  useEffect(() => {
+    window.location.replace(getAppUrl(`${location.pathname}${location.search}${location.hash}`));
+  }, [location.hash, location.pathname, location.search]);
+
+  return <PageLoader />;
+}
+
+const marketingChildren = [
+  {
+    index: true,
+    element: lazyPage(<LandingPage />),
+  },
+  {
+    path: 'login',
+    element: <ExternalRedirect />,
+  },
+  {
+    path: 'register',
+    element: <ExternalRedirect />,
+  },
+  {
+    path: 'app',
+    element: <ExternalRedirect />,
+  },
+  {
+    path: 'app/*',
+    element: <ExternalRedirect />,
+  },
+  {
+    path: 'de/datenschutz',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'de/impressum',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'en/privacy',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'en/legal-notice',
+    element: lazyPage(<LegalPage />),
+  },
+];
+
+const appChildren = [
+  {
+    index: true,
+    element: <Navigate to="/login" replace />,
+  },
+  {
+    path: 'login',
+    element: lazyPage(<LoginPage />),
+  },
+  {
+    path: 'register',
+    element: lazyPage(<RegisterPage />),
+  },
+  {
+    path: 'de/datenschutz',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'de/impressum',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'en/privacy',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'en/legal-notice',
+    element: lazyPage(<LegalPage />),
+  },
+  {
+    path: 'app',
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: lazyPage(<DashboardPage />),
+      },
+      {
+        path: 'groceries',
+        element: lazyPage(<GroceriesPage />),
+      },
+      {
+        path: 'shopping-list',
+        element: lazyPage(<ShoppingListPage />),
+      },
+      {
+        path: 'fridge-analyzer',
+        element: lazyPage(<FridgeAnalyzerPage />),
+      },
+      {
+        path: 'recipes',
+        element: lazyPage(<RecipesPage />),
+      },
+      {
+        path: 'profile',
+        element: lazyPage(<ProfilePage />),
+      },
+    ],
+  },
+];
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <RootLayout />,
-    children: [
-      {
-        index: true,
-        element: lazyPage(<LandingPage />),
-      },
-      {
-        path: 'login',
-        element: lazyPage(<LoginPage />),
-      },
-      {
-        path: 'register',
-        element: lazyPage(<RegisterPage />),
-      },
-      {
-        path: 'de/datenschutz',
-        element: lazyPage(<LegalPage />),
-      },
-      {
-        path: 'de/impressum',
-        element: lazyPage(<LegalPage />),
-      },
-      {
-        path: 'en/privacy',
-        element: lazyPage(<LegalPage />),
-      },
-      {
-        path: 'en/legal-notice',
-        element: lazyPage(<LegalPage />),
-      },
-      {
-        path: 'app',
-        element: (
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        ),
-        children: [
-          {
-            index: true,
-            element: lazyPage(<DashboardPage />),
-          },
-          {
-            path: 'groceries',
-            element: lazyPage(<GroceriesPage />),
-          },
-          {
-            path: 'shopping-list',
-            element: lazyPage(<ShoppingListPage />),
-          },
-          {
-            path: 'fridge-analyzer',
-            element: lazyPage(<FridgeAnalyzerPage />),
-          },
-          {
-            path: 'recipes',
-            element: lazyPage(<RecipesPage />),
-          },
-          {
-            path: 'profile',
-            element: lazyPage(<ProfilePage />),
-          },
-        ],
-      },
-    ],
+    children: isMarketingBuild ? marketingChildren : appChildren,
   },
 ]);
