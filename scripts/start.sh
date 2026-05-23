@@ -14,7 +14,7 @@ cleanup() {
     exit 0
 }
 
-trap cleanup SIGTERM SIGINT
+trap cleanup TERM INT
 
 # Starte Backend im Hintergrund
 echo "🔌 Starting Backend (FastAPI) on port 3001..."
