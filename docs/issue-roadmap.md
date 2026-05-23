@@ -36,8 +36,8 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | --- | --- | --- |
 | #16 | Performance and Core Web Vitals budgets | Initial route-level code splitting, Vite manual chunks, `budget:web`, and web quality CI added; Lighthouse/PageSpeed pending |
 | #20 | AdSense readiness, certified CMP, consent mode | Transitional AdSense feature and consent gates added; certified CMP/runtime consent flow pending |
-| #21 | Marketing ad placements | Pending |
-| #22 | App ad slots for free users and paid-user suppression | Pending |
+| #21 | Marketing ad placements | Placement matrix and no-go zones documented; implementation waits for CMP and Astro marketing pages |
+| #22 | App ad slots for free users and paid-user suppression | Transitional slot plan and backend entitlement requirement documented; final suppression API pending |
 | #23 | Analytics, Search Console, AdSense monitoring, SEO QA | Transitional `check:seo` gate added for robots, sitemap, canonical, x-default, and JSON-LD; analytics/Search Console setup pending |
 
 ## Phase 5: Mobile Readiness
@@ -70,6 +70,8 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #23 | `npm run check:seo` validates robots, sitemap public URLs, canonical root, x-default root alternate, and core JSON-LD graph in CI | Search Console, analytics events, AdSense monitoring, rendered-route SEO validation after Astro split |
 | #20 | AdSense scripts do not load unless `VITE_ADSENSE_ENABLED=true` and `VITE_ADSENSE_CONSENT_GRANTED=true`; dev ad testing can show placeholders without loading external scripts | Certified CMP, runtime consent mode, legal review, paid-user entitlement enforcement |
 | #24 | `docs/content-architecture.md` defines German/English route families, page models, feature/use-case/blog structures, internal linking, and structured-data boundaries | Astro implementation, typed content collections, rendered page QA |
+| #21 | `docs/ads-consent.md` defines allowed marketing placements and hero/legal/sticky/layout-shift no-go zones | Astro page implementation, reserved slot dimensions, CMP-gated rendered QA |
+| #22 | `docs/ads-consent.md` maps current app ad surfaces and requires backend-owned `ads/no_ads` entitlements before real app ads go live | Backend entitlement field, frontend wiring to entitlement source, paid-user smoke test |
 
 ## Next Code Slice
 
