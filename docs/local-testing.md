@@ -65,6 +65,12 @@ Never reuse production secrets for local testing.
 
 Use a disposable Supabase project or a staging database, not production.
 
+## RLS Boundary
+
+The current app authenticates users in the FastAPI backend and reaches Postgres through a server-side SQLAlchemy connection. Supabase RLS is therefore not the active guardrail for the existing app routes.
+
+If we later move any reads or writes directly to Supabase client access, then RLS must be added for those tables with a concrete mapping from the app user identity to the database session identity. Until then, keep the database credentials server-side and treat backend authorization as the source of truth.
+
 For a new Supabase project:
 
 1. Create the project and save its database password locally.
