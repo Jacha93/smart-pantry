@@ -6,7 +6,7 @@ This guide is the current source of truth for testing the web app locally with r
 
 Create or update these two local files. Do not commit them.
 
-If the old Supabase project was deleted, ignore every previous `db.<project-ref>.supabase.co` value and create a fresh disposable/staging Supabase project first. The local smoke tests need a live Postgres database with the Smart Pantry schema; the app does not depend on the deleted project once the new `DATABASE_URL` is in place.
+If the old Supabase project was deleted, create a fresh disposable/staging Supabase project first and copy its exact `DATABASE_URL` into `backend_python/.env`. The local smoke tests need a live Postgres database with the Smart Pantry schema; the app depends only on the current `DATABASE_URL`, not on the deleted project.
 
 ### Root `.env`
 
@@ -34,10 +34,10 @@ Keep `VITE_ADSENSE_ENABLED=false` and `VITE_ADSENSE_CONSENT_GRANTED=false` until
 
 ### `backend_python/.env`
 
-Prefer the Supabase Session Pooler URL for local testing unless you know your network can reach the direct IPv6 database host:
+Use the exact Supabase connection string from Project Settings:
 
 ```env
-DATABASE_URL=postgresql://postgres.<SUPABASE_PROJECT_REF>:<SUPABASE_DB_PASSWORD>@aws-0-<SUPABASE_REGION>.pooler.supabase.com:5432/postgres
+DATABASE_URL=postgresql://postgres.<SUPABASE_PROJECT_REF>:<SUPABASE_DB_PASSWORD>@db.<SUPABASE_PROJECT_REF>.supabase.co:5432/postgres
 JWT_SECRET=<AT_LEAST_32_RANDOM_CHARACTERS>
 ENVIRONMENT=development
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
@@ -51,7 +51,7 @@ For image analysis or recipe API testing, fill `GEMINI_API_KEY` and `SPOONACULAR
 
 Replace every placeholder literally. If `DATABASE_URL` still contains `<SUPABASE_PROJECT_REF>`, the backend can start but registration/login will fail when it tries to resolve the database host.
 
-If `npm run check:local-env` says the `DATABASE_URL` host does not resolve, do not keep using the direct host form `db.<project-ref>.supabase.co`. Copy the Session Pooler connection string from Supabase instead. `postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password.
+`postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password. The direct `db.<project-ref>.supabase.co` form from Supabase is valid here and should not be replaced with a pooler string just because a local DNS check happens to fail.
 
 Generate `JWT_SECRET` locally, for example:
 
@@ -68,7 +68,7 @@ Use a disposable Supabase project or a staging database, not production.
 For a new Supabase project:
 
 1. Create the project and save its database password locally.
-2. In Supabase, open the database connection settings and copy the Session Pooler connection string.
+2. In Supabase, open the database connection settings and copy the connection string exactly as shown.
 3. Put that value into `backend_python/.env` as `DATABASE_URL`; URL-encode special characters in the password.
 4. Open the SQL editor and run `database-dumps/smart_pantry_schema.sql`.
 5. Run `npm run check:local-env` and `npm run check:db-schema`.

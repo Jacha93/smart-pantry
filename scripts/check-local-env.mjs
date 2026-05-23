@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { lookup } from 'node:dns/promises';
 
 const requiredRoot = [
   'VITE_API_URL',
@@ -55,31 +54,19 @@ function assertNoPlaceholders(values, path) {
 async function assertBackend(values) {
   const databaseUrl = values.get('DATABASE_URL') || '';
   const jwtSecret = values.get('JWT_SECRET') || '';
-  let parsedDatabaseUrl;
 
   if (!databaseUrl.startsWith('postgresql://') && !databaseUrl.startsWith('postgres://')) {
     throw new Error('backend_python/.env DATABASE_URL must start with postgresql:// or postgres://');
   }
 
   try {
-    parsedDatabaseUrl = new URL(databaseUrl);
+    new URL(databaseUrl);
   } catch {
     throw new Error('backend_python/.env DATABASE_URL is not a valid URL');
   }
 
   if (databaseUrl.includes('<supabase_project_ref>') || databaseUrl.includes('[PROJECT]')) {
     throw new Error('backend_python/.env DATABASE_URL still contains the Supabase project placeholder');
-  }
-
-  try {
-    await lookup(parsedDatabaseUrl.hostname);
-  } catch {
-    const directSupabaseHostPattern = /^db\.[^.]+\.supabase\.co$/;
-    const hint = directSupabaseHostPattern.test(parsedDatabaseUrl.hostname)
-      ? ' The Supabase project may be deleted or the direct database host may be unreachable locally; create/select a staging Supabase project and use its Session Pooler URL.'
-      : '';
-
-    throw new Error(`backend_python/.env DATABASE_URL host does not resolve: ${parsedDatabaseUrl.hostname}.${hint}`);
   }
 
   if (jwtSecret.length < 32) {

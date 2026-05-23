@@ -78,7 +78,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 The current blocker for end-to-end local testing is that the previous Supabase project was deleted:
 
 1. Create a new disposable/staging Supabase project.
-2. Put the new Session Pooler URL into `backend_python/.env` as `DATABASE_URL`.
+2. Put the new Supabase connection string into `backend_python/.env` as `DATABASE_URL`.
 3. Apply `database-dumps/smart_pantry_schema.sql` in the new project's SQL editor.
 4. Run `npm run check:local-env` and `npm run check:db-schema`.
 5. Run `npm run dev:api`, then `npm run smoke:api`.
