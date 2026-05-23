@@ -35,7 +35,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | Issue | Work item | Status |
 | --- | --- | --- |
 | #16 | Performance and Core Web Vitals budgets | Initial route-level code splitting, Vite manual chunks, `budget:web`, and web quality CI added; Lighthouse/PageSpeed pending |
-| #20 | AdSense readiness, certified CMP, consent mode | Pending |
+| #20 | AdSense readiness, certified CMP, consent mode | Transitional AdSense feature and consent gates added; certified CMP/runtime consent flow pending |
 | #21 | Marketing ad placements | Pending |
 | #22 | App ad slots for free users and paid-user suppression | Pending |
 | #23 | Analytics, Search Console, AdSense monitoring, SEO QA | Transitional `check:seo` gate added for robots, sitemap, canonical, x-default, and JSON-LD; analytics/Search Console setup pending |
@@ -68,6 +68,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #14 | Legal pages are directly routable and footer links point to real URLs in the active locale | Astro static legal pages, crawlable locale-specific metadata, legal review of ads/consent text |
 | #13 | Current Vite shell keeps private app routes noindexed, clears canonicals on private routes, and emits canonical/x-default/locale alternates for the public legal routes | Real `/de` and `/en` marketing routes, server-rendered head output, redirect matrix, final x-default strategy |
 | #23 | `npm run check:seo` validates robots, sitemap public URLs, canonical root, x-default root alternate, and core JSON-LD graph in CI | Search Console, analytics events, AdSense monitoring, rendered-route SEO validation after Astro split |
+| #20 | AdSense scripts do not load unless `VITE_ADSENSE_ENABLED=true` and `VITE_ADSENSE_CONSENT_GRANTED=true`; dev ad testing can show placeholders without loading external scripts | Certified CMP, runtime consent mode, legal review, paid-user entitlement enforcement |
 
 ## Next Code Slice
 

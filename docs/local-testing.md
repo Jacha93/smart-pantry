@@ -15,6 +15,8 @@ VITE_API_URL=http://127.0.0.1:3001
 VITE_AUTH_DISABLED=false
 VITE_USE_MOCK_AUTH=false
 VITE_SHOW_ADS_FOR_ALL=false
+VITE_ADSENSE_ENABLED=false
+VITE_ADSENSE_CONSENT_GRANTED=false
 ```
 
 Use `127.0.0.1` for `VITE_API_URL` while testing the full stack. It avoids browser and CORS edge cases where `localhost` resolves differently between frontend, backend, and proxy logs.
@@ -27,6 +29,8 @@ VITE_ADSENSE_AD_SLOT_RECTANGLE=
 VITE_ADSENSE_AD_SLOT_HORIZONTAL=
 VITE_ADSENSE_AD_SLOT_VERTICAL=
 ```
+
+Keep `VITE_ADSENSE_ENABLED=false` and `VITE_ADSENSE_CONSENT_GRANTED=false` until a certified CMP and consent-mode implementation are tested. `VITE_SHOW_ADS_FOR_ALL=true` may show local placeholders for layout checks, but it must not load external AdSense scripts without both gates enabled.
 
 ### `backend_python/.env`
 

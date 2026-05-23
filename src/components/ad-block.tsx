@@ -48,7 +48,7 @@ interface AdBlockProps {
  * 1. Google AdSense Account erstellen: https://www.google.com/adsense/
  * 2. Website verifizieren
  * 3. Ad Units erstellen und adSlotId kopieren
- * 4. AdSense Script in layout.tsx einbinden
+ * 4. VITE_ADSENSE_ENABLED und Consent-Gate erst nach CMP-Freigabe aktivieren
  */
 export function AdBlock({
   adSlotId,
@@ -63,6 +63,9 @@ export function AdBlock({
   const adRef = useRef<HTMLDivElement>(null);
   const [isAdSenseLoaded, setIsAdSenseLoaded] = useState(false);
   const [showAd, setShowAd] = useState(false);
+  const isAdSenseEnabled = import.meta.env.VITE_ADSENSE_ENABLED === 'true';
+  const hasAdConsent = import.meta.env.VITE_ADSENSE_CONSENT_GRANTED === 'true';
+  const canLoadAdSense = isAdSenseEnabled && hasAdConsent;
 
   // Prüfe ob Ad angezeigt werden soll
   useEffect(() => {
@@ -76,9 +79,9 @@ export function AdBlock({
     }
   }, [devMode, showOnlyForFreeTier, currentPlan]);
 
-  // Lade Google AdSense Script (nur wenn adSlotId gesetzt ist)
+  // Lade Google AdSense Script nur nach expliziter Feature- und Consent-Freigabe.
   useEffect(() => {
-    if (!showAd || !adSlotId) return;
+    if (!showAd || !adSlotId || !canLoadAdSense) return;
 
     // Prüfe ob AdSense bereits geladen ist
     if (window.adsbygoogle && Array.isArray(window.adsbygoogle)) {
@@ -102,11 +105,11 @@ export function AdBlock({
     return () => {
       // Cleanup: Entferne Script nicht, da es wiederverwendet werden kann
     };
-  }, [showAd, adSlotId]);
+  }, [showAd, adSlotId, canLoadAdSense]);
 
   // Initialisiere AdSense Ad (nur einmal pro AdBlock)
   useEffect(() => {
-    if (!showAd || !adSlotId || !isAdSenseLoaded || !adRef.current) return;
+    if (!showAd || !adSlotId || !canLoadAdSense || !isAdSenseLoaded || !adRef.current) return;
 
     try {
       // Prüfe ob Ad bereits initialisiert wurde
@@ -137,15 +140,15 @@ export function AdBlock({
     } catch (error) {
       console.error('Error initializing AdSense:', error);
     }
-  }, [showAd, adSlotId, isAdSenseLoaded, format, responsive]);
+  }, [showAd, adSlotId, canLoadAdSense, isAdSenseLoaded, format, responsive]);
 
   // Zeige nichts wenn Ad nicht angezeigt werden soll
   if (!showAd) {
     return null;
   }
 
-  // Placeholder für Dev/Testing (wenn keine adSlotId)
-  if (!adSlotId) {
+  // Placeholder für Dev/Testing und für AdSense-Konfiguration ohne Consent.
+  if (!adSlotId || !canLoadAdSense) {
     return (
       <Card className={`border-dashed border-2 border-primary/30 bg-primary/5 ${className}`}>
         <CardContent className="p-4">
@@ -162,6 +165,11 @@ export function AdBlock({
             {devMode && (
               <div className="text-xs text-amber-600 dark:text-amber-400">
                 Dev Mode: Ad wird angezeigt
+              </div>
+            )}
+            {adSlotId && !canLoadAdSense && (
+              <div className="text-xs text-muted-foreground/70">
+                AdSense blocked until CMP consent is active
               </div>
             )}
           </div>
@@ -184,4 +192,3 @@ declare global {
     adsbygoogle?: any[];
   }
 }
-
