@@ -28,7 +28,7 @@ async def register(user_data: UserCreate, session: AsyncSession = Depends(get_se
     # Neuen User erstellen
     new_user = User(
         email=user_data.email,
-        name=user_data.name,
+        fullName=user_data.name,
         passwordHash=get_password_hash(user_data.password),
         createdAt=datetime.utcnow()
     )

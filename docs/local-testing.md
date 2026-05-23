@@ -34,10 +34,10 @@ Keep `VITE_ADSENSE_ENABLED=false` and `VITE_ADSENSE_CONSENT_GRANTED=false` until
 
 ### `backend_python/.env`
 
-Use the exact Supabase connection string from Project Settings:
+Use the exact Supabase Session Pooler connection string from Project Settings:
 
 ```env
-DATABASE_URL=postgresql://postgres.<SUPABASE_PROJECT_REF>:<SUPABASE_DB_PASSWORD>@db.<SUPABASE_PROJECT_REF>.supabase.co:5432/postgres
+DATABASE_URL=postgresql://postgres.<SUPABASE_PROJECT_REF>:<SUPABASE_DB_PASSWORD>@aws-<POOLER_REGION>.pooler.supabase.com:5432/postgres
 JWT_SECRET=<AT_LEAST_32_RANDOM_CHARACTERS>
 ENVIRONMENT=development
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
@@ -51,7 +51,7 @@ For image analysis or recipe API testing, fill `GEMINI_API_KEY` and `SPOONACULAR
 
 Replace every placeholder literally. If `DATABASE_URL` still contains `<SUPABASE_PROJECT_REF>`, the backend can start but registration/login will fail when it tries to resolve the database host.
 
-`postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password. The direct `db.<project-ref>.supabase.co` form from Supabase is valid here and should not be replaced with a pooler string just because a local DNS check happens to fail.
+`postgresql://...` and `postgres://...` are both accepted; URL-encode special characters in the password. For this project and other IPv4-only local environments, use the Session Pooler string rather than the direct `db.<project-ref>.supabase.co` form.
 
 Generate `JWT_SECRET` locally, for example:
 
@@ -74,7 +74,7 @@ If we later move any reads or writes directly to Supabase client access, then RL
 For a new Supabase project:
 
 1. Create the project and save its database password locally.
-2. In Supabase, open the database connection settings and copy the connection string exactly as shown.
+2. In Supabase, open the database connection settings and copy the Session Pooler connection string exactly as shown.
 3. Put that value into `backend_python/.env` as `DATABASE_URL`; URL-encode special characters in the password.
 4. Open the SQL editor and run `database-dumps/smart_pantry_schema.sql`.
 5. Run `npm run check:local-env` and `npm run check:db-schema`.

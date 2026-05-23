@@ -67,12 +67,12 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
 
 4. **Supabase Setup**
    - Erstelle ein Projekt auf [Supabase](https://supabase.com)
-   - Kopiere die Connection String (DATABASE_URL) aus den Project Settings
-   - Die URL sieht aus wie: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`
+   - Kopiere die Session Pooler Connection String (DATABASE_URL) aus den Project Settings
+   - Die URL sieht aus wie: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[POOLER_REGION].pooler.supabase.com:5432/postgres`
 
 5. **Backend-Umgebungsvariablen setzen (`backend_python/.env`)**
    ```env
-   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
+   DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[POOLER_REGION].pooler.supabase.com:5432/postgres
    JWT_SECRET=CHANGE_ME_JWT_SECRET
    GEMINI_API_KEY=YOUR_GEMINI_API_KEY
    SPOONACULAR_API_KEY=YOUR_SPOONACULAR_API_KEY
@@ -288,13 +288,13 @@ Siehe [LICENSE.md](./LICENSE.md) für Details.
 
 2. **Connection String kopieren**
    - Gehe zu Project Settings → Database
-   - Kopiere die Connection String (URI)
-   - Die URL sieht aus wie: `postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres`
+   - Kopiere die Session Pooler Connection String (URI)
+   - Die URL sieht aus wie: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-[POOLER_REGION].pooler.supabase.com:5432/postgres`
    - Setze diese als `DATABASE_URL` in deiner `.env` Datei
 
 3. **Datenbank-Schema**
-   - Das Backend erstellt Tabellen automatisch beim ersten Start (via SQLModel)
-   - Keine manuellen Migrations nötig
+   - Wende das SQL-Schema aus `database-dumps/smart_pantry_schema.sql` oder die entsprechende Supabase-Migration an
+   - Die Tabellen müssen vor dem ersten echten Login vorhanden sein
 
 #### Backup & Wiederherstellung
 
