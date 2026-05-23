@@ -28,7 +28,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #14 | Public legal and trust pages | Transitional Vite routes added for `/de/datenschutz`, `/de/impressum`, `/en/privacy`, and `/en/legal-notice`; Astro/legal metadata still pending |
 | #15 | Structured data | Basic Organization, WebSite, and SoftwareApplication JSON-LD added to current Vite shell; locale-specific Astro output and breadcrumbs pending |
 | #17 | robots.txt, sitemap.xml, index rules | Transitional `robots.txt`, `sitemap.xml`, and client-side noindex for `/app` routes added; Astro locale sitemap still pending |
-| #24 | Content architecture for feature, use-case, and blog pages | Pending |
+| #24 | Content architecture for feature, use-case, and blog pages | Route families, content model, page structure, internal linking, and schema boundaries documented |
 
 ## Phase 4: Ads, Consent, Analytics, and Performance
 
@@ -69,6 +69,7 @@ Open issues read on 2026-05-21 from `jacha93/smart-pantry`.
 | #13 | Current Vite shell keeps private app routes noindexed, clears canonicals on private routes, and emits canonical/x-default/locale alternates for the public legal routes | Real `/de` and `/en` marketing routes, server-rendered head output, redirect matrix, final x-default strategy |
 | #23 | `npm run check:seo` validates robots, sitemap public URLs, canonical root, x-default root alternate, and core JSON-LD graph in CI | Search Console, analytics events, AdSense monitoring, rendered-route SEO validation after Astro split |
 | #20 | AdSense scripts do not load unless `VITE_ADSENSE_ENABLED=true` and `VITE_ADSENSE_CONSENT_GRANTED=true`; dev ad testing can show placeholders without loading external scripts | Certified CMP, runtime consent mode, legal review, paid-user entitlement enforcement |
+| #24 | `docs/content-architecture.md` defines German/English route families, page models, feature/use-case/blog structures, internal linking, and structured-data boundaries | Astro implementation, typed content collections, rendered page QA |
 
 ## Next Code Slice
 

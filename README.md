@@ -109,7 +109,7 @@ Siehe [CHANGELOG.md](./CHANGELOG.md) für detaillierte Migrationshinweise und Br
 
 Für echte lokale End-to-End-Tests mit Supabase, Backend und mehreren Testusern siehe [docs/local-testing.md](./docs/local-testing.md).
 
-Die geplante Trennung von Marketing, Web-App und API ist in [docs/adr/0001-monorepo-split-domain-strategy.md](./docs/adr/0001-monorepo-split-domain-strategy.md) dokumentiert. Der aktuelle Issue-Fahrplan steht in [docs/issue-roadmap.md](./docs/issue-roadmap.md).
+Die geplante Trennung von Marketing, Web-App und API ist in [docs/adr/0001-monorepo-split-domain-strategy.md](./docs/adr/0001-monorepo-split-domain-strategy.md) dokumentiert. Der aktuelle Issue-Fahrplan steht in [docs/issue-roadmap.md](./docs/issue-roadmap.md); die SEO-Content-Struktur fuer die spaetere Marketing-App in [docs/content-architecture.md](./docs/content-architecture.md).
 
 ### Lokale Tests ohne Backend oder Datenbank
 
